@@ -1,0 +1,978 @@
+/* Enhanced Auth Container */
+.auth-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #ffffff 0%, #ffffff 100%);
+  padding: 1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Side-by-side Layout */
+.auth-layout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3rem;
+  max-width: 1200px;
+  width: 100%;
+  min-height: 100vh;
+  padding: 2rem;
+  margin: 0 auto;
+}
+
+/* Left Side - Logo Section */
+.logo-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem;
+  max-width: 500px;
+}
+
+.logo-content {
+  margin-top: 2rem;
+  text-align: center;
+}
+
+.logo-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.5rem;
+  animation: titleGlow 2s ease-in-out infinite;
+}
+
+.logo-subtitle {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+  letter-spacing: 1px;
+}
+
+/* Right Side - Form Section */
+.form-section {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  max-width: 500px;
+}
+
+.auth-card {
+  background: white;
+  border-radius: 20px;
+  padding: 2.5rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 450px;
+  position: relative;
+  overflow: hidden;
+  animation: cardSlideIn 0.6s ease-out;
+}
+
+.auth-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #ff6b35, #f7931e, #ff6b35);
+  background-size: 200% 100%;
+  animation: gradientShift 3s ease-in-out infinite;
+}
+
+/* Enhanced Realistic Circuit Board Logo Animation Styles */
+.logo-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 2rem;
+  perspective: 1000px;
+}
+
+.logo-circuit {
+  position: relative;
+  width: 220px;
+  height: 220px;
+  transform-style: preserve-3d;
+  animation: logoFloat 3s ease-in-out infinite;
+}
+
+.circuit-board {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  animation: circuitGlow 4s ease-in-out infinite;
+  border: 2px solid #475569;
+}
+
+.circuit-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    linear-gradient(90deg, rgba(59, 130, 246, 0.15) 1px, transparent 1px),
+    linear-gradient(rgba(59, 130, 246, 0.15) 1px, transparent 1px);
+  background-size: 15px 15px;
+  animation: gridMove 25s linear infinite;
+}
+
+.circuit-grid::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.1) 2px, transparent 2px),
+    radial-gradient(circle at 80% 20%, rgba(59, 130, 246, 0.1) 2px, transparent 2px),
+    radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.1) 2px, transparent 2px),
+    radial-gradient(circle at 80% 80%, rgba(59, 130, 246, 0.1) 2px, transparent 2px);
+  background-size: 40px 40px;
+  animation: gridPulse 3s ease-in-out infinite;
+}
+
+.circuit-nodes {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.circuit-node {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: radial-gradient(circle, #3b82f6 0%, #1d4ed8 70%, #1e40af 100%);
+  border-radius: 50%;
+  box-shadow: 
+    0 0 15px #3b82f6,
+    inset 0 0 5px rgba(255, 255, 255, 0.3);
+  animation: nodePulse 2s ease-in-out infinite;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.circuit-node:nth-child(1) { top: 15%; left: 15%; animation-delay: 0s; }
+.circuit-node:nth-child(2) { top: 15%; right: 15%; animation-delay: 0.5s; }
+.circuit-node:nth-child(3) { bottom: 15%; left: 15%; animation-delay: 1s; }
+.circuit-node:nth-child(4) { bottom: 15%; right: 15%; animation-delay: 1.5s; }
+.circuit-node:nth-child(5) { top: 50%; left: 10%; animation-delay: 0.25s; }
+.circuit-node:nth-child(6) { top: 50%; right: 10%; animation-delay: 0.75s; }
+.circuit-node:nth-child(7) { left: 50%; top: 10%; animation-delay: 1.25s; }
+.circuit-node:nth-child(8) { left: 50%; bottom: 10%; animation-delay: 1.75s; }
+
+.circuit-paths {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.circuit-path {
+  position: absolute;
+  background: linear-gradient(90deg, #3b82f6, #60a5fa, #93c5fd, #60a5fa, #3b82f6);
+  background-size: 200% 100%;
+  animation: pathFlow 3s linear infinite;
+  border-radius: 2px;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+}
+
+.circuit-path.horizontal {
+  width: 70%;
+  height: 3px;
+  top: 50%;
+  left: 15%;
+  transform: translateY(-50%);
+}
+
+.circuit-path.vertical {
+  width: 3px;
+  height: 70%;
+  left: 50%;
+  top: 15%;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, #3b82f6, #60a5fa, #93c5fd, #60a5fa, #3b82f6);
+  background-size: 100% 200%;
+  animation: pathFlowVertical 3s linear infinite;
+}
+
+.circuit-path.diagonal {
+  width: 3px;
+  height: 50%;
+  top: 25%;
+  left: 30%;
+  transform: rotate(45deg);
+  background: linear-gradient(45deg, #3b82f6, #60a5fa, #93c5fd, #60a5fa, #3b82f6);
+  background-size: 200% 200%;
+  animation: pathFlowDiagonal 4s linear infinite;
+}
+
+.circuit-path.diagonal2 {
+  width: 3px;
+  height: 50%;
+  top: 25%;
+  right: 30%;
+  transform: rotate(-45deg);
+  background: linear-gradient(-45deg, #3b82f6, #60a5fa, #93c5fd, #60a5fa, #3b82f6);
+  background-size: 200% 200%;
+  animation: pathFlowDiagonal2 4.5s linear infinite;
+}
+
+/* Electronic Components */
+.resistor {
+  position: absolute;
+  width: 20px;
+  height: 6px;
+  background: linear-gradient(90deg, #fbbf24, #f59e0b, #d97706, #f59e0b, #fbbf24);
+  border-radius: 3px;
+  box-shadow: 0 0 5px rgba(251, 191, 36, 0.5);
+  animation: resistorGlow 2s ease-in-out infinite;
+}
+
+.resistor:nth-child(1) { top: 30%; left: 25%; transform: rotate(0deg); }
+.resistor:nth-child(2) { top: 70%; right: 25%; transform: rotate(0deg); }
+.resistor:nth-child(3) { left: 30%; top: 25%; transform: rotate(90deg); }
+.resistor:nth-child(4) { right: 30%; bottom: 25%; transform: rotate(90deg); }
+
+.capacitor {
+  position: absolute;
+  width: 8px;
+  height: 12px;
+  background: linear-gradient(180deg, #10b981, #059669, #047857);
+  border-radius: 2px;
+  box-shadow: 0 0 5px rgba(16, 185, 129, 0.5);
+  animation: capacitorCharge 3s ease-in-out infinite;
+}
+
+.capacitor:nth-child(1) { top: 35%; left: 20%; }
+.capacitor:nth-child(2) { top: 35%; right: 20%; }
+.capacitor:nth-child(3) { bottom: 35%; left: 20%; }
+.capacitor:nth-child(4) { bottom: 35%; right: 20%; }
+
+.ic-chip {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed, #6d28d9);
+  border-radius: 3px;
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.6);
+  animation: chipPulse 2.5s ease-in-out infinite;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.ic-chip:nth-child(1) { top: 40%; left: 40%; }
+.ic-chip:nth-child(2) { top: 40%; right: 40%; }
+.ic-chip:nth-child(3) { bottom: 40%; left: 40%; }
+.ic-chip:nth-child(4) { bottom: 40%; right: 40%; }
+
+.ic-chip::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 4px;
+  height: 4px;
+  background: #fbbf24;
+  border-radius: 1px;
+  animation: pinBlink 1s ease-in-out infinite;
+}
+
+.electron {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: radial-gradient(circle, #fbbf24 0%, #f59e0b 70%, #d97706 100%);
+  border-radius: 50%;
+  box-shadow: 0 0 8px #fbbf24;
+  animation: electronMove 2s linear infinite;
+}
+
+.electron:nth-child(1) {
+  top: 20%;
+  left: 20%;
+  animation: electronMove1 3s linear infinite;
+}
+
+.electron:nth-child(2) {
+  top: 20%;
+  right: 20%;
+  animation: electronMove2 4s linear infinite;
+}
+
+.electron:nth-child(3) {
+  bottom: 20%;
+  left: 20%;
+  animation: electronMove3 3.5s linear infinite;
+}
+
+.electron:nth-child(4) {
+  bottom: 20%;
+  right: 20%;
+  animation: electronMove4 4.5s linear infinite;
+}
+
+.electron:nth-child(5) {
+  top: 50%;
+  left: 10%;
+  animation: electronMove5 3.2s linear infinite;
+}
+
+.electron:nth-child(6) {
+  top: 50%;
+  right: 10%;
+  animation: electronMove6 3.8s linear infinite;
+}
+
+.logo-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 70px;
+  height: 70px;
+  background: linear-gradient(135deg, #4f46e5, #6366f1, #8b5cf6);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 
+    0 0 25px rgba(79, 70, 229, 0.6),
+    inset 0 0 15px rgba(255, 255, 255, 0.1);
+  animation: centerPulse 2s ease-in-out infinite;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.logo-center-icon {
+  font-size: 1.8rem;
+  color: white;
+  animation: iconRotate 4s linear infinite;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.logo-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 280px;
+  height: 280px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.15) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: glowPulse 3s ease-in-out infinite;
+  z-index: -1;
+}
+
+.logo-glow::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 200px;
+  height: 200px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: glowPulse2 4s ease-in-out infinite;
+}
+
+@keyframes logoFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes circuitGlow {
+  0%, 100% { 
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    border-color: #475569;
+  }
+  50% { 
+    box-shadow: 0 20px 40px rgba(59, 130, 246, 0.4);
+    border-color: #3b82f6;
+  }
+}
+
+@keyframes gridMove {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(15px, 15px); }
+}
+
+@keyframes gridPulse {
+  0%, 100% { opacity: 0.1; }
+  50% { opacity: 0.3; }
+}
+
+@keyframes nodePulse {
+  0%, 100% { 
+    transform: scale(1); 
+    box-shadow: 0 0 15px #3b82f6;
+  }
+  50% { 
+    transform: scale(1.3); 
+    box-shadow: 0 0 25px #3b82f6;
+  }
+}
+
+@keyframes pathFlow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+@keyframes pathFlowVertical {
+  0% { background-position: 50% 0%; }
+  100% { background-position: 50% 200%; }
+}
+
+@keyframes pathFlowDiagonal {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 200% 200%; }
+}
+
+@keyframes pathFlowDiagonal2 {
+  0% { background-position: 200% 0%; }
+  100% { background-position: 0% 200%; }
+}
+
+@keyframes resistorGlow {
+  0%, 100% { 
+    box-shadow: 0 0 5px rgba(251, 191, 36, 0.5);
+    transform: scale(1);
+  }
+  50% { 
+    box-shadow: 0 0 15px rgba(251, 191, 36, 0.8);
+    transform: scale(1.05);
+  }
+}
+
+@keyframes capacitorCharge {
+  0%, 100% { 
+    box-shadow: 0 0 5px rgba(16, 185, 129, 0.5);
+    transform: scale(1);
+  }
+  50% { 
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.8);
+    transform: scale(1.1);
+  }
+}
+
+@keyframes chipPulse {
+  0%, 100% { 
+    box-shadow: 0 0 8px rgba(139, 92, 246, 0.6);
+    transform: scale(1);
+  }
+  50% { 
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.9);
+    transform: scale(1.05);
+  }
+}
+
+@keyframes pinBlink {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+@keyframes electronMove1 {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(60px, 0); }
+  50% { transform: translate(60px, 60px); }
+  75% { transform: translate(0, 60px); }
+  100% { transform: translate(0, 0); }
+}
+
+@keyframes electronMove2 {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(-60px, 0); }
+  50% { transform: translate(-60px, 60px); }
+  75% { transform: translate(0, 60px); }
+  100% { transform: translate(0, 0); }
+}
+
+@keyframes electronMove3 {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(60px, 0); }
+  50% { transform: translate(60px, -60px); }
+  75% { transform: translate(0, -60px); }
+  100% { transform: translate(0, 0); }
+}
+
+@keyframes electronMove4 {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(-60px, 0); }
+  50% { transform: translate(-60px, -60px); }
+  75% { transform: translate(0, -60px); }
+  100% { transform: translate(0, 0); }
+}
+
+@keyframes electronMove5 {
+  0% { transform: translate(0, 0); }
+  33% { transform: translate(40px, -20px); }
+  66% { transform: translate(20px, 40px); }
+  100% { transform: translate(0, 0); }
+}
+
+@keyframes electronMove6 {
+  0% { transform: translate(0, 0); }
+  33% { transform: translate(-40px, -20px); }
+  66% { transform: translate(-20px, 40px); }
+  100% { transform: translate(0, 0); }
+}
+
+@keyframes centerPulse {
+  0%, 100% { 
+    transform: translate(-50%, -50%) scale(1); 
+    box-shadow: 0 0 25px rgba(79, 70, 229, 0.6);
+  }
+  50% { 
+    transform: translate(-50%, -50%) scale(1.1); 
+    box-shadow: 0 0 35px rgba(79, 70, 229, 0.9);
+  }
+}
+
+@keyframes iconRotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.15; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 0.3; transform: translate(-50%, -50%) scale(1.1); }
+}
+
+@keyframes glowPulse2 {
+  0%, 100% { opacity: 0.1; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 0.2; transform: translate(-50%, -50%) scale(1.05); }
+}
+
+@keyframes cardSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes titleGlow {
+  0%, 100% { filter: drop-shadow(0 0 5px rgba(79, 70, 229, 0.3)); }
+  50% { filter: drop-shadow(0 0 15px rgba(79, 70, 229, 0.6)); }
+}
+
+/* Enhanced Title Styles */
+.auth-title {
+  text-align: center;
+  color: #2d3748;
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, #ff6b35, #f7931e);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: titleGlow 2s ease-in-out infinite;
+}
+
+.auth-subtitle {
+  text-align: center;
+  color: #718096;
+  font-size: 1.1rem;
+  margin-bottom: 2rem;
+  font-weight: 500;
+}
+
+/* Enhanced Form Styles */
+.login-form {
+  margin-bottom: 1.5rem;
+}
+
+.form-group {
+  margin-bottom: 1.25rem;
+  position: relative;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #4a5568;
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-icon {
+  position: absolute;
+  left: -2.5rem;
+  color: #ff6b35;
+  font-size: 1.1rem;
+  z-index: 2;
+  transition: all 0.3s ease;
+  pointer-events: none;
+  top: 50%;
+  transform: translateY(-50%);
+  background: white;
+  padding: 0.5rem;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.input-group:focus-within .input-icon {
+  color: #f7931e;
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 4px 8px rgba(255, 107, 53, 0.2);
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: white;
+  position: relative;
+  z-index: 1;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #ff6b35;
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+  transform: translateY(-2px);
+}
+
+.password-toggle {
+  position: absolute;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: #718096;
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 0.5rem;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.password-toggle:hover {
+  color: #ff6b35;
+  background: rgba(255, 107, 53, 0.1);
+  transform: scale(1.1);
+}
+
+/* Enhanced Button Styles */
+.login-btn {
+  width: 100%;
+  padding: 0.875rem 2rem;
+  background: linear-gradient(135deg, #ff6b35, #f7931e);
+  border: none;
+  border-radius: 12px;
+  color: white;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  margin-top: 0.5rem;
+}
+
+.login-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.login-btn:hover::before {
+  left: 100%;
+}
+
+.login-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(255, 107, 53, 0.3);
+}
+
+.login-btn:active {
+  transform: translateY(0);
+}
+
+/* Loading Spinner */
+.loading-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Enhanced Form Actions */
+.form-actions {
+  text-align: center;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.form-actions span {
+  color: #718096;
+  font-size: 0.9rem;
+  margin-right: 0.5rem;
+}
+
+.register-link {
+  color: #ff6b35;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.register-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #ff6b35, #f7931e);
+  transition: width 0.3s ease;
+}
+
+.register-link:hover::after {
+  width: 100%;
+}
+
+.register-link:hover {
+  color: #f7931e;
+  transform: translateY(-1px);
+}
+
+/* Error Message */
+.error {
+  background: linear-gradient(135deg, #fed7d7, #feb2b2);
+  color: #c53030;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-left: 4px solid #e53e3e;
+  animation: errorShake 0.5s ease-in-out;
+}
+
+@keyframes errorShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .auth-layout {
+    flex-direction: column;
+    gap: 2rem;
+    min-height: auto;
+    padding: 1rem;
+    justify-content: center;
+  }
+  
+  .logo-section {
+    flex: none;
+    order: 1;
+    padding: 1rem;
+    max-width: 400px;
+  }
+  
+  .form-section {
+    flex: none;
+    order: 2;
+    padding: 1rem;
+    width: 100%;
+    max-width: 450px;
+  }
+  
+  .logo-circuit {
+    width: 180px;
+    height: 180px;
+  }
+  
+  .logo-title {
+    font-size: 2rem;
+  }
+  
+  .auth-card {
+    max-width: 400px;
+    padding: 2rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .auth-container {
+    padding: 0.5rem;
+    min-height: 100vh;
+  }
+  
+  .auth-layout {
+    gap: 1.5rem;
+    min-height: 100vh;
+    justify-content: center;
+    padding: 1rem;
+  }
+  
+  .logo-section {
+    flex: 0 0 auto;
+    padding: 1rem;
+    max-width: 350px;
+  }
+  
+  .form-section {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .auth-card {
+    padding: 2rem;
+    margin: 0;
+    max-width: 100%;
+    width: 100%;
+  }
+  
+  .auth-title {
+    font-size: 1.8rem;
+  }
+  
+  .auth-subtitle {
+    font-size: 0.9rem;
+  }
+  
+  .logo-circuit {
+    width: 150px;
+    height: 150px;
+  }
+  
+  .logo-title {
+    font-size: 1.8rem;
+  }
+  
+  .logo-subtitle {
+    font-size: 0.9rem;
+  }
+  
+  .form-control {
+    padding: 0.625rem 0.875rem;
+    font-size: 0.85rem;
+  }
+  
+  .input-icon {
+    font-size: 0.9rem;
+    left: -2rem;
+  }
+  
+  .login-btn {
+    padding: 0.625rem 1.25rem;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .auth-container {
+    padding: 0.25rem;
+  }
+  
+  .auth-layout {
+    padding: 0.5rem;
+    gap: 1rem;
+  }
+  
+  .auth-card {
+    padding: 1.5rem;
+    border-radius: 15px;
+  }
+  
+  .auth-title {
+    font-size: 1.5rem;
+  }
+  
+  .auth-subtitle {
+    font-size: 0.85rem;
+  }
+  
+  .logo-circuit {
+    width: 120px;
+    height: 120px;
+  }
+  
+  .logo-title {
+    font-size: 1.5rem;
+  }
+  
+  .logo-subtitle {
+    font-size: 0.8rem;
+  }
+  
+  .form-control {
+    padding: 0.625rem 0.875rem 0.625rem 3rem;
+    font-size: 0.85rem;
+  }
+} 
