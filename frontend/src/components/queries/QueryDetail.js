@@ -279,6 +279,16 @@ const QueryDetail = () => {
           </div>
         )}
 
+        {/* Resolution */}
+        {query.resolution && (
+          <div className="query-resolution">
+            <h3>Resolution</h3>
+            <div className="resolution-content">
+              <p>{query.resolution}</p>
+            </div>
+          </div>
+        )}
+
         {/* Teacher Responses Section */}
         <div className="query-responses">
           <div className="responses-header">

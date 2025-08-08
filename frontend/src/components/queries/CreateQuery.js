@@ -12,7 +12,8 @@ const CreateQuery = () => {
     tool_id: '',
     design_stage_id: '',
     issue_category_id: '',
-    debug_steps: ''
+    debug_steps: '',
+    resolution: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -231,7 +232,7 @@ const CreateQuery = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="debug_steps">Debug Steps (Optional)</label>
+            <label htmlFor="debug_steps">Debug Steps </label>
             <textarea
               id="debug_steps"
               name="debug_steps"
@@ -244,7 +245,20 @@ const CreateQuery = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="images">Upload Images (Optional)</label>
+            <label htmlFor="resolution">Resolution</label>
+            <textarea
+              id="resolution"
+              name="resolution"
+              className="form-control"
+              value={formData.resolution}
+              onChange={handleChange}
+              placeholder="If you've already resolved this issue, describe how you solved it..."
+              rows="4"
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="images">Upload Images </label>
             <div className="image-upload-container">
               <input
                 type="file"

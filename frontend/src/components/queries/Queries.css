@@ -939,13 +939,15 @@ textarea.form-control {
 }
 
 .query-description,
-.query-debug-steps {
+.query-debug-steps,
+.query-resolution {
   padding: var(--space-8);
   border-bottom: 1px solid var(--gray-200);
 }
 
 .query-description h3,
-.query-debug-steps h3 {
+.query-debug-steps h3,
+.query-resolution h3 {
   margin: 0 0 var(--space-4);
   color: var(--gray-900);
   font-size: 22px;
@@ -957,7 +959,8 @@ textarea.form-control {
 }
 
 .description-content,
-.debug-content {
+.debug-content,
+.resolution-content {
   background: var(--gray-50);
   padding: var(--space-6);
   border-radius: var(--radius-md);
@@ -968,7 +971,8 @@ textarea.form-control {
 }
 
 .description-content::before,
-.debug-content::before {
+.debug-content::before,
+.resolution-content::before {
   content: '';
   position: absolute;
   top: 0;
@@ -980,7 +984,8 @@ textarea.form-control {
 }
 
 .description-content p,
-.debug-content p {
+.debug-content p,
+.resolution-content p {
   margin: 0;
   color: var(--gray-600);
   line-height: 1.6;

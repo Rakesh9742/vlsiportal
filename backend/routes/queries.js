@@ -46,7 +46,8 @@ router.post('/', auth, checkRole(['student']), uploadImages, handleUploadError, 
   body('tool_id').optional().isInt().withMessage('Tool ID must be a number'),
   body('design_stage_id').optional().isInt().withMessage('Design stage ID must be a number'),
   body('issue_category_id').optional().isInt().withMessage('Issue category ID must be a number'),
-  body('debug_steps').optional()
+  body('debug_steps').optional(),
+  body('resolution').optional()
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -60,7 +61,8 @@ router.post('/', auth, checkRole(['student']), uploadImages, handleUploadError, 
       tool_id,
       design_stage_id,
       issue_category_id,
-      debug_steps
+      debug_steps,
+      resolution
     } = req.body;
     const studentId = req.user.userId;
 
@@ -73,9 +75,9 @@ router.post('/', auth, checkRole(['student']), uploadImages, handleUploadError, 
       const [result] = await connection.execute(
         `INSERT INTO queries (
           student_id, title, description, 
-          tool_id, design_stage_id, issue_category_id, debug_steps
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [studentId, title, description, tool_id, design_stage_id, issue_category_id, debug_steps]
+          tool_id, design_stage_id, issue_category_id, debug_steps, resolution
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [studentId, title, description, tool_id, design_stage_id, issue_category_id, debug_steps, resolution]
       );
 
       const queryId = result.insertId;
@@ -317,6 +319,7 @@ router.put('/:id', auth, [
   body('design_stage_id').optional().isInt(),
   body('issue_category_id').optional().isInt(),
   body('debug_steps').optional(),
+  body('resolution').optional(),
   body('resolution_attempts').optional().isInt()
 ], async (req, res) => {
   try {

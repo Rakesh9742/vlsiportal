@@ -24,7 +24,8 @@ const EditQuery = () => {
     tool_id: '',
     design_stage_id: '',
     issue_category_id: '',
-    debug_steps: ''
+    debug_steps: '',
+    resolution: ''
   });
 
   // Options for dropdowns
@@ -57,7 +58,8 @@ const EditQuery = () => {
         tool_id: queryData.tool_id || '',
         design_stage_id: queryData.design_stage_id || '',
         issue_category_id: queryData.issue_category_id || '',
-        debug_steps: queryData.debug_steps || ''
+        debug_steps: queryData.debug_steps || '',
+        resolution: queryData.resolution || ''
       });
     } catch (error) {
       setError('Failed to load query');
@@ -299,6 +301,19 @@ const EditQuery = () => {
               className="form-control"
               rows="4"
               placeholder="Describe any debugging steps already attempted..."
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="resolution">Resolution</label>
+            <textarea
+              id="resolution"
+              name="resolution"
+              value={formData.resolution}
+              onChange={handleInputChange}
+              className="form-control"
+              rows="4"
+              placeholder="Describe how this issue was resolved..."
             />
           </div>
 

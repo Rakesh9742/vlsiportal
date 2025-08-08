@@ -166,7 +166,7 @@ const Register = () => {
               </div>
 
               <div className="form-group">
-                <label htmlFor="username">Uniex Username</label>
+                <label htmlFor="username">Linux Username</label>
                 <div className="input-group">
                   <FaUser className="input-icon" />
                   <input

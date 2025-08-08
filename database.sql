@@ -1,6 +1,4 @@
--- Create database
-CREATE DATABASE IF NOT EXISTS vlsi_portal;
-USE vlsi_portal;
+
 
 -- Create users table (updated schema)
 CREATE TABLE IF NOT EXISTS users (
@@ -50,6 +48,7 @@ CREATE TABLE IF NOT EXISTS queries (
     issue_category_id INT,
     status ENUM('open', 'in_progress', 'resolved', 'closed') DEFAULT 'open',
     resolution_attempts INT DEFAULT 0,
+    resolution TEXT,
     debug_steps TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

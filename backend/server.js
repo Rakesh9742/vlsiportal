@@ -14,8 +14,22 @@ console.log(`📡 Server will run on port: ${process.env.PORT || 5000}`);
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// CORS configuration for VNC machine hosting
+const corsOptions = {
+  origin: [
+    'http://localhost:3000',
+    'http://192.168.92.34:3000',
+    'http://192.168.92.34',
+    'http://192.168.122.1:3000',
+    'http://192.168.122.1'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+};
+
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -32,11 +46,13 @@ app.get('/api/health', (req, res) => {
   res.json({ message: 'VLSI Portal Backend is running!' });
 });
 
-app.listen(PORT, () => {
+// Listen on all interfaces for VNC machine hosting
+app.listen(PORT, '0.0.0.0', () => {
   console.log('🎉 Server started successfully!');
   console.log(`🌐 Server URL: http://localhost:${PORT}`);
-  console.log(`🔍 Health Check: http://localhost:${PORT}/api/health`);
-  console.log(`📁 Uploads URL: http://localhost:${PORT}/uploads`);
+  console.log(`🌐 VNC Machine URL: http://192.168.92.34:${PORT}`);
+  console.log(`🔍 Health Check: http://192.168.92.34:${PORT}/api/health`);
+  console.log(`📁 Uploads URL: http://192.168.92.34:${PORT}/uploads`);
   console.log('📝 API Endpoints:');
   console.log('   - POST /api/auth/register - Student registration');
   console.log('   - POST /api/auth/login - User login');
