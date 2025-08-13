@@ -58,8 +58,7 @@ const Dashboard = () => {
         return <FaTools className="status-icon progress" />;
       case 'resolved':
         return <FaCheckCircle className="status-icon resolved" />;
-      case 'closed':
-        return <FaCheckCircle className="status-icon closed" />;
+
       default:
         return <FaQuestionCircle className="status-icon" />;
     }
@@ -72,7 +71,6 @@ const Dashboard = () => {
       case 'in_progress':
         return 60;
       case 'resolved':
-      case 'closed':
         return 100;
       default:
         return 0;
@@ -87,8 +85,7 @@ const Dashboard = () => {
         return 'In Progress';
       case 'resolved':
         return 'Resolved';
-      case 'closed':
-        return 'Closed';
+
       default:
         return 'Unknown';
     }
@@ -222,7 +219,7 @@ const Dashboard = () => {
             <Link to="/queries/new" className="action-card">
               <FaPlus className="action-icon" />
               <h3>Create New Query</h3>
-              <p>Ask a question to teachers</p>
+              <p>Ask a question to expert reviewers</p>
             </Link>
             <Link to="/queries" className="action-card">
               <FaQuestionCircle className="action-icon" />
@@ -238,10 +235,10 @@ const Dashboard = () => {
         </div>
       )}
 
-      {user?.role === 'teacher' && (
+      {user?.role === 'expert_reviewer' && (
         <div className="dashboard-section">
           <div className="section-header">
-            <h2>Teacher Actions</h2>
+            <h2>Expert Reviewer Actions</h2>
           </div>
           <div className="quick-actions">
             <Link to="/queries" className="action-card">

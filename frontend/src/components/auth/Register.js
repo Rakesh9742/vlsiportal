@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { FaUser, FaLock, FaEye, FaEyeSlash, FaUserTie, FaGlobe, FaMicrochip } from 'react-icons/fa';
@@ -11,13 +11,27 @@ const Register = () => {
     password: '',
     confirmPassword: '',
     full_name: '',
-    domain: ''
+    domain_id: ''
   });
+  const [domains, setDomains] = useState([]);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  // Fetch domains on component mount
+  useEffect(() => {
+    const fetchDomains = async () => {
+      try {
+        const response = await axios.get('/auth/domains');
+        setDomains(response.data.domains);
+      } catch (error) {
+        console.error('Failed to fetch domains:', error);
+      }
+    };
+    fetchDomains();
+  }, []);
 
   const handleChange = (e) => {
     setFormData({
@@ -149,19 +163,24 @@ const Register = () => {
               </div>
 
               <div className="form-group">
-                <label htmlFor="domain">Domain</label>
+                <label htmlFor="domain_id">Domain</label>
                 <div className="input-group">
                   <FaGlobe className="input-icon" />
-                  <input
-                    type="text"
-                    id="domain"
-                    name="domain"
+                  <select
+                    id="domain_id"
+                    name="domain_id"
                     className="form-control"
-                    value={formData.domain}
+                    value={formData.domain_id}
                     onChange={handleChange}
-                    placeholder="Enter your domain (e.g., VLSI Design, Digital Electronics)"
                     required
-                  />
+                  >
+                    <option value="">Select your domain</option>
+                    {domains.map((domain) => (
+                      <option key={domain.id} value={domain.id}>
+                        {domain.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 

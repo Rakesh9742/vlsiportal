@@ -7,12 +7,26 @@
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "server": "cd backend && npm run dev",
     "client": "cd frontend && npm start",
-    "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install"
+    "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "dev-localhost": "echo 'Using localhost configuration' && npm run dev",
+    "dev-production": "echo 'Switching to production configuration...' && copy frontend\\.env.production frontend\\.env && npm run dev",
+    "switch-localhost": "echo 'Switching to localhost configuration...' && copy frontend\\.env.localhost frontend\\.env",
+    "switch-production": "echo 'Switching to production configuration...' && copy frontend\\.env.production frontend\\.env"
   },
-  "keywords": ["vlsi", "portal", "react", "node", "mysql"],
+  "keywords": [
+    "vlsi",
+    "portal",
+    "react",
+    "node",
+    "mysql"
+  ],
   "author": "VLSI Portal Team",
   "license": "MIT",
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "mysql2": "^3.14.3"
   }
-} 
+}

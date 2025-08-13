@@ -13,7 +13,7 @@ A comprehensive web application for VLSI students and teachers to manage queries
 ### For Teachers
 - **Query Overview**: View all student queries with detailed information
 - **Response System**: Provide detailed responses to student queries
-- **Status Management**: Update query status (open, in progress, resolved, closed)
+- **Status Management**: Update query status (open, in progress, resolved)
 - **Tool Integration**: Support for various EDA tools and design stages
 
 ## Tech Stack
@@ -112,7 +112,7 @@ vlsiportal/
 - `tool_id` (Foreign Key)
 - `design_stage_id` (Foreign Key)
 - `issue_category_id` (Foreign Key)
-- `status` (open/in_progress/resolved/closed)
+- `status` (open/in_progress/resolved)
 - `resolution_attempts`
 - `debug_steps`
 - `created_at`

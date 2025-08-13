@@ -40,6 +40,63 @@
 .header-actions {
   display: flex;
   gap: var(--space-4);
+  align-items: center;
+}
+
+.header-actions .btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 14px;
+  font-weight: 600;
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--radius-md);
+  letter-spacing: 0.5px;
+  border: 2px solid transparent;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.header-actions .btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.header-actions .btn-secondary {
+  background: var(--gradient-blue);
+  color: var(--white);
+  box-shadow: var(--shadow-md);
+}
+
+.header-actions .btn-secondary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  background: linear-gradient(135deg, var(--primary-blue-dark) 0%, var(--primary-blue) 100%);
+}
+
+.header-actions .btn svg {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.header-actions .btn:hover:not(:disabled) svg {
+  transform: scale(1.1);
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid var(--white);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 /* Statistics Cards */
@@ -87,6 +144,20 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--gray-600);
+}
+
+.stat-card.domain-filtered {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: var(--white);
+  border-color: #667eea;
+}
+
+.stat-card.domain-filtered h3 {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.stat-card.domain-filtered .stat-number {
+  color: var(--white);
 }
 
 .stat-number {
@@ -264,14 +335,7 @@
   background: #f59e0b;
 }
 
-.query-item.closed {
-  background: #f0fdf4;
-  border-color: #bbf7d0;
-}
 
-.query-item.closed::before {
-  background: #10b981;
-}
 
 .query-row {
   display: flex;
@@ -360,10 +424,7 @@
   color: var(--white);
 }
 
-.status-indicator.closed {
-  background: #10b981;
-  color: var(--white);
-}
+
 
 .query-actions {
   display: flex;
@@ -1281,10 +1342,7 @@ textarea.form-control {
   border-color: #f59e0b;
 }
 
-.status-btn.closed-btn:hover {
-  background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
-  border-color: #10b981;
-}
+
 
 .response-form {
   margin-top: var(--space-6);

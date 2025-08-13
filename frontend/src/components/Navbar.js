@@ -30,13 +30,29 @@ const Navbar = () => {
         </Link>
 
         <div className={`navbar-menu ${isMenuOpen ? 'active' : ''}`}>
-          <Link to="/queries" className="nav-link" onClick={() => setIsMenuOpen(false)}>
-            {user?.role === 'teacher' ? 'Dashboard' : 'Queries'}
-          </Link>
-          {user?.role === 'teacher' && (
-            <Link to="/analytics" className="nav-link" onClick={() => setIsMenuOpen(false)}>
-              Analytics
-            </Link>
+          {user?.role === 'admin' ? (
+            <>
+              <Link to="/admin" className="nav-link" onClick={() => setIsMenuOpen(false)}>
+                Admin Dashboard
+              </Link>
+              <Link to="/admin/expert-reviewers" className="nav-link" onClick={() => setIsMenuOpen(false)}>
+                Expert Reviewers
+              </Link>
+              <Link to="/admin/assignments" className="nav-link" onClick={() => setIsMenuOpen(false)}>
+                Query Assignments
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link to="/queries" className="nav-link" onClick={() => setIsMenuOpen(false)}>
+                {user?.role === 'expert_reviewer' ? 'Dashboard' : 'Queries'}
+              </Link>
+              {user?.role === 'expert_reviewer' && (
+                <Link to="/analytics" className="nav-link" onClick={() => setIsMenuOpen(false)}>
+                  Analytics
+                </Link>
+              )}
+            </>
           )}
           <Link to="/profile" className="nav-link" onClick={() => setIsMenuOpen(false)}>
             Profile

@@ -268,10 +268,7 @@
   background: var(--success-light);
 }
 
-.status-icon.closed {
-  color: var(--error);
-  background: var(--error-light);
-}
+
 
 .query-item:hover .status-icon {
   transform: scale(1.1);
@@ -347,10 +344,7 @@
   background: linear-gradient(90deg, var(--success), #34d399);
 }
 
-.progress-fill.closed {
-  width: 100%;
-  background: linear-gradient(90deg, var(--error), #f87171);
-}
+
 
 .progress-label {
   display: flex;

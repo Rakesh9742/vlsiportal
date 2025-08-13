@@ -9,7 +9,6 @@ const Analytics = () => {
   const [analytics, setAnalytics] = useState({
     totalQueries: 0,
     respondedQueries: 0,
-    closedQueries: 0,
     openQueries: 0,
     inProgressQueries: 0,
     resolvedQueries: 0,
@@ -33,7 +32,6 @@ const Analytics = () => {
       // Calculate analytics
       const totalQueries = queries.length;
       const respondedQueries = queries.filter(q => q.responses && q.responses.length > 0).length;
-      const closedQueries = queries.filter(q => q.status === 'closed').length;
       const openQueries = queries.filter(q => q.status === 'open').length;
       const inProgressQueries = queries.filter(q => q.status === 'in_progress').length;
       const resolvedQueries = queries.filter(q => q.status === 'resolved').length;
@@ -67,7 +65,7 @@ const Analytics = () => {
           month: monthName,
           queries: monthQueries.length,
           responded: monthQueries.filter(q => q.responses && q.responses.length > 0).length,
-          closed: monthQueries.filter(q => q.status === 'closed').length
+          resolved: monthQueries.filter(q => q.status === 'resolved').length
         });
       }
 
@@ -79,7 +77,6 @@ const Analytics = () => {
       setAnalytics({
         totalQueries,
         respondedQueries,
-        closedQueries,
         openQueries,
         inProgressQueries,
         resolvedQueries,
@@ -103,8 +100,7 @@ const Analytics = () => {
         return <FaTools className="status-icon progress" />;
       case 'resolved':
         return <FaCheckCircle className="status-icon resolved" />;
-      case 'closed':
-        return <FaTimes className="status-icon closed" />;
+
       default:
         return <FaClock className="status-icon" />;
     }
@@ -169,12 +165,12 @@ const Analytics = () => {
         </div>
 
         <div className="metric-card">
-          <div className="metric-icon closed">
-            <FaTimes />
+          <div className="metric-icon resolved">
+            <FaCheckCircle />
           </div>
           <div className="metric-content">
-            <h3>Closed</h3>
-            <div className="metric-value">{analytics.closedQueries}</div>
+            <h3>Resolved</h3>
+            <div className="metric-value">{analytics.resolvedQueries}</div>
             <div className="metric-trend">
               <FaArrowUp className="trend-up" />
               <span>Successfully resolved</span>
@@ -213,8 +209,8 @@ const Analytics = () => {
                   style={{ height: `${(stat.responded / Math.max(...analytics.monthlyStats.map(s => s.responded))) * 100}%` }}
                 ></div>
                 <div 
-                  className="bar-fill closed" 
-                  style={{ height: `${(stat.closed / Math.max(...analytics.monthlyStats.map(s => s.closed))) * 100}%` }}
+                  className="bar-fill resolved" 
+                  style={{ height: `${(stat.resolved / Math.max(...analytics.monthlyStats.map(s => s.resolved))) * 100}%` }}
                 ></div>
               </div>
               <div className="month-label">{stat.month}</div>
@@ -228,8 +224,8 @@ const Analytics = () => {
                   <span className="stat-value">{stat.responded}</span>
                 </div>
                 <div className="stat-item">
-                  <span className="stat-label">Closed</span>
-                  <span className="stat-value">{stat.closed}</span>
+                  <span className="stat-label">Resolved</span>
+                  <span className="stat-value">{stat.resolved}</span>
                 </div>
               </div>
             </div>

@@ -116,9 +116,7 @@
   background: var(--gradient-blue);
 }
 
-.metric-icon.closed {
-  background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
-}
+
 
 .metric-icon.time {
   background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
@@ -228,9 +226,7 @@
   background: var(--gradient-blue);
 }
 
-.bar-fill.closed {
-  background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
-}
+
 
 .month-label {
   font-size: 12px;

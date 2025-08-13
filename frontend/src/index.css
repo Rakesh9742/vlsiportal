@@ -262,11 +262,7 @@ body {
   border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
-.status-closed {
-  background: var(--error-light);
-  color: var(--error);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-}
+
 
 .loading {
   display: flex;

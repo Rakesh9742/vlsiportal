@@ -10,31 +10,49 @@ const CreateQuery = () => {
     title: '',
     description: '',
     tool_id: '',
-    design_stage_id: '',
+    stage_id: '',
     issue_category_id: '',
+    custom_issue_category: '',
     debug_steps: '',
     resolution: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [designStages, setDesignStages] = useState([]);
+  const [stages, setStages] = useState([]);
   const [issueCategories, setIssueCategories] = useState([]);
   const [tools, setTools] = useState([]);
   const [selectedImages, setSelectedImages] = useState([]);
   const [imagePreview, setImagePreview] = useState([]);
+  const [userDomain, setUserDomain] = useState(null);
+  const [showCustomCategory, setShowCustomCategory] = useState(false);
 
   useEffect(() => {
-    // Fetch design stages, issue categories, and tools
+    // Fetch user data and domain-specific stages, tools
     const fetchData = async () => {
       try {
-        const [stagesRes, categoriesRes, toolsRes] = await Promise.all([
-          axios.get('/queries/design-stages'),
-          axios.get('/queries/issue-categories'),
-          axios.get('/queries/tools')
-        ]);
-        setDesignStages(stagesRes.data.stages);
-        setIssueCategories(categoriesRes.data.categories);
+        // Get current user to determine domain
+        const userRes = await axios.get('/auth/me');
+        const user = userRes.data.user;
+        setUserDomain(user.domain);
+        
+        // Fetch tools
+        const toolsRes = await axios.get('/queries/tools');
         setTools(toolsRes.data.tools);
+        
+        // Fetch domain-specific stages based on user's domain
+        if (user.domain === 'Physical Design') {
+          const stagesRes = await axios.get('/queries/pd-stages');
+          setStages(stagesRes.data.stages);
+        } else {
+          // For other domains, use the domain config
+          const domainConfigRes = await axios.get(`/queries/domain-config/${user.domain}`);
+          const domainStages = domainConfigRes.data.stages.map((stage, index) => ({
+            id: index + 1,
+            name: stage,
+            description: stage
+          }));
+          setStages(domainStages);
+        }
       } catch (error) {
         console.error('Error fetching data:', error);
       }
@@ -43,10 +61,72 @@ const CreateQuery = () => {
   }, []);
 
   const handleChange = (e) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
+    
+    // If stage is selected, load corresponding issue categories
+    if (name === 'stage_id' && value) {
+      loadIssueCategories(value);
+      // Reset issue category when stage changes
+      setFormData(prev => ({
+        ...prev,
+        issue_category_id: '',
+        custom_issue_category: ''
+      }));
+      setShowCustomCategory(false);
+    }
+    
+    // If issue category is "Others", show custom input
+    if (name === 'issue_category_id') {
+      if (value === 'others') {
+        setShowCustomCategory(true);
+        setFormData(prev => ({
+          ...prev,
+          custom_issue_category: ''
+        }));
+      } else {
+        setShowCustomCategory(false);
+        setFormData(prev => ({
+          ...prev,
+          custom_issue_category: ''
+        }));
+      }
+    }
+  };
+
+  const loadIssueCategories = async (stageId) => {
+    try {
+      // Don't proceed if userDomain is not set yet
+      if (!userDomain) {
+        console.log('User domain not set yet, skipping issue categories load');
+        return;
+      }
+      
+      if (userDomain === 'Physical Design') {
+        const response = await axios.get(`/queries/pd-issue-categories/${stageId}`);
+        setIssueCategories(response.data.categories);
+      } else {
+        // For other domains, get categories from domain config
+        const domainConfigRes = await axios.get(`/queries/domain-config/${userDomain}`);
+        const selectedStage = stages.find(stage => stage.id == stageId);
+        if (selectedStage && domainConfigRes.data.issueCategories[selectedStage.name]) {
+          const categories = domainConfigRes.data.issueCategories[selectedStage.name].map((category, index) => ({
+            id: index + 1,
+            name: category,
+            description: category
+          }));
+          setIssueCategories(categories);
+        } else {
+          setIssueCategories([]);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading issue categories:', error);
+      setIssueCategories([]);
+    }
   };
 
   const handleImageChange = (e) => {
@@ -108,7 +188,12 @@ const CreateQuery = () => {
       // Add form fields
       Object.keys(formData).forEach(key => {
         if (formData[key]) {
-          submitData.append(key, formData[key]);
+          // If custom category is used, send it instead of issue_category_id
+          if (key === 'issue_category_id' && formData[key] === 'others' && formData.custom_issue_category) {
+            submitData.append('custom_issue_category', formData.custom_issue_category);
+          } else if (key !== 'custom_issue_category') {
+            submitData.append(key, formData[key]);
+          }
         }
       });
 
@@ -140,7 +225,7 @@ const CreateQuery = () => {
           <FaArrowLeft /> Back to Queries
         </button>
         <h1>Create New Query</h1>
-        <p>Ask a question to VLSI teachers</p>
+        <p>Ask a question to VLSI expert reviewers</p>
       </div>
 
       {error && <div className="error">{error}</div>}
@@ -177,16 +262,16 @@ const CreateQuery = () => {
 
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="design_stage_id">Design Stage</label>
+              <label htmlFor="stage_id">Design Stage</label>
               <select
-                id="design_stage_id"
-                name="design_stage_id"
+                id="stage_id"
+                name="stage_id"
                 className="form-control"
-                value={formData.design_stage_id}
+                value={formData.stage_id}
                 onChange={handleChange}
               >
                 <option value="">Select Design Stage</option>
-                {designStages.map(stage => (
+                {stages.map(stage => (
                   <option key={stage.id} value={stage.id}>
                     {stage.name}
                   </option>
@@ -202,15 +287,33 @@ const CreateQuery = () => {
                 className="form-control"
                 value={formData.issue_category_id}
                 onChange={handleChange}
+                disabled={!formData.stage_id}
               >
-                <option value="">Select Issue Category</option>
+                <option value="">{formData.stage_id ? 'Select Issue Category' : 'Select a stage first'}</option>
                 {issueCategories.map(category => (
                   <option key={category.id} value={category.id}>
                     {category.name}
                   </option>
                 ))}
+                <option value="others">Others</option>
               </select>
             </div>
+            
+            {showCustomCategory && (
+              <div className="form-group">
+                <label htmlFor="custom_issue_category">Custom Issue Category</label>
+                <input
+                  type="text"
+                  id="custom_issue_category"
+                  name="custom_issue_category"
+                  className="form-control"
+                  value={formData.custom_issue_category}
+                  onChange={handleChange}
+                  placeholder="Enter your custom issue category"
+                  required
+                />
+              </div>
+            )}
           </div>
 
           <div className="form-group">
@@ -337,7 +440,7 @@ const CreateQuery = () => {
           <li>Use a descriptive title that summarizes your question</li>
           <li>Select appropriate design stage and issue category for better responses</li>
           <li>Specify the tool you're using if relevant</li>
-          <li>Upload relevant images to help teachers understand your issue better</li>
+          <li>Upload relevant images to help expert reviewers understand your issue better</li>
         </ul>
       </div>
     </div>

@@ -12,13 +12,29 @@ import Analytics from './components/Analytics';
 import QueryList from './components/queries/QueryList';
 import QueryDetail from './components/queries/QueryDetail';
 import CreateQuery from './components/queries/CreateQuery';
+import EditQuery from './components/queries/EditQuery';
 import Profile from './components/Profile';
+import AdminDashboard from './components/admin/AdminDashboard';
+import ExpertReviewerManagement from './components/admin/ExpertReviewerManagement';
+import QueryAssignmentManagement from './components/admin/QueryAssignmentManagement';
+import UserManagement from './components/admin/UserManagement';
+import QueryManagement from './components/admin/QueryManagement';
+import AdminAnalytics from './components/admin/AdminAnalytics';
 
 // Context
 import { AuthProvider } from './context/AuthContext';
 
-// Configure axios defaults
-axios.defaults.baseURL = 'http://localhost:5000/api';
+// Configure axios defaults with dynamic URL support
+const getApiUrl = () => {
+  // Check if we're in development mode (localhost)
+  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    return process.env.REACT_APP_API_URL || 'http://localhost:5000';
+  }
+  // Production mode - use backup URL or fallback to localhost
+  return process.env.REACT_APP_BACKUP_API_URL || process.env.REACT_APP_API_URL || 'http://localhost:5000';
+};
+
+axios.defaults.baseURL = getApiUrl() + '/api';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -102,12 +118,40 @@ function App() {
                 element={isAuthenticated ? <QueryDetail /> : <Navigate to="/login" />} 
               />
               <Route 
+                path="/queries/:id/edit" 
+                element={isAuthenticated ? <EditQuery /> : <Navigate to="/login" />} 
+              />
+              <Route 
                 path="/analytics" 
                 element={isAuthenticated ? <Analytics /> : <Navigate to="/login" />} 
               />
               <Route 
                 path="/profile" 
                 element={isAuthenticated ? <Profile /> : <Navigate to="/login" />} 
+              />
+              <Route 
+                path="/admin" 
+                element={isAuthenticated && user?.role === 'admin' ? <AdminDashboard /> : <Navigate to="/queries" />} 
+              />
+              <Route 
+                path="/admin/expert-reviewers" 
+                element={isAuthenticated && user?.role === 'admin' ? <ExpertReviewerManagement /> : <Navigate to="/queries" />} 
+              />
+              <Route 
+                path="/admin/assignments" 
+                element={isAuthenticated && user?.role === 'admin' ? <QueryAssignmentManagement /> : <Navigate to="/queries" />} 
+              />
+              <Route 
+                path="/admin/users" 
+                element={isAuthenticated && user?.role === 'admin' ? <UserManagement /> : <Navigate to="/queries" />} 
+              />
+              <Route 
+                path="/admin/queries" 
+                element={isAuthenticated && user?.role === 'admin' ? <QueryManagement /> : <Navigate to="/queries" />} 
+              />
+              <Route 
+                path="/admin/analytics" 
+                element={isAuthenticated && user?.role === 'admin' ? <AdminAnalytics /> : <Navigate to="/queries" />} 
               />
               <Route 
                 path="/" 

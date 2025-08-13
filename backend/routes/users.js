@@ -8,7 +8,7 @@ const router = express.Router();
 router.get('/teachers', auth, async (req, res) => {
   try {
     const [teachers] = await db.execute(
-      'SELECT id, username, full_name, domain FROM users WHERE role = ?',
+      'SELECT id, username, full_name, domain_id FROM users WHERE role = ?',
       ['teacher']
     );
     res.json({ teachers });
@@ -22,7 +22,7 @@ router.get('/teachers', auth, async (req, res) => {
 router.get('/profile', auth, async (req, res) => {
   try {
     const [users] = await db.execute(
-      'SELECT id, username, role, full_name, domain, created_at FROM users WHERE id = ?',
+      'SELECT id, username, role, full_name, domain_id, created_at FROM users WHERE id = ?',
       [req.user.userId]
     );
 
@@ -40,12 +40,12 @@ router.get('/profile', auth, async (req, res) => {
 // Update user profile
 router.put('/profile', auth, async (req, res) => {
   try {
-    const { full_name, domain } = req.body;
+    const { full_name, domain_id } = req.body;
     const userId = req.user.userId;
 
     await db.execute(
-      'UPDATE users SET full_name = ?, domain = ? WHERE id = ?',
-      [full_name, domain, userId]
+      'UPDATE users SET full_name = ?, domain_id = ? WHERE id = ?',
+      [full_name, domain_id, userId]
     );
 
     res.json({ message: 'Profile updated successfully' });

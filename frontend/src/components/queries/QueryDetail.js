@@ -80,7 +80,7 @@ const QueryDetail = () => {
       'open': { class: 'status-open', icon: <FaExclamationTriangle />, text: 'Open' },
       'in_progress': { class: 'status-progress', icon: <FaTools />, text: 'In Progress' },
       'resolved': { class: 'status-resolved', icon: <FaCheck />, text: 'Resolved' },
-      'closed': { class: 'status-closed', icon: <FaTimes />, text: 'Closed' }
+
     };
     
     const config = statusConfig[status] || statusConfig['open'];
@@ -236,7 +236,7 @@ const QueryDetail = () => {
               {query.images.map((image) => (
                 <div key={image.id} className="query-image-item">
                   <img 
-                    src={`http://localhost:5000/uploads/${image.filename}`} 
+                    src={`http://192.168.92.34:5000/uploads/${image.filename}`} 
                     alt={image.original_name}
                     onClick={() => setSelectedImage(image)}
                   />
@@ -246,14 +246,14 @@ const QueryDetail = () => {
                   </div>
                   <div className="image-actions">
                     <a
-                      href={`http://localhost:5000/uploads/${image.filename}`}
+                      href={`http://192.168.92.34:5000/uploads/${image.filename}`}
                       download={image.original_name}
                       className="image-action-btn"
                       title="Download"
                     >
                       <FaDownload />
                     </a>
-                    {(user?.role === 'teacher' || (user?.role === 'student' && query.student_id === user?.userId)) && (
+                    {(user?.role === 'expert_reviewer' || (user?.role === 'student' && query.student_id === user?.userId)) && (
                       <button
                         onClick={() => handleDeleteImage(image.id)}
                         className="image-action-btn"
@@ -292,8 +292,8 @@ const QueryDetail = () => {
         {/* Teacher Responses Section */}
         <div className="query-responses">
           <div className="responses-header">
-            <h3>Teacher Responses</h3>
-            {user?.role === 'teacher' && query.status !== 'closed' && (
+                    <h3>Expert Reviewer Responses</h3>
+        {(user?.role === 'expert_reviewer' || user?.role === 'admin') && query.status !== 'resolved' && (
               <button
                 onClick={() => setShowResponseForm(!showResponseForm)}
                 className="btn btn-primary"
@@ -368,22 +368,22 @@ const QueryDetail = () => {
               </div>
               <h4>No Responses Yet</h4>
               <p>
-                {user?.role === 'teacher' 
+                {(user?.role === 'expert_reviewer' || user?.role === 'admin')
                   ? 'Be the first to provide guidance to this student.'
-                  : 'No teacher responses yet. Check back later for guidance.'
+                  : 'No expert reviewer responses yet. Check back later for guidance.'
                 }
               </p>
             </div>
           )}
         </div>
 
-        {/* Teacher Actions */}
-        {user?.role === 'teacher' && query.status !== 'closed' && (
+        {/* Expert Reviewer and Admin Actions */}
+        {(user?.role === 'expert_reviewer' || user?.role === 'admin') && query.status !== 'resolved' && (
           <div className="teacher-actions">
-            <div className="teacher-actions-header">
-              <h3>Teacher Actions</h3>
-              <p>Provide guidance and update query status</p>
-            </div>
+                          <div className="teacher-actions-header">
+                <h3>{user?.role === 'admin' ? 'Admin Actions' : 'Expert Reviewer Actions'}</h3>
+                <p>Provide guidance and update query status</p>
+              </div>
 
             <div className="teacher-actions-content">
               {/* Status Update Section */}
@@ -396,7 +396,7 @@ const QueryDetail = () => {
                       {query.status === 'open' && 'Open'}
                       {query.status === 'in_progress' && 'In Progress'}
                       {query.status === 'resolved' && 'Resolved'}
-                      {query.status === 'closed' && 'Closed'}
+
                     </span>
                   </div>
                 </div>
@@ -428,34 +428,14 @@ const QueryDetail = () => {
                       Mark as Resolved
                     </button>
                   )}
-                  {query.status !== 'closed' && (
-                    <button
-                      onClick={() => handleStatusUpdate('closed')}
-                      className="btn btn-outline status-btn closed-btn"
-                    >
-                      <FaTimes />
-                      Mark as Closed
-                    </button>
-                  )}
+
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Student Actions */}
-        {user?.role === 'student' && query.status === 'resolved' && (
-          <div className="student-actions">
-            <h3>Student Actions</h3>
-            <button
-              onClick={() => handleStatusUpdate('closed')}
-              className="btn btn-primary"
-            >
-              <FaCheck />
-              Mark as Closed
-            </button>
-          </div>
-        )}
+
       </div>
 
       {/* Image Modal */}
@@ -469,7 +449,7 @@ const QueryDetail = () => {
               <FaTimes />
             </button>
             <img 
-              src={`http://localhost:5000/uploads/${selectedImage.filename}`} 
+              src={`http://192.168.92.34:5000/uploads/${selectedImage.filename}`} 
               alt={selectedImage.original_name}
             />
             <div className="image-modal-info">
