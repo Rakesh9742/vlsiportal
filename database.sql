@@ -591,7 +591,6 @@ INSERT INTO domain_issue_categories (domain_id, stage_id, name, description) VAL
 (7, 18, 'Power (current & voltage) ratings', 'Power rating specifications'),
 (7, 18, 'Branch currents', 'Branch current analysis'),
 (7, 18, 'Node Voltages in cross voltage domains', 'Cross voltage domain node voltage issues'),
-(7, 18, 'Other', 'Other schematic design input issues'),
 
 -- Floorplan categories
 (7, 19, 'Devices Placement', 'Device placement optimization'),
@@ -604,7 +603,6 @@ INSERT INTO domain_issue_categories (domain_id, stage_id, name, description) VAL
 (7, 19, 'Area', 'Area optimization'),
 (7, 19, 'ESD & Clamps integration', 'ESD protection integration'),
 (7, 19, 'Latchup', 'Latchup prevention'),
-(7, 19, 'Other', 'Other floorplan issues'),
 
 -- Routing categories
 (7, 20, 'Opens', 'Open circuit issues'),
@@ -614,7 +612,6 @@ INSERT INTO domain_issue_categories (domain_id, stage_id, name, description) VAL
 (7, 20, 'High Current', 'High current routing issues'),
 (7, 20, 'Power mesh', 'Power distribution mesh'),
 (7, 20, 'Crosstalk', 'Crosstalk issues'),
-(7, 20, 'Other', 'Other routing issues'),
 
 -- AL outputs categories
 (7, 21, 'GDS', 'GDS file generation'),
@@ -623,19 +620,16 @@ INSERT INTO domain_issue_categories (domain_id, stage_id, name, description) VAL
 (7, 21, 'Netlist', 'Netlist generation'),
 (7, 21, 'PV reports', 'Physical verification reports'),
 (7, 21, 'PERC & ESD reports', 'PERC and ESD analysis reports'),
-(7, 21, 'Other', 'Other output file issues'),
 
 -- RC extraction categories
 (7, 22, 'Design updates', 'Design update issues'),
 (7, 22, 'Post layout sims', 'Post layout simulation issues'),
 (7, 22, 'LVS fail', 'LVS failure issues'),
-(7, 22, 'Other', 'Other RC extraction issues'),
 
 -- ECO categories
 (7, 23, 'Design updates', 'Design update issues'),
 (7, 23, 'Post layout sims updates', 'Post layout simulation updates'),
 (7, 23, 'Clk & Data Timing', 'Clock and data timing issues'),
-(7, 23, 'Other', 'Other ECO issues'),
 
 -- EMIR categories
 (7, 24, 'Static IR drop analysis', 'Static IR drop analysis'),
@@ -645,7 +639,6 @@ INSERT INTO domain_issue_categories (domain_id, stage_id, name, description) VAL
 (7, 24, 'Signal EM Iavg', 'Signal electromigration average current'),
 (7, 24, 'Signal EM Irms', 'Signal electromigration RMS current'),
 (7, 24, 'EMIR calculations', 'EMIR calculation issues'),
-(7, 24, 'Other', 'Other EMIR issues'),
 
 -- Physical verification categories
 (7, 25, 'DRC', 'Design rule check violations'),
@@ -657,7 +650,6 @@ INSERT INTO domain_issue_categories (domain_id, stage_id, name, description) VAL
 (7, 25, 'Bump', 'Bump related issues'),
 (7, 25, 'ESD', 'ESD protection issues'),
 (7, 25, 'Density', 'Density check issues'),
-(7, 25, 'Other', 'Other physical verification issues'),
 
 -- ESD categories
 (7, 26, 'ESD types', 'ESD protection types'),
@@ -665,19 +657,16 @@ INSERT INTO domain_issue_categories (domain_id, stage_id, name, description) VAL
 (7, 26, 'Clamps', 'ESD clamp circuits'),
 (7, 26, 'Resistance', 'ESD resistance issues'),
 (7, 26, 'ESD voltage values', 'ESD voltage specifications'),
-(7, 26, 'Other', 'Other ESD issues'),
 
 -- Pads categories
 (7, 27, 'Bond Pads', 'Bond pad design'),
 (7, 27, 'Different types of Bond pads', 'Various bond pad types'),
 (7, 27, 'Probe pads', 'Probe pad design'),
 (7, 27, 'RDL Routing', 'Redistribution layer routing'),
-(7, 27, 'Other', 'Other pad design issues'),
 
 -- Package categories
 (7, 28, 'CSP (Chip Scale package)', 'Chip scale package design'),
 (7, 28, 'Wire bond', 'Wire bonding design'),
-(7, 28, 'Other', 'Other package design issues'),
 
 -- Technology & PDKs categories
 (7, 29, 'PDKs', 'Process design kit issues'),
@@ -686,7 +675,6 @@ INSERT INTO domain_issue_categories (domain_id, stage_id, name, description) VAL
 (7, 29, 'Metal stack (FEOL, MEOL, BEOL)', 'Metal stack configuration'),
 (7, 29, 'DRM (Design Rule Manual)', 'Design rule manual issues'),
 (7, 29, 'Rule decks', 'Rule deck configuration'),
-(7, 29, 'Other', 'Other technology and PDK issues'),
 
 -- DB Version control categories
 (7, 30, 'Project DB', 'Project database management'),
@@ -696,7 +684,6 @@ INSERT INTO domain_issue_categories (domain_id, stage_id, name, description) VAL
 (7, 30, 'Design DB check-in', 'Design database check-in'),
 (7, 30, 'Design DB check-out', 'Design database check-out'),
 (7, 30, 'Design DB access or edit permission', 'Database access permissions'),
-(7, 30, 'Other', 'Other database version control issues'),
 
 -- Project Release & QA categories
 (7, 31, 'Devices used', 'Device usage tracking'),
@@ -706,8 +693,7 @@ INSERT INTO domain_issue_categories (domain_id, stage_id, name, description) VAL
 (7, 31, 'LEF vs GDS', 'LEF vs GDS comparison'),
 (7, 31, 'LEF vs Verilog', 'LEF vs Verilog comparison'),
 (7, 31, 'Design Reviews', 'Design review process'),
-(7, 31, 'Cross team release', 'Cross-team release coordination'),
-(7, 31, 'Other', 'Other project release and QA issues');
+(7, 31, 'Cross team release', 'Cross-team release coordination');
 
 -- Insert sample tools
 INSERT INTO tools (name, description, domain_id) VALUES
@@ -726,6 +712,13 @@ INSERT INTO tools (name, description, domain_id) VALUES
 ('Pegasus', 'Synopsys Pegasus Verification System', 5),
 ('Calibre', 'Mentor Graphics Calibre for DRC/LVS', 5),
 ('IC Validator', 'Synopsys IC Validator for physical verification', 5),
+
+-- Analog Layout Tools
+('Calibre', 'Mentor Graphics Calibre for DRC/LVS verification in analog layout', 7),
+('ICV', 'Synopsys IC Validator for physical verification in analog layout', 7),
+('Pegasus', 'Synopsys Pegasus Verification System for analog layout verification', 7),
+('Virtuoso', 'Cadence Virtuoso for analog layout design and editing', 7),
+('Custom Compiler', 'Synopsys Custom Compiler for analog layout design', 7),
 
 -- Other domain tools (keeping some existing ones for other domains)
 ('Virtuoso', 'Cadence Virtuoso for analog design', 8),

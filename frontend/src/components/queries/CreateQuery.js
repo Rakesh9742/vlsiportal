@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { FaPaperPlane, FaArrowLeft, FaExclamationTriangle, FaTools, FaLayerGroup, FaTag, FaImage, FaTimes } from 'react-icons/fa';
+import { FaPaperPlane, FaArrowLeft, FaExclamationTriangle, FaTools, FaLayerGroup, FaTag, FaImage, FaTimes, FaArrowDown } from 'react-icons/fa';
 import './Queries.css';
 
 const CreateQuery = () => {
@@ -27,6 +27,130 @@ const CreateQuery = () => {
   const [imagePreview, setImagePreview] = useState([]);
   const [userDomain, setUserDomain] = useState(null);
   const [showCustomCategory, setShowCustomCategory] = useState(false);
+
+  // Function to get domain-specific examples
+  const getDomainExamples = (domain) => {
+    const examples = {
+      'Physical Design': [
+        {
+          title: "Clock tree synthesis failing with high skew in 28nm design",
+          description: "I'm working on a 28nm design with multiple clock domains. During CTS, I'm getting high clock skew (&gt;500ps) between clock sinks. The design has 3 clock domains: clk_core (500MHz), clk_mem (200MHz), and clk_io (100MHz). I've tried adjusting the clock tree constraints but the skew remains high. The clock tree is using H-tree topology.",
+          stage: "Clock Tree Synthesis",
+          category: "Timing Issues",
+          tool: "Synopsys Design Compiler",
+          technology: "TSMC 28nm",
+          debugSteps: "1. Checked clock tree constraints 2. Verified clock domain definitions 3. Analyzed clock tree reports 4. Tried different buffer types"
+        },
+        {
+          title: "Place and route congestion in high-density design",
+          description: "My 16nm design is experiencing severe routing congestion in the memory array area. The congestion is around 85% and causing timing violations. I've tried adjusting the placement density and routing constraints, but the congestion persists. The design has 8 memory banks with tight spacing requirements.",
+          stage: "Place and Route",
+          category: "Congestion Issues",
+          tool: "Cadence Innovus",
+          technology: "TSMC 16nm",
+          debugSteps: "1. Analyzed congestion maps 2. Adjusted placement density 3. Modified routing constraints 4. Checked memory array spacing"
+        },
+        {
+          title: "Power analysis showing IR drop violations",
+          description: "Power analysis in my 7nm design shows IR drop violations in the core logic area. The voltage drop is exceeding 5% of VDD in several regions. I've added decoupling capacitors and power straps, but the violations persist. The design operates at 2.5GHz with multiple power domains.",
+          stage: "Power Analysis",
+          category: "Power Issues",
+          tool: "Synopsys PrimeTime",
+          technology: "TSMC 7nm",
+          debugSteps: "1. Added decoupling capacitors 2. Increased power strap density 3. Analyzed power grid resistance 4. Checked power domain boundaries"
+        }
+      ],
+      'Analog Layout': [
+        {
+          title: "Differential pair matching issues in current mirror layout",
+          description: "I'm designing a current mirror with 1:5 ratio in 22nm technology. The differential pair shows significant mismatch (&gt;2%) in simulation. I've used common centroid layout and dummy devices, but the matching is still poor. The devices are sized at W/L = 10μm/0.5μm.",
+          stage: "Layout Design",
+          category: "Matching Issues",
+          tool: "Cadence Virtuoso",
+          technology: "GlobalFoundries 22nm",
+          debugSteps: "1. Verified common centroid placement 2. Added dummy devices 3. Checked device orientation 4. Analyzed process variations"
+        },
+        {
+          title: "Parasitic extraction showing unexpected coupling",
+          description: "Parasitic extraction in my analog layout shows unexpected coupling between sensitive analog nets and digital switching signals. The coupling is causing noise injection into the analog circuits. I've tried shielding and spacing, but the coupling remains significant.",
+          stage: "Parasitic Extraction",
+          category: "Noise Issues",
+          tool: "Synopsys StarRC",
+          technology: "TSMC 28nm",
+          debugSteps: "1. Added shielding layers 2. Increased spacing between nets 3. Analyzed coupling capacitance 4. Checked guard ring placement"
+        },
+        {
+          title: "LVS verification failing due to device mismatch",
+          description: "LVS verification is failing because the extracted netlist doesn't match the schematic. The issue is with device parameter extraction, particularly with custom device definitions. The devices are properly defined in the PDK, but the extraction is not recognizing them correctly.",
+          stage: "LVS Verification",
+          category: "Verification Issues",
+          tool: "Calibre LVS",
+          technology: "GlobalFoundries 14nm",
+          debugSteps: "1. Checked device definitions 2. Verified PDK setup 3. Analyzed extraction rules 4. Reviewed device parameters"
+        }
+      ],
+      'RTL Design': [
+        {
+          title: "FIFO depth calculation for variable rate data transfer",
+          description: "I need to design a FIFO between two modules with different clock domains. Module A sends data at variable rates (burst mode), and Module B processes data at a constant rate. How do I calculate the optimal FIFO depth to prevent overflow while minimizing area?",
+          stage: "RTL Design",
+          category: "Design Methodology",
+          tool: "Verilog/VHDL",
+          technology: "Generic (FPGA/ASIC)",
+          debugSteps: "1. Analyzed data rate patterns 2. Calculated worst-case scenarios 3. Simulated with different FIFO depths"
+        },
+        {
+          title: "Clock domain crossing synchronization issues",
+          description: "I'm implementing clock domain crossing between a 100MHz and 200MHz domain. The CDC module is showing metastability issues in simulation. I've used double-flop synchronization, but still getting occasional data corruption. The data width is 32 bits.",
+          stage: "RTL Design",
+          category: "Timing Issues",
+          tool: "ModelSim/QuestaSim",
+          technology: "Generic",
+          debugSteps: "1. Implemented double-flop CDC 2. Added metastability analysis 3. Checked timing constraints 4. Verified CDC protocols"
+        },
+        {
+          title: "State machine optimization for power efficiency",
+          description: "My state machine is consuming too much power due to frequent state transitions. I need to optimize it for power efficiency while maintaining functionality. The state machine has 16 states and operates at 500MHz. How can I reduce power consumption?",
+          stage: "RTL Design",
+          category: "Power Optimization",
+          tool: "Synopsys Design Compiler",
+          technology: "TSMC 28nm",
+          debugSteps: "1. Analyzed state transition patterns 2. Implemented clock gating 3. Optimized state encoding 4. Added power analysis"
+        }
+      ],
+      'Verification': [
+        {
+          title: "UVM testbench failing to detect protocol violations",
+          description: "My UVM testbench for an AXI4 interface is not detecting protocol violations. The monitor is configured correctly, but it's missing some handshake violations. I'm using SystemVerilog with UVM 1.2. The interface has 5 channels: AW, W, B, AR, R.",
+          stage: "Verification",
+          category: "Protocol Issues",
+          tool: "ModelSim/QuestaSim",
+          technology: "Generic",
+          debugSteps: "1. Checked monitor configuration 2. Verified protocol checker setup 3. Analyzed waveform for violations 4. Reviewed UVM sequence generation"
+        },
+        {
+          title: "Coverage closure issues in complex test scenarios",
+          description: "I'm having trouble achieving coverage closure in my verification environment. The functional coverage is stuck at 85% for several critical scenarios. The design has multiple interfaces and complex state machines. How can I improve coverage?",
+          stage: "Verification",
+          category: "Coverage Issues",
+          tool: "Synopsys VCS",
+          technology: "Generic",
+          debugSteps: "1. Analyzed uncovered scenarios 2. Added directed tests 3. Implemented coverage-driven verification 4. Reviewed coverage exclusions"
+        },
+        {
+          title: "Formal verification timeout in large design",
+          description: "Formal verification is timing out on my large design module. The property checking is taking too long and hitting memory limits. The module has 1000+ flip-flops and complex combinational logic. How can I improve formal verification performance?",
+          stage: "Verification",
+          category: "Performance Issues",
+          tool: "Synopsys VC Formal",
+          technology: "Generic",
+          debugSteps: "1. Partitioned the design 2. Simplified properties 3. Added abstraction techniques 4. Optimized formal engine settings"
+        }
+      ]
+    };
+    
+    return examples[domain] || [];
+  };
 
   useEffect(() => {
     // Fetch user data and domain-specific stages, tools
@@ -99,9 +223,9 @@ const CreateQuery = () => {
       setShowCustomCategory(false);
     }
     
-    // If issue category is "Others", show custom input
+    // If issue category is "Others", show custom input (but not for Analog Layout)
     if (name === 'issue_category_id') {
-      if (value === 'others') {
+      if (value === 'others' && userDomain !== 'Analog Layout') {
         setShowCustomCategory(true);
         setFormData(prev => ({
           ...prev,
@@ -235,8 +359,18 @@ const CreateQuery = () => {
         >
           <FaArrowLeft /> Back to Queries
         </button>
-        <h1>Create New Query</h1>
-        <p>Ask a question to VLSI expert reviewers</p>
+        <div className="header-content">
+          <h1>Create New Query</h1>
+          <p>Ask a question to VLSI expert reviewers</p>
+        </div>
+        {userDomain && (
+          <button 
+            onClick={() => document.getElementById('sample-examples')?.scrollIntoView({ behavior: 'smooth' })}
+            className="jump-to-examples-btn"
+          >
+            <FaArrowDown /> Jump to Examples
+          </button>
+        )}
       </div>
 
       {error && <div className="error">{error}</div>}
@@ -306,7 +440,7 @@ const CreateQuery = () => {
                     {category.name}
                   </option>
                 ))}
-                <option value="others">Others</option>
+                {userDomain !== 'Analog Layout' && <option value="others">Others</option>}
               </select>
             </div>
             
@@ -467,6 +601,41 @@ const CreateQuery = () => {
           <li>Upload relevant images to help expert reviewers understand your issue better</li>
         </ul>
       </div>
+
+      {userDomain && (
+        <div id="sample-examples" className="sample-examples">
+          <h3>Sample Examples for {userDomain}</h3>
+          
+          {getDomainExamples(userDomain).map((example, index) => (
+            <div key={index} className="example-section">
+              <h4>Example {index + 1}: {userDomain} Issue</h4>
+              <div className="example-content">
+                <div className="example-field">
+                  <strong>Title:</strong> {example.title}
+                </div>
+                <div className="example-field">
+                  <strong>Description:</strong> {example.description}
+                </div>
+                <div className="example-field">
+                  <strong>Design Stage:</strong> {example.stage}
+                </div>
+                <div className="example-field">
+                  <strong>Issue Category:</strong> {example.category}
+                </div>
+                <div className="example-field">
+                  <strong>Tool:</strong> {example.tool}
+                </div>
+                <div className="example-field">
+                  <strong>Technology:</strong> {example.technology}
+                </div>
+                <div className="example-field">
+                  <strong>Debug Steps:</strong> {example.debugSteps}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

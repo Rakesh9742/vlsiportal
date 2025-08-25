@@ -170,9 +170,9 @@ const EditQuery = () => {
       setShowCustomCategory(false);
     }
     
-    // If issue category is "Others", show custom input
+    // If issue category is "Others", show custom input (but not for Analog Layout)
     if (name === 'issue_category_id') {
-      if (value === 'others') {
+      if (value === 'others' && studentDomain !== 'Analog Layout') {
         setShowCustomCategory(true);
         setFormData(prev => ({
           ...prev,
@@ -458,7 +458,7 @@ const EditQuery = () => {
                     {category.name}
                   </option>
                 ))}
-                <option value="others">Others</option>
+                {studentDomain !== 'Analog Layout' && <option value="others">Others</option>}
               </select>
             </div>
             
