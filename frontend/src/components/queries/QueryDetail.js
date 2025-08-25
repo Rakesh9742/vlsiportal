@@ -218,6 +218,18 @@ const QueryDetail = () => {
               </div>
             </div>
           )}
+
+          {query.technology && (
+            <div className="info-card">
+              <div className="info-icon">
+                <FaTag />
+              </div>
+              <div className="info-content">
+                <h4>Technology</h4>
+                <p>{query.technology}</p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Query Description */}

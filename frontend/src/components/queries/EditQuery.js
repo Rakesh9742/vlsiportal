@@ -20,6 +20,7 @@ const EditQuery = () => {
     title: '',
     description: '',
     tool_id: '',
+    technology: '',
     stage_id: '',
     issue_category_id: '',
     custom_issue_category: '',
@@ -29,6 +30,7 @@ const EditQuery = () => {
 
   // Options for dropdowns
   const [tools, setTools] = useState([]);
+  const [technologies, setTechnologies] = useState([]);
   const [stages, setStages] = useState([]);
   const [issueCategories, setIssueCategories] = useState([]);
   const [studentDomain, setStudentDomain] = useState(null);
@@ -70,6 +72,7 @@ const EditQuery = () => {
         title: queryData.title || '',
         description: queryData.description || '',
         tool_id: queryData.tool_id || '',
+        technology: queryData.technology || '',
         stage_id: queryData.stage_id || '',
         issue_category_id: queryData.issue_category_id || '',
         custom_issue_category: queryData.custom_issue_category || '',
@@ -99,11 +102,27 @@ const EditQuery = () => {
 
   const fetchOptions = async () => {
     try {
-      // Fetch tools
-      const toolsRes = await axios.get('/queries/tools');
-      setTools(toolsRes.data.tools);
+      // Fetch technologies
+      const technologiesRes = await axios.get('/queries/technologies');
+      setTechnologies(technologiesRes.data.technologies);
     } catch (error) {
       console.error('Failed to load options:', error);
+    }
+  };
+
+  // Load tools based on student's domain
+  const loadToolsForDomain = async (domainId) => {
+    try {
+      if (domainId) {
+        const toolsRes = await axios.get(`/queries/tools/${domainId}`);
+        setTools(toolsRes.data.tools);
+      } else {
+        // Fallback to all tools if domain_id is not available
+        const toolsRes = await axios.get('/queries/tools');
+        setTools(toolsRes.data.tools);
+      }
+    } catch (error) {
+      console.error('Failed to load tools for domain:', error);
     }
   };
 
@@ -384,6 +403,19 @@ const EditQuery = () => {
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="technology">Technology</label>
+              <input
+                type="text"
+                id="technology"
+                name="technology"
+                value={formData.technology}
+                onChange={handleInputChange}
+                className="form-control"
+                                 placeholder="Enter technology (e.g., TSMC 28nm, GF 22nm, etc.)"
+              />
             </div>
           </div>
 

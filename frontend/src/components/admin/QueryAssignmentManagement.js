@@ -74,12 +74,30 @@ const QueryAssignmentManagement = () => {
     }
   };
 
-  const handleAssignQuery = (query) => {
+  const handleAssignQuery = async (query) => {
     setSelectedQuery(query);
     setAssignmentData({
       expert_reviewer_id: '',
       notes: ''
     });
+    
+    // Fetch reviewers for the specific domain
+    try {
+      if (query.student_domain) {
+        const domainReviewersRes = await axios.get(`/auth/expert-reviewers/domain/${encodeURIComponent(query.student_domain)}`);
+        setReviewers(domainReviewersRes.data.reviewers);
+      } else {
+        // If no domain, fetch all reviewers
+        const reviewersRes = await axios.get('/auth/expert-reviewers');
+        setReviewers(reviewersRes.data.reviewers);
+      }
+    } catch (error) {
+      console.error('Error fetching domain reviewers:', error);
+      // Fallback to all reviewers
+      const reviewersRes = await axios.get('/auth/expert-reviewers');
+      setReviewers(reviewersRes.data.reviewers);
+    }
+    
     setShowAssignmentModal(true);
   };
 
@@ -424,7 +442,26 @@ const QueryAssignmentManagement = () => {
                 <div className="form-group">
                   <label htmlFor="expert_reviewer_id">
                     <FaUsers />
-                    Expert Reviewer *
+                    Expert Reviewer * {selectedQuery.student_domain && (
+                      <span className="domain-filter-note">
+                        (Filtered for {selectedQuery.student_domain} domain)
+                        <button 
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              const allReviewersRes = await axios.get('/auth/expert-reviewers');
+                              setReviewers(allReviewersRes.data.reviewers);
+                            } catch (error) {
+                              console.error('Error fetching all reviewers:', error);
+                            }
+                          }}
+                          className="btn-link"
+                          style={{ marginLeft: '8px', color: '#3b82f6', textDecoration: 'underline', fontSize: '11px' }}
+                        >
+                          Show all
+                        </button>
+                      </span>
+                    )}
                   </label>
                   <select
                     id="expert_reviewer_id"
@@ -437,12 +474,38 @@ const QueryAssignmentManagement = () => {
                     required
                   >
                     <option value="">Select Expert Reviewer</option>
-                    {reviewers.map(reviewer => (
-                      <option key={reviewer.id} value={reviewer.id}>
-                        {reviewer.full_name} ({reviewer.domain_name})
+                    {reviewers.length > 0 ? (
+                      reviewers.map(reviewer => (
+                        <option key={reviewer.id} value={reviewer.id}>
+                          {reviewer.full_name} ({reviewer.domain_name})
+                        </option>
+                      ))
+                    ) : (
+                      <option value="" disabled>
+                        No reviewers available for this domain
                       </option>
-                    ))}
+                    )}
                   </select>
+                  {selectedQuery.student_domain && reviewers.length === 0 && (
+                    <div className="form-help">
+                      No expert reviewers found for the {selectedQuery.student_domain} domain. 
+                      <button 
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            const allReviewersRes = await axios.get('/auth/expert-reviewers');
+                            setReviewers(allReviewersRes.data.reviewers);
+                          } catch (error) {
+                            console.error('Error fetching all reviewers:', error);
+                          }
+                        }}
+                        className="btn-link"
+                        style={{ marginLeft: '8px', color: '#3b82f6', textDecoration: 'underline' }}
+                      >
+                        Show all reviewers
+                      </button>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="form-group">

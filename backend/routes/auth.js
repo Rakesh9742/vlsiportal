@@ -159,6 +159,26 @@ router.get('/expert-reviewers', auth, checkRole(['admin']), async (req, res) => 
   }
 });
 
+// Admin: Get expert reviewers by domain
+router.get('/expert-reviewers/domain/:domainName', auth, checkRole(['admin']), async (req, res) => {
+  try {
+    const domainName = req.params.domainName;
+    
+    const [reviewers] = await db.execute(`
+      SELECT u.id, u.username, u.full_name, u.created_at, d.name as domain_name
+      FROM users u
+      LEFT JOIN domains d ON u.domain_id = d.id
+      WHERE u.role = 'expert_reviewer' AND d.name = ?
+      ORDER BY u.full_name
+    `, [domainName]);
+    
+    res.json({ reviewers });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Admin: Create Admin User
 router.post('/create-admin', auth, checkRole(['admin']), [
   body('username').isLength({ min: 3 }).withMessage('Username must be at least 3 characters'),
@@ -300,7 +320,7 @@ router.post('/login', [
 router.get('/me', auth, async (req, res) => {
   try {
     const [users] = await db.execute(
-      `SELECT u.id, u.username, u.role, u.full_name, d.name as domain 
+      `SELECT u.id, u.username, u.role, u.full_name, u.domain_id, d.name as domain 
        FROM users u 
        LEFT JOIN domains d ON u.domain_id = d.id 
        WHERE u.id = ?`,

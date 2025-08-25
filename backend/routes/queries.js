@@ -33,6 +33,36 @@ router.get('/pd-issue-categories/:stageId', async (req, res) => {
   }
 });
 
+// Get domain-specific stages for any domain
+router.get('/domain-stages/:domainId', async (req, res) => {
+  try {
+    const { domainId } = req.params;
+    const [stages] = await db.execute(
+      'SELECT * FROM domain_stages WHERE domain_id = ? ORDER BY id',
+      [domainId]
+    );
+    res.json({ stages });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get domain-specific issue categories for a specific stage
+router.get('/domain-issue-categories/:stageId', async (req, res) => {
+  try {
+    const { stageId } = req.params;
+    const [categories] = await db.execute(
+      'SELECT * FROM domain_issue_categories WHERE stage_id = ? ORDER BY name',
+      [stageId]
+    );
+    res.json({ categories });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Get all Physical Design issue categories
 router.get('/pd-issue-categories', async (req, res) => {
   try {
@@ -70,6 +100,58 @@ router.get('/domain-config/:domainName', async (req, res) => {
   }
 });
 
+// Get domain stages and issue categories by domain ID
+router.get('/domain-config-by-id/:domainId', async (req, res) => {
+  try {
+    const { domainId } = req.params;
+    
+    // Get domain name first
+    const [domains] = await db.execute(
+      'SELECT name FROM domains WHERE id = ?',
+      [domainId]
+    );
+    
+    if (domains.length === 0) {
+      return res.status(404).json({ message: 'Domain not found' });
+    }
+    
+    const domainName = domains[0].name;
+    
+    // Get stages for this domain
+    const [stages] = await db.execute(
+      'SELECT * FROM domain_stages WHERE domain_id = ? ORDER BY id',
+      [domainId]
+    );
+    
+    // Get issue categories for this domain
+    const [categories] = await db.execute(`
+      SELECT ic.*, ds.name as stage_name 
+      FROM domain_issue_categories ic 
+      JOIN domain_stages ds ON ic.stage_id = ds.id 
+      WHERE ic.domain_id = ?
+      ORDER BY ds.id, ic.name
+    `, [domainId]);
+    
+    // Group categories by stage
+    const issueCategories = {};
+    stages.forEach(stage => {
+      issueCategories[stage.name] = categories
+        .filter(cat => cat.stage_id === stage.id)
+        .map(cat => cat.name);
+    });
+    
+    res.json({ 
+      domain: domainName,
+      domainId: parseInt(domainId),
+      stages: stages.map(stage => stage.name),
+      issueCategories: issueCategories
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Get all domains with their stages and issue categories
 router.get('/domain-config', async (req, res) => {
   try {
@@ -91,11 +173,38 @@ router.get('/tools', async (req, res) => {
   }
 });
 
+// Get tools by domain
+router.get('/tools/:domainId', async (req, res) => {
+  try {
+    const { domainId } = req.params;
+    const [tools] = await db.execute(
+      'SELECT * FROM tools WHERE domain_id = ? ORDER BY name',
+      [domainId]
+    );
+    res.json({ tools });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get all technologies
+router.get('/technologies', async (req, res) => {
+  try {
+    const [technologies] = await db.execute('SELECT * FROM technologies ORDER BY name');
+    res.json({ technologies });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Create new query with image uploads (students only)
 router.post('/', auth, checkRole(['student']), uploadImages, handleUploadError, [
   body('title').notEmpty().withMessage('Title is required'),
   body('description').notEmpty().withMessage('Description is required'),
   body('tool_id').optional().isInt().withMessage('Tool ID must be a number'),
+  body('technology').optional().isString().withMessage('Technology must be a string'),
   body('stage_id').optional().isInt().withMessage('Stage ID must be a number'),
   body('custom_issue_category').optional(),
   body('debug_steps').optional(),
@@ -111,6 +220,7 @@ router.post('/', auth, checkRole(['student']), uploadImages, handleUploadError, 
       title, 
       description, 
       tool_id,
+      technology,
       stage_id,
       custom_issue_category,
       debug_steps,
@@ -124,8 +234,8 @@ router.post('/', auth, checkRole(['student']), uploadImages, handleUploadError, 
 
     try {
       // Build query fields and values
-      const queryFields = ['student_id', 'title', 'description', 'tool_id', 'stage_id', 'debug_steps', 'resolution'];
-      const queryValues = [studentId, title, description, tool_id, stage_id, debug_steps, resolution];
+      const queryFields = ['student_id', 'title', 'description', 'tool_id', 'technology', 'stage_id', 'debug_steps', 'resolution'];
+      const queryValues = [studentId, title, description, tool_id, technology, stage_id, debug_steps, resolution];
       
       // Handle custom issue category
       let issue_category_id = null;
@@ -588,6 +698,7 @@ router.put('/:id', auth, [
   body('title').optional(),
   body('description').optional(),
   body('tool_id').optional().isInt(),
+  body('technology').optional().isString(),
   body('stage_id').optional().isInt(),
   body('issue_category_id').optional().isInt(),
   body('custom_issue_category').optional(),

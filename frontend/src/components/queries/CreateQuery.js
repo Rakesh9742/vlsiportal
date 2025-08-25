@@ -10,6 +10,7 @@ const CreateQuery = () => {
     title: '',
     description: '',
     tool_id: '',
+    technology: '',
     stage_id: '',
     issue_category_id: '',
     custom_issue_category: '',
@@ -21,6 +22,7 @@ const CreateQuery = () => {
   const [stages, setStages] = useState([]);
   const [issueCategories, setIssueCategories] = useState([]);
   const [tools, setTools] = useState([]);
+  const [technologies, setTechnologies] = useState([]);
   const [selectedImages, setSelectedImages] = useState([]);
   const [imagePreview, setImagePreview] = useState([]);
   const [userDomain, setUserDomain] = useState(null);
@@ -35,23 +37,41 @@ const CreateQuery = () => {
         const user = userRes.data.user;
         setUserDomain(user.domain);
         
-        // Fetch tools
-        const toolsRes = await axios.get('/queries/tools');
-        setTools(toolsRes.data.tools);
+        // Fetch tools based on user's domain
+        if (user.domain_id) {
+          const toolsRes = await axios.get(`/queries/tools/${user.domain_id}`);
+          setTools(toolsRes.data.tools);
+        } else {
+          // Fallback to all tools if domain_id is not available
+          const toolsRes = await axios.get('/queries/tools');
+          setTools(toolsRes.data.tools);
+        }
+        
+        // Fetch technologies
+        const technologiesRes = await axios.get('/queries/technologies');
+        setTechnologies(technologiesRes.data.technologies);
         
         // Fetch domain-specific stages based on user's domain
         if (user.domain === 'Physical Design') {
+          // For Physical Design, use the pd_stages table
           const stagesRes = await axios.get('/queries/pd-stages');
           setStages(stagesRes.data.stages);
         } else {
-          // For other domains, use the domain config
-          const domainConfigRes = await axios.get(`/queries/domain-config/${user.domain}`);
-          const domainStages = domainConfigRes.data.stages.map((stage, index) => ({
-            id: index + 1,
-            name: stage,
-            description: stage
-          }));
-          setStages(domainStages);
+          // For other domains, use the domain_id from user response
+          if (user.domain_id) {
+            // Fetch stages from domain_stages table
+            const stagesRes = await axios.get(`/queries/domain-stages/${user.domain_id}`);
+            setStages(stagesRes.data.stages);
+          } else {
+            // Fallback to domain config if domain ID is not available
+            const domainConfigRes = await axios.get(`/queries/domain-config/${user.domain}`);
+            const domainStages = domainConfigRes.data.stages.map((stage, index) => ({
+              id: index + 1,
+              name: stage,
+              description: stage
+            }));
+            setStages(domainStages);
+          }
         }
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -106,22 +126,13 @@ const CreateQuery = () => {
       }
       
       if (userDomain === 'Physical Design') {
+        // For Physical Design, use pd_issue_categories table
         const response = await axios.get(`/queries/pd-issue-categories/${stageId}`);
         setIssueCategories(response.data.categories);
       } else {
-        // For other domains, get categories from domain config
-        const domainConfigRes = await axios.get(`/queries/domain-config/${userDomain}`);
-        const selectedStage = stages.find(stage => stage.id == stageId);
-        if (selectedStage && domainConfigRes.data.issueCategories[selectedStage.name]) {
-          const categories = domainConfigRes.data.issueCategories[selectedStage.name].map((category, index) => ({
-            id: index + 1,
-            name: category,
-            description: category
-          }));
-          setIssueCategories(categories);
-        } else {
-          setIssueCategories([]);
-        }
+        // For other domains, use domain_issue_categories table
+        const response = await axios.get(`/queries/domain-issue-categories/${stageId}`);
+        setIssueCategories(response.data.categories);
       }
     } catch (error) {
       console.error('Error loading issue categories:', error);
@@ -332,6 +343,19 @@ const CreateQuery = () => {
                 </option>
               ))}
             </select>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="technology">Technology</label>
+            <input
+              type="text"
+              id="technology"
+              name="technology"
+              className="form-control"
+              value={formData.technology}
+              onChange={handleChange}
+              placeholder="Enter technology (e.g., TSMC 28nm, GF 22nm, etc.)"
+            />
           </div>
 
           <div className="form-group">

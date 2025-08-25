@@ -27,6 +27,9 @@ const Navbar = () => {
             <span>VLSI</span>
           </div>
           <span className="brand-text">Portal</span>
+          {user?.domain && user?.role !== 'admin' && (
+            <span className="domain-badge">{user.domain}</span>
+          )}
         </Link>
 
         <div className={`navbar-menu ${isMenuOpen ? 'active' : ''}`}>

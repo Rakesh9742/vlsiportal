@@ -46,7 +46,8 @@ const QueryList = () => {
   const filteredQueries = queries.filter(query => {
     const matchesSearch = query.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          query.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (query.category && query.category.toLowerCase().includes(searchTerm.toLowerCase()));
+                         (query.category && query.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         (query.technology && query.technology.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const matchesStatus = statusFilter === 'all' || query.status === statusFilter;
     
@@ -265,6 +266,11 @@ const QueryList = () => {
                       {new Date(query.created_at).toLocaleDateString()}
                     </span>
                   </div>
+                  {query.technology && (
+                    <div className="info-item">
+                      <span className="info-value">{query.technology}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="query-status">

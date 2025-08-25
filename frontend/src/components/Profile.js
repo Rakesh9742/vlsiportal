@@ -13,9 +13,11 @@ const Profile = () => {
     domain: ''
   });
   const [saving, setSaving] = useState(false);
+  const [domains, setDomains] = useState([]);
 
   useEffect(() => {
     fetchProfile();
+    fetchDomains();
   }, []);
 
   const fetchProfile = async () => {
@@ -30,6 +32,15 @@ const Profile = () => {
       setError('Failed to load profile');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchDomains = async () => {
+    try {
+      const response = await axios.get('/users/domains');
+      setDomains(response.data.domains);
+    } catch (error) {
+      console.error('Failed to load domains:', error);
     }
   };
 
@@ -123,16 +134,21 @@ const Profile = () => {
 
               <div className="form-group">
                 <label htmlFor="domain">Domain</label>
-                <input
-                  type="text"
+                <select
                   id="domain"
                   name="domain"
                   className="form-control"
-                  value={editData.domain}
+                  value={editData.domain || ''}
                   onChange={handleChange}
-                  placeholder="e.g., VLSI Design, Digital Electronics"
                   required
-                />
+                >
+                  <option value="">Select a domain</option>
+                  {domains.map((domain) => (
+                    <option key={domain.id} value={domain.name}>
+                      {domain.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="form-actions">
@@ -187,7 +203,9 @@ const Profile = () => {
                   <FaCalendar />
                   Domain
                 </span>
-                <span className="detail-value">{user.domain}</span>
+                <span className="detail-value">
+                  {user.domain || 'Not assigned'}
+                </span>
               </div>
 
               <div className="detail-item">

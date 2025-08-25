@@ -28,6 +28,16 @@ CREATE TABLE IF NOT EXISTS tools (
     id INT PRIMARY KEY AUTO_INCREMENT,
     name VARCHAR(100) NOT NULL,
     description TEXT,
+    domain_id INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (domain_id) REFERENCES domains(id) ON DELETE SET NULL
+);
+
+-- Create technologies table
+CREATE TABLE IF NOT EXISTS technologies (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -49,6 +59,7 @@ CREATE TABLE IF NOT EXISTS pd_issue_categories (
     FOREIGN KEY (stage_id) REFERENCES pd_stages(id) ON DELETE CASCADE,
     UNIQUE KEY unique_stage_category (stage_id, name)
 );
+
 
 -- Create domain stages table
 CREATE TABLE IF NOT EXISTS domain_stages (
@@ -82,6 +93,7 @@ CREATE TABLE IF NOT EXISTS queries (
     title VARCHAR(200) NOT NULL,
     description TEXT NOT NULL,
     tool_id INT,
+    technology VARCHAR(100),
     stage_id INT,
     issue_category_id INT,
     custom_issue_category VARCHAR(200), -- For custom categories when "Others" is selected
@@ -551,16 +563,176 @@ INSERT INTO domain_issue_categories (domain_id, stage_id, name, description) VAL
 (5, 17, 'Settings', 'LEC settings issues'),
 (5, 17, 'Debug Analysis', 'LEC debug analysis issues');
 
+-- Insert Analog Layout stages into domain_stages
+INSERT INTO domain_stages (domain_id, name, description) VALUES
+(7, 'Schematic design inputs', 'Schematic design input requirements and specifications'),
+(7, 'Floorplan', 'Floorplanning and device placement for analog layout'),
+(7, 'Routing', 'Analog signal routing and interconnect'),
+(7, 'AL outputs', 'Analog layout output files and deliverables'),
+(7, 'RC extraction', 'RC parasitic extraction for analog circuits'),
+(7, 'ECO', 'Engineering change orders for analog layout'),
+(7, 'EMIR', 'Electromigration and IR drop analysis for analog'),
+(7, 'Physical verification', 'Physical verification for analog layout'),
+(7, 'ESD', 'ESD protection and design'),
+(7, 'Pads', 'Bond pads and probe pads design'),
+(7, 'Package', 'Package design and integration'),
+(7, 'Technology & PDKs', 'Technology files and PDK management'),
+(7, 'DB Version control', 'Database version control and management'),
+(7, 'Project Release & QA', 'Project release and quality assurance');
+
+-- Insert Analog Layout issue categories into domain_issue_categories
+INSERT INTO domain_issue_categories (domain_id, stage_id, name, description) VALUES
+-- Schematic design inputs categories
+(7, 18, 'Matching (devices, nets - resistances, capacitance)', 'Device and net matching issues'),
+(7, 18, 'High speed', 'High speed design considerations'),
+(7, 18, 'High Voltage', 'High voltage design requirements'),
+(7, 18, 'Different voltage domains', 'Multiple voltage domain issues'),
+(7, 18, 'Clk & Data paths', 'Clock and data path design'),
+(7, 18, 'Power (current & voltage) ratings', 'Power rating specifications'),
+(7, 18, 'Branch currents', 'Branch current analysis'),
+(7, 18, 'Node Voltages in cross voltage domains', 'Cross voltage domain node voltage issues'),
+(7, 18, 'Other', 'Other schematic design input issues'),
+
+-- Floorplan categories
+(7, 19, 'Devices Placement', 'Device placement optimization'),
+(7, 19, 'Macro placement', 'Macro cell placement'),
+(7, 19, 'Power planning', 'Power distribution planning'),
+(7, 19, 'Different types of MOS devices', 'Various MOS device types'),
+(7, 19, 'Different types of devices', 'Various device types'),
+(7, 19, 'Blocks integration', 'Block integration issues'),
+(7, 19, 'Analog & Digital blocks integration', 'Mixed-signal block integration'),
+(7, 19, 'Area', 'Area optimization'),
+(7, 19, 'ESD & Clamps integration', 'ESD protection integration'),
+(7, 19, 'Latchup', 'Latchup prevention'),
+(7, 19, 'Other', 'Other floorplan issues'),
+
+-- Routing categories
+(7, 20, 'Opens', 'Open circuit issues'),
+(7, 20, 'Shorts', 'Short circuit issues'),
+(7, 20, 'DRCs', 'Design rule check violations'),
+(7, 20, 'High Speed signal routing', 'High speed signal routing issues'),
+(7, 20, 'High Current', 'High current routing issues'),
+(7, 20, 'Power mesh', 'Power distribution mesh'),
+(7, 20, 'Crosstalk', 'Crosstalk issues'),
+(7, 20, 'Other', 'Other routing issues'),
+
+-- AL outputs categories
+(7, 21, 'GDS', 'GDS file generation'),
+(7, 21, 'LEF', 'LEF file generation'),
+(7, 21, 'DEF', 'DEF file generation'),
+(7, 21, 'Netlist', 'Netlist generation'),
+(7, 21, 'PV reports', 'Physical verification reports'),
+(7, 21, 'PERC & ESD reports', 'PERC and ESD analysis reports'),
+(7, 21, 'Other', 'Other output file issues'),
+
+-- RC extraction categories
+(7, 22, 'Design updates', 'Design update issues'),
+(7, 22, 'Post layout sims', 'Post layout simulation issues'),
+(7, 22, 'LVS fail', 'LVS failure issues'),
+(7, 22, 'Other', 'Other RC extraction issues'),
+
+-- ECO categories
+(7, 23, 'Design updates', 'Design update issues'),
+(7, 23, 'Post layout sims updates', 'Post layout simulation updates'),
+(7, 23, 'Clk & Data Timing', 'Clock and data timing issues'),
+(7, 23, 'Other', 'Other ECO issues'),
+
+-- EMIR categories
+(7, 24, 'Static IR drop analysis', 'Static IR drop analysis'),
+(7, 24, 'Dynamic IR drop analysis', 'Dynamic IR drop analysis'),
+(7, 24, 'Power EM Iavg', 'Power electromigration average current'),
+(7, 24, 'Power EM Irms', 'Power electromigration RMS current'),
+(7, 24, 'Signal EM Iavg', 'Signal electromigration average current'),
+(7, 24, 'Signal EM Irms', 'Signal electromigration RMS current'),
+(7, 24, 'EMIR calculations', 'EMIR calculation issues'),
+(7, 24, 'Other', 'Other EMIR issues'),
+
+-- Physical verification categories
+(7, 25, 'DRC', 'Design rule check violations'),
+(7, 25, 'DFM', 'Design for manufacturability'),
+(7, 25, 'ANT', 'Antenna effect violations'),
+(7, 25, 'LVS', 'Layout vs schematic issues'),
+(7, 25, 'ERC', 'Electrical rule check violations'),
+(7, 25, 'PERC', 'Programmable electrical rule check'),
+(7, 25, 'Bump', 'Bump related issues'),
+(7, 25, 'ESD', 'ESD protection issues'),
+(7, 25, 'Density', 'Density check issues'),
+(7, 25, 'Other', 'Other physical verification issues'),
+
+-- ESD categories
+(7, 26, 'ESD types', 'ESD protection types'),
+(7, 26, 'ESD sizes', 'ESD device sizing'),
+(7, 26, 'Clamps', 'ESD clamp circuits'),
+(7, 26, 'Resistance', 'ESD resistance issues'),
+(7, 26, 'ESD voltage values', 'ESD voltage specifications'),
+(7, 26, 'Other', 'Other ESD issues'),
+
+-- Pads categories
+(7, 27, 'Bond Pads', 'Bond pad design'),
+(7, 27, 'Different types of Bond pads', 'Various bond pad types'),
+(7, 27, 'Probe pads', 'Probe pad design'),
+(7, 27, 'RDL Routing', 'Redistribution layer routing'),
+(7, 27, 'Other', 'Other pad design issues'),
+
+-- Package categories
+(7, 28, 'CSP (Chip Scale package)', 'Chip scale package design'),
+(7, 28, 'Wire bond', 'Wire bonding design'),
+(7, 28, 'Other', 'Other package design issues'),
+
+-- Technology & PDKs categories
+(7, 29, 'PDKs', 'Process design kit issues'),
+(7, 29, 'Tech file', 'Technology file issues'),
+(7, 29, 'Display file', 'Display file issues'),
+(7, 29, 'Metal stack (FEOL, MEOL, BEOL)', 'Metal stack configuration'),
+(7, 29, 'DRM (Design Rule Manual)', 'Design rule manual issues'),
+(7, 29, 'Rule decks', 'Rule deck configuration'),
+(7, 29, 'Other', 'Other technology and PDK issues'),
+
+-- DB Version control categories
+(7, 30, 'Project DB', 'Project database management'),
+(7, 30, 'Layout Design DB', 'Layout design database'),
+(7, 30, 'Schematic design DB', 'Schematic design database'),
+(7, 30, 'Check list DB', 'Checklist database'),
+(7, 30, 'Design DB check-in', 'Design database check-in'),
+(7, 30, 'Design DB check-out', 'Design database check-out'),
+(7, 30, 'Design DB access or edit permission', 'Database access permissions'),
+(7, 30, 'Other', 'Other database version control issues'),
+
+-- Project Release & QA categories
+(7, 31, 'Devices used', 'Device usage tracking'),
+(7, 31, 'Additional cost Masks', 'Additional mask costs'),
+(7, 31, 'DB Prefixing', 'Database prefixing'),
+(7, 31, 'Shapes out side of Boundary', 'Shapes outside boundary'),
+(7, 31, 'LEF vs GDS', 'LEF vs GDS comparison'),
+(7, 31, 'LEF vs Verilog', 'LEF vs Verilog comparison'),
+(7, 31, 'Design Reviews', 'Design review process'),
+(7, 31, 'Cross team release', 'Cross-team release coordination'),
+(7, 31, 'Other', 'Other project release and QA issues');
+
 -- Insert sample tools
-INSERT INTO tools (name, description) VALUES
-('Design Compiler', 'Synopsys Design Compiler for synthesis'),
-('PrimeTime', 'Synopsys PrimeTime for timing analysis'),
-('IC Compiler', 'Synopsys IC Compiler for place and route'),
-('Virtuoso', 'Cadence Virtuoso for analog design'),
-('Innovus', 'Cadence Innovus for digital design'),
-('Calibre', 'Mentor Graphics Calibre for DRC/LVS'),
-('ModelSim', 'Mentor Graphics ModelSim for simulation'),
-('VCS', 'Synopsys VCS for simulation');
+INSERT INTO tools (name, description, domain_id) VALUES
+-- Physical Design Tools
+('Design Compiler', 'Synopsys Design Compiler for synthesis', 5),
+('Genus', 'Cadence Genus Synthesis Solution', 5),
+('Fusion Compiler', 'Synopsys Fusion Compiler for design implementation', 5),
+('Innovus', 'Cadence Innovus Implementation System', 5),
+('ICC2', 'Synopsys IC Compiler II for place and route', 5),
+('Redhawk', 'Ansys Redhawk for power analysis', 5),
+('Voltus', 'Cadence Voltus IC Power Integrity Solution', 5),
+('Tempus', 'Cadence Tempus Timing Signoff Solution', 5),
+('PrimeTime', 'Synopsys PrimeTime for timing analysis', 5),
+('StarRC', 'Synopsys StarRC for parasitic extraction', 5),
+('Quantus', 'Cadence Quantus Extraction Solution', 5),
+('Pegasus', 'Synopsys Pegasus Verification System', 5),
+('Calibre', 'Mentor Graphics Calibre for DRC/LVS', 5),
+('IC Validator', 'Synopsys IC Validator for physical verification', 5),
+
+-- Other domain tools (keeping some existing ones for other domains)
+('Virtuoso', 'Cadence Virtuoso for analog design', 8),
+('ModelSim', 'Mentor Graphics ModelSim for simulation', 4),
+('VCS', 'Synopsys VCS for simulation', 4);
+
+
 
 -- Insert admin user (password: admin123)
 INSERT INTO users (username, password, role, full_name, domain_id) VALUES

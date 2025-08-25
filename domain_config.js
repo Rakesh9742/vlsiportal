@@ -145,20 +145,36 @@ const domainConfig = {
   // Analog Layout Domain
   'Analog Layout': {
     stages: [
-      'Schematic Design',
-      'Layout Design',
-      'Layout Verification',
-      'Parasitic Extraction',
-      'Layout vs Schematic',
-      'Design Rule Check'
+      'Schematic design inputs',
+      'Floorplan',
+      'Routing',
+      'AL outputs',
+      'RC extraction',
+      'ECO',
+      'EMIR',
+      'Physical verification',
+      'ESD',
+      'Pads',
+      'Package',
+      'Technology & PDKs',
+      'DB Version control',
+      'Project Release & QA'
     ],
     issueCategories: {
-      'Schematic Design': ['Circuit Design', 'Component Selection', 'Circuit Analysis', 'Others'],
-      'Layout Design': ['Layout Planning', 'Component Placement', 'Routing', 'Others'],
-      'Layout Verification': ['DRC', 'LVS', 'ERC', 'Others'],
-      'Parasitic Extraction': ['RC Extraction', 'Parasitic Analysis', 'Others'],
-      'Layout vs Schematic': ['LVS Issues', 'Netlist Comparison', 'Others'],
-      'Design Rule Check': ['DRC Violations', 'DRC Fixes', 'Others']
+      'Schematic design inputs': ['Matching (devices, nets - resistances, capacitance)', 'High speed', 'High Voltage', 'Different voltage domains', 'Clk & Data paths', 'Power (current & voltage) ratings', 'Branch currents', 'Node Voltages in cross voltage domains', 'Other'],
+      'Floorplan': ['Devices Placement', 'Macro placement', 'Power planning', 'Different types of MOS devices', 'Different types of devices', 'Blocks integration', 'Analog & Digital blocks integration', 'Area', 'ESD & Clamps integration', 'Latchup', 'Other'],
+      'Routing': ['Opens', 'Shorts', 'DRCs', 'High Speed signal routing', 'High Current', 'Power mesh', 'Crosstalk', 'Other'],
+      'AL outputs': ['GDS', 'LEF', 'DEF', 'Netlist', 'PV reports', 'PERC & ESD reports', 'Other'],
+      'RC extraction': ['Design updates', 'Post layout sims', 'LVS fail', 'Other'],
+      'ECO': ['Design updates', 'Post layout sims updates', 'Clk & Data Timing', 'Other'],
+      'EMIR': ['Static IR drop analysis', 'Dynamic IR drop analysis', 'Power EM Iavg', 'Power EM Irms', 'Signal EM Iavg', 'Signal EM Irms', 'EMIR calculations', 'Other'],
+      'Physical verification': ['DRC', 'DFM', 'ANT', 'LVS', 'ERC', 'PERC', 'Bump', 'ESD', 'Density', 'Other'],
+      'ESD': ['ESD types', 'ESD sizes', 'Clamps', 'Resistance', 'ESD voltage values', 'Other'],
+      'Pads': ['Bond Pads', 'Different types of Bond pads', 'Probe pads', 'RDL Routing', 'Other'],
+      'Package': ['CSP (Chip Scale package)', 'Wire bond', 'Other'],
+      'Technology & PDKs': ['PDKs', 'Tech file', 'Display file', 'Metal stack (FEOL, MEOL, BEOL)', 'DRM (Design Rule Manual)', 'Rule decks', 'Other'],
+      'DB Version control': ['Project DB', 'Layout Design DB', 'Schematic design DB', 'Check list DB', 'Design DB check-in', 'Design DB check-out', 'Design DB access or edit permission', 'Other'],
+      'Project Release & QA': ['Devices used', 'Additional cost Masks', 'DB Prefixing', 'Shapes out side of Boundary', 'LEF vs GDS', 'LEF vs Verilog', 'Design Reviews', 'Cross team release', 'Other']
     }
   },
   
