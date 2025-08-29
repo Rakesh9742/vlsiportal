@@ -10,31 +10,35 @@ const adminRoutes = require('./routes/admin');
 dotenv.config();
 
 console.log('🚀 Starting VLSI Portal Backend...');
-console.log(`📡 Server will run on port: ${process.env.PORT || 5000}`);
+console.log(`📡 Server will run on port: ${process.env.PORT || 520}`);
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 520;
 
 // CORS configuration for both localhost and production hosting
 const corsOptions = {
   origin: [
     // Localhost URLs
+    'http://localhost:420',
     'http://localhost:3000',
     'http://localhost:3001',
+    'http://127.0.0.1:420',
     'http://127.0.0.1:3000',
     'http://127.0.0.1:3001',
     
     // Production URLs (VNC machine)
+    'http://192.168.92.34:420',
     'http://192.168.92.34:3000',
     'http://192.168.92.34',
+    'http://192.168.122.1:420',
     'http://192.168.122.1:3000',
     'http://192.168.122.1',
     
     // Additional local network URLs
-    'http://192.168.1.100:3000',
-    'http://192.168.1.101:3000',
-    'http://192.168.0.100:3000',
-    'http://192.168.0.101:3000'
+    'http://192.168.1.100:420',
+    'http://192.168.1.101:420',
+    'http://192.168.0.100:420',
+    'http://192.168.0.101:420'
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],

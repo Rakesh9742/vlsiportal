@@ -5,8 +5,10 @@
   "main": "index.js",
   "scripts": {
     "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "dev-windows": "start-dev.bat",
+    "dev-unix": "./start-dev.sh",
     "server": "cd backend && npm run dev",
-    "client": "cd frontend && npm start",
+    "client": "cd frontend && npm run dev",
     "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
     "dev-localhost": "echo 'Using localhost configuration' && npm run dev",
     "dev-production": "echo 'Switching to production configuration...' && copy frontend\\.env.production frontend\\.env && npm run dev",

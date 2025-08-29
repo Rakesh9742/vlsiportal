@@ -50,8 +50,8 @@ print_status "Installing PM2 for process management..."
 sudo npm install -g pm2
 
 print_status "Setting up firewall..."
-sudo firewall-cmd --permanent --add-port=3000/tcp
-sudo firewall-cmd --permanent --add-port=5000/tcp
+sudo firewall-cmd --permanent --add-port=420/tcp
+sudo firewall-cmd --permanent --add-port=520/tcp
 sudo firewall-cmd --reload
 
 print_status "Creating application directory..."
@@ -91,14 +91,14 @@ module.exports = {
       max_memory_restart: '1G',
       env: {
         NODE_ENV: 'production',
-        PORT: 5000
+        PORT: 520
       }
     },
     {
       name: 'vlsi-frontend',
       script: 'serve',
       cwd: './frontend',
-      args: '-s build -l 3000',
+      args: '-s build -l 420',
       instances: 1,
       autorestart: true,
       watch: false,
@@ -156,9 +156,9 @@ echo "3. Import database schema: mysql -u root -p vlsi_portal < backend/config/d
 echo "4. Start the application: ./start-vlsi.sh"
 echo ""
 echo "🌐 Access URLs:"
-echo "   Frontend: http://192.168.92.34:3000"
-echo "   Backend API: http://192.168.92.34:5000"
-echo "   Health Check: http://192.168.92.34:5000/api/health"
+echo "   Frontend: http://192.168.92.34:420"
+echo "   Backend API: http://192.168.92.34:520"
+echo "   Health Check: http://192.168.92.34:520/api/health"
 echo ""
 echo "🔧 Management Commands:"
 echo "   View logs: pm2 logs"
