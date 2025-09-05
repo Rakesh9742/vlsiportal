@@ -4,6 +4,7 @@
   "description": "VLSI Portal for Students and Teachers",
   "main": "index.js",
   "scripts": {
+    "start": "npm run dev",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "dev-windows": "start-dev.bat",
     "dev-unix": "./start-dev.sh",
