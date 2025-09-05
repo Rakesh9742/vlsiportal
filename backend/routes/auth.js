@@ -179,6 +179,61 @@ router.get('/expert-reviewers/domain/:domainName', auth, checkRole(['admin']), a
   }
 });
 
+// Professional Registration
+router.post('/register-professional', [
+  body('email').isEmail().withMessage('Valid email is required'),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('full_name').notEmpty().withMessage('Full name is required'),
+  body('domain_id').isInt().withMessage('Domain is required')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { email, password, full_name, domain_id } = req.body;
+    const username = email; // Use email as username
+
+    // Check if user already exists
+    const [existingUsers] = await db.execute(
+      'SELECT id FROM users WHERE username = ?',
+      [username]
+    );
+
+    if (existingUsers.length > 0) {
+      return res.status(400).json({ message: 'Username already exists' });
+    }
+
+    // Check if domain exists
+    const [domains] = await db.execute(
+      'SELECT id FROM domains WHERE id = ?',
+      [domain_id]
+    );
+
+    if (domains.length === 0) {
+      return res.status(400).json({ message: 'Invalid domain selected' });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Insert new professional
+    const [result] = await db.execute(
+      'INSERT INTO users (username, password, role, full_name, domain_id) VALUES (?, ?, ?, ?, ?)',
+      [username, hashedPassword, 'professional', full_name, domain_id]
+    );
+
+    res.status(201).json({
+      message: 'Professional registered successfully',
+      userId: result.insertId
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Admin: Create Admin User
 router.post('/create-admin', auth, checkRole(['admin']), [
   body('username').isLength({ min: 3 }).withMessage('Username must be at least 3 characters'),
@@ -212,9 +267,9 @@ router.post('/create-admin', auth, checkRole(['admin']), [
       [username, hashedPassword, 'admin', full_name, null]
     );
 
-    res.status(201).json({ 
+    res.status(201).json({
       message: 'Admin user created successfully',
-      userId: result.insertId 
+      userId: result.insertId
     });
   } catch (error) {
     console.error(error);
@@ -338,4 +393,44 @@ router.get('/me', auth, async (req, res) => {
   }
 });
 
-module.exports = router; 
+// Get assignees (only admin and expert reviewer users) for query assignment
+router.get('/assignees', auth, async (req, res) => {
+  try {
+    const [assignees] = await db.execute(
+      `SELECT u.id, u.username, u.full_name, u.role, d.name as domain_name
+       FROM users u
+       LEFT JOIN domains d ON u.domain_id = d.id
+       WHERE u.role IN ('admin', 'expert_reviewer')
+       ORDER BY u.role DESC, u.full_name ASC`
+    );
+
+    res.json({ assignees });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get assignees filtered by domain (only admin users)
+router.get('/assignees/domain/:domain', auth, async (req, res) => {
+  try {
+    const domain = decodeURIComponent(req.params.domain);
+    
+    const [assignees] = await db.execute(
+      `SELECT u.id, u.username, u.full_name, u.role, d.name as domain_name
+       FROM users u
+       LEFT JOIN domains d ON u.domain_id = d.id
+       WHERE u.role IN ('admin', 'expert_reviewer')
+         AND (d.name = ? OR u.role = 'admin')
+       ORDER BY u.role DESC, u.full_name ASC`,
+      [domain]
+    );
+
+    res.json({ assignees });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+module.exports = router;

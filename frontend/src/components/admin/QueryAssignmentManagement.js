@@ -68,7 +68,6 @@ const QueryAssignmentManagement = () => {
       const assigneesRes = await axios.get('/auth/assignees');
       setReviewers(assigneesRes.data.assignees);
     } catch (error) {
-      console.error('Error fetching data:', error);
       setError('Failed to load data');
     } finally {
       setLoading(false);
@@ -93,7 +92,6 @@ const QueryAssignmentManagement = () => {
         setReviewers(assigneesRes.data.assignees);
       }
     } catch (error) {
-      console.error('Error fetching domain assignees:', error);
       // Fallback to all assignees
       const assigneesRes = await axios.get('/auth/assignees');
       setReviewers(assigneesRes.data.assignees);
@@ -108,7 +106,12 @@ const QueryAssignmentManagement = () => {
     setSuccess('');
 
     try {
-      await axios.post(`/admin/queries/${selectedQuery.id}/assign`, assignmentData);
+      // Ensure expert_reviewer_id is sent as an integer
+      const dataToSend = {
+        ...assignmentData,
+        expert_reviewer_id: parseInt(assignmentData.expert_reviewer_id, 10)
+      };
+      await axios.post(`/admin/queries/${selectedQuery.id}/assign`, dataToSend);
       setSuccess('Query assigned successfully!');
       setShowAssignmentModal(false);
       setSelectedQuery(null);
@@ -121,7 +124,7 @@ const QueryAssignmentManagement = () => {
   const handleReassignQuery = async (queryId, reviewerId, notes) => {
     try {
       await axios.put(`/admin/queries/${queryId}/reassign`, {
-        expert_reviewer_id: reviewerId,
+        expert_reviewer_id: parseInt(reviewerId, 10),
         notes: notes
       });
       setSuccess('Query reassigned successfully!');
@@ -273,6 +276,7 @@ const QueryAssignmentManagement = () => {
                     <div className="card-header">
                       <div className="query-title">
                         <h4>{query.title}</h4>
+                        <div className="query-id">ID: {query.custom_query_id || query.id}</div>
                         <div className="query-meta">
                           <span className="meta-item">
                             <FaUser />
@@ -351,6 +355,7 @@ const QueryAssignmentManagement = () => {
                     <div className="card-header">
                       <div className="query-title">
                         <h4>{query.title}</h4>
+                        <div className="query-id">ID: {query.custom_query_id || query.id}</div>
                         <div className="query-meta">
                           <span className="meta-item">
                             <FaUser />
@@ -453,7 +458,6 @@ const QueryAssignmentManagement = () => {
                               const allAssigneesRes = await axios.get('/auth/assignees');
                             setReviewers(allAssigneesRes.data.assignees);
                             } catch (error) {
-                              console.error('Error fetching all reviewers:', error);
                             }
                           }}
                           className="btn-link"
@@ -480,7 +484,7 @@ const QueryAssignmentManagement = () => {
                         {reviewers.length > 0 ? (
                            reviewers.map(reviewer => (
                              <SelectItem key={reviewer.id} value={reviewer.id}>
-                               {reviewer.full_name} ({reviewer.domain_name})
+                               {reviewer.full_name}
                              </SelectItem>
                            ))
                          ) : (
@@ -501,7 +505,6 @@ const QueryAssignmentManagement = () => {
                             const allAssigneesRes = await axios.get('/auth/assignees');
                             setReviewers(allAssigneesRes.data.assignees);
                           } catch (error) {
-                            console.error('Error fetching all reviewers:', error);
                           }
                         }}
                         className="btn-link"

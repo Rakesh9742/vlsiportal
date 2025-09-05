@@ -44,7 +44,6 @@ const Dashboard = () => {
       // Get recent queries (last 5)
       setRecentQueries(queries.slice(0, 5));
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
     }
@@ -178,6 +177,7 @@ const Dashboard = () => {
                     {getStatusIcon(query.status)}
                     <div>
                       <h4 className="query-title">{query.title}</h4>
+                      <div className="query-id">ID: {query.custom_query_id || query.id}</div>
                       <div className="query-meta">
                         <span>By: {query.student_name}</span>
                         <span>Status: {query.status}</span>

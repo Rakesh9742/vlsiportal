@@ -38,8 +38,41 @@ const Login = ({ onLogin }) => {
 
   return (
     <div className="auth-container">
+      {/* Full Page 3D Background */}
+      <div className="full-page-3d-bg">
+        <div className="bg-cube-3d"></div>
+        <div className="bg-cube-3d"></div>
+        <div className="bg-cube-3d"></div>
+        <div className="bg-cube-3d"></div>
+        <div className="bg-cube-3d"></div>
+        <div className="bg-cube-3d"></div>
+        <div className="bg-sphere-3d"></div>
+        <div className="bg-sphere-3d"></div>
+        <div className="bg-sphere-3d"></div>
+        <div className="bg-sphere-3d"></div>
+        <div className="bg-sphere-3d"></div>
+        <div className="bg-sphere-3d"></div>
+        <div className="bg-pyramid-3d"></div>
+        <div className="bg-pyramid-3d"></div>
+        <div className="bg-pyramid-3d"></div>
+        <div className="bg-pyramid-3d"></div>
+      </div>
+      
       <div className="auth-layout admin-login">
-        {/* Centered Login Form */}
+        {/* Left Side - Website Name */}
+        <div className="website-section">
+          <div className="website-name">
+            <img src="/logo.png" alt="VLSI Portal Logo" className="website-logo" />
+            <h1 className="website-title">VLSI Portal</h1>
+            <p className="website-subtitle">Advanced Learning Platform</p>
+            <p className="website-description">
+              Empowering students and professionals with cutting-edge VLSI design tools, 
+              comprehensive learning resources, and expert guidance for semiconductor innovation.
+            </p>
+          </div>
+        </div>
+        
+        {/* Right Side - Login Form */}
         <div className="form-section">
           <div className="auth-card">
             <h2 className="auth-title">Admin Portal</h2>

@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# VLSI Portal Deployment Script for CentOS Linux 8 VNC Machine
-# IP: 192.168.92.34
+# VLSI Portal Deployment Script for AWS Server
+# IP: 3.6.88.118
 
 echo "🚀 Starting VLSI Portal Deployment on CentOS Linux 8..."
-echo "📍 Target IP: 192.168.92.34"
+echo "📍 Target IP: 3.6.88.118"
 
 # Colors for output
 RED='\033[0;31m'
@@ -50,7 +50,7 @@ print_status "Installing PM2 for process management..."
 sudo npm install -g pm2
 
 print_status "Setting up firewall..."
-sudo firewall-cmd --permanent --add-port=420/tcp
+sudo firewall-cmd --permanent --add-port=3001/tcp
 sudo firewall-cmd --permanent --add-port=3000/tcp
 sudo firewall-cmd --reload
 
@@ -98,7 +98,7 @@ module.exports = {
       name: 'vlsi-frontend',
       script: 'serve',
       cwd: './frontend',
-      args: '-s build -l 420',
+      args: '-s build -l 3001',
       instances: 1,
       autorestart: true,
       watch: false,
@@ -156,9 +156,9 @@ echo "3. Import database schema: mysql -u root -p vlsi_portal < backend/config/d
 echo "4. Start the application: ./start-vlsi.sh"
 echo ""
 echo "🌐 Access URLs:"
-echo "   Frontend: http://192.168.92.34:420"
-echo "   Backend API: http://192.168.92.34:3000"
-echo "   Health Check: http://192.168.92.34:3000/api/health"
+echo "   Frontend: http://3.6.88.118:3001"
+echo "   Backend API: http://3.6.88.118:3000"
+echo "   Health Check: http://3.6.88.118:3000/api/health"
 echo ""
 echo "🔧 Management Commands:"
 echo "   View logs: pm2 logs"

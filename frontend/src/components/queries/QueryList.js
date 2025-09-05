@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
-import { FaPlus, FaSearch, FaEdit, FaEye, FaCalendar, FaUser, FaDownload } from 'react-icons/fa';
+import { FaPlus, FaSearch, FaEdit, FaEye, FaCalendar, FaUser, FaDownload, FaQuestionCircle, FaCheckCircle } from 'react-icons/fa';
 import './Queries.css';
 
 const QueryList = () => {
   const { user } = useAuth();
   const [queries, setQueries] = useState([]);
+  const [resolvedQueries, setResolvedQueries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -15,6 +16,8 @@ const QueryList = () => {
   const [domainFilter, setDomainFilter] = useState('all');
   const [domains, setDomains] = useState([]);
   const [exporting, setExporting] = useState(false);
+  const [activeTab, setActiveTab] = useState('my-queries');
+  const [resolvedLoading, setResolvedLoading] = useState(false);
 
   useEffect(() => {
     fetchQueries();
@@ -22,6 +25,12 @@ const QueryList = () => {
       fetchDomains();
     }
   }, [user?.role]);
+
+  useEffect(() => {
+    if (activeTab === 'resolved-queries' && user?.role === 'student') {
+      fetchResolvedQueries();
+    }
+  }, [activeTab, user?.role]);
 
   const fetchQueries = async () => {
     try {
@@ -34,20 +43,37 @@ const QueryList = () => {
     }
   };
 
+  const fetchResolvedQueries = async () => {
+    try {
+      setResolvedLoading(true);
+      const response = await axios.get('/queries/resolved-domain');
+      setResolvedQueries(response.data.queries || []);
+    } catch (error) {
+      setError('Failed to fetch resolved queries');
+    } finally {
+      setResolvedLoading(false);
+    }
+  };
+
   const fetchDomains = async () => {
     try {
       const response = await axios.get('/auth/domains');
       setDomains(response.data.domains);
     } catch (error) {
-      console.error('Failed to fetch domains:', error);
     }
   };
 
-  const filteredQueries = queries.filter(query => {
+  const getCurrentQueries = () => {
+    return activeTab === 'resolved-queries' ? resolvedQueries : queries;
+  };
+
+  const filteredQueries = getCurrentQueries().filter(query => {
     const matchesSearch = query.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          query.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (query.category && query.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                         (query.technology && query.technology.toLowerCase().includes(searchTerm.toLowerCase()));
+                         (query.technology && query.technology.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         (query.custom_query_id && query.custom_query_id.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         query.id.toString().includes(searchTerm);
     
     const matchesStatus = statusFilter === 'all' || query.status === statusFilter;
     
@@ -57,13 +83,21 @@ const QueryList = () => {
   });
 
   const getStatusCount = (status) => {
-    return queries.filter(q => q.status === status).length;
+    const currentQueries = getCurrentQueries();
+    return currentQueries.filter(q => q.status === status).length;
   };
+
+  const currentQueries = getCurrentQueries();
+  const totalQueries = currentQueries.length;
+  const openQueries = currentQueries.filter(q => q.status === 'open').length;
+  const inProgressQueries = currentQueries.filter(q => q.status === 'in_progress').length;
+  const resolvedQueriesCount = currentQueries.filter(q => q.status === 'resolved').length;
 
   const exportToCSV = async () => {
     setExporting(true);
     try {
-      const response = await axios.get('/queries/export', {
+      const endpoint = activeTab === 'resolved-queries' ? '/queries/export-resolved-domain' : '/queries/export';
+      const response = await axios.get(endpoint, {
         responseType: 'blob'
       });
       
@@ -71,13 +105,16 @@ const QueryList = () => {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `resolved_queries_${new Date().toISOString().split('T')[0]}.zip`);
+      const filename = activeTab === 'resolved-queries' ? 
+        `resolved_queries_${new Date().toISOString().split('T')[0]}.zip` :
+        `queries_${new Date().toISOString().split('T')[0]}.zip`;
+      link.setAttribute('download', filename);
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      setError('Failed to export resolved queries');
+      setError('Failed to export queries');
     } finally {
       setExporting(false);
     }
@@ -103,10 +140,12 @@ const QueryList = () => {
     }
   };
 
-  if (loading) {
+  if (loading || (activeTab === 'resolved-queries' && resolvedLoading)) {
     return (
       <div className="queries-page">
-        <div className="loading">Loading queries...</div>
+        <div className="loading">
+          Loading {activeTab === 'resolved-queries' ? 'resolved queries' : 'queries'}...
+        </div>
       </div>
     );
   }
@@ -119,7 +158,7 @@ const QueryList = () => {
       <p>{user?.role === 'expert_reviewer' ? 'Review and respond to student queries' : user?.role === 'admin' ? 'Manage and respond to all student queries' : 'Manage and track your VLSI design queries'}</p>
         </div>
         <div className="header-actions">
-          {(user?.role === 'expert_reviewer' || user?.role === 'admin') && (
+          {user?.role === 'admin' && (
             <button 
               onClick={exportToCSV} 
               className="btn btn-secondary"
@@ -138,10 +177,9 @@ const QueryList = () => {
               )}
             </button>
           )}
-          {(user?.role === 'student' || user?.role === 'professional') && (
+          {(user?.role === 'student' || user?.role === 'professional') && activeTab === 'my-queries' && (
             <Link to="/queries/new" className="btn btn-primary">
-              <FaPlus />
-              New Query
+              <FaPlus /> Create New Query
             </Link>
           )}
         </div>
@@ -149,30 +187,56 @@ const QueryList = () => {
 
       {error && <div className="error">{error}</div>}
 
-      <div className="queries-stats">
-        <div className="stat-card">
-          <h3>Total</h3>
-          <span className="stat-number">{queries.length}</span>
+      {user?.role === 'student' && (
+        <div className="query-tabs">
+          <button 
+            className={`tab-button ${activeTab === 'my-queries' ? 'active' : ''}`}
+            onClick={() => setActiveTab('my-queries')}
+          >
+            <FaQuestionCircle /> My Queries
+          </button>
+          <button 
+            className={`tab-button ${activeTab === 'resolved-queries' ? 'active' : ''}`}
+            onClick={() => setActiveTab('resolved-queries')}
+          >
+            <FaCheckCircle /> Resolved Queries
+          </button>
         </div>
-        <div className="stat-card">
-          <h3>Open</h3>
-          <span className="stat-number">{getStatusCount('open')}</span>
+      )}
+
+      {activeTab !== 'resolved-queries' && (
+        <div className="queries-stats">
+          <div className="stat-card">
+            <h3>Total</h3>
+            <span className="stat-number">{totalQueries}</span>
+          </div>
+          <div className="stat-card">
+            <h3>Open</h3>
+            <span className="stat-number">{openQueries}</span>
+          </div>
+          <div className="stat-card">
+            <h3>In Progress</h3>
+            <span className="stat-number">{inProgressQueries}</span>
+          </div>
+          <div className="stat-card">
+            <h3>Resolved</h3>
+            <span className="stat-number">{resolvedQueriesCount}</span>
+          </div>
+          {(user?.role === 'expert_reviewer' || user?.role === 'admin') && domainFilter !== 'all' && (
+            <div className="stat-card domain-filtered">
+              <h3>Domain Filtered</h3>
+              <span className="stat-number">{filteredQueries.length}</span>
+            </div>
+          )}
         </div>
-        <div className="stat-card">
-          <h3>In Progress</h3>
-          <span className="stat-number">{getStatusCount('in_progress')}</span>
-        </div>
-        <div className="stat-card">
-          <h3>Resolved</h3>
-          <span className="stat-number">{getStatusCount('resolved')}</span>
-        </div>
-        {(user?.role === 'expert_reviewer' || user?.role === 'admin') && domainFilter !== 'all' && (
-          <div className="stat-card domain-filtered">
-            <h3>Domain Filtered</h3>
-            <span className="stat-number">{filteredQueries.length}</span>
+      )}
+
+      {activeTab === 'resolved-queries' && (
+          <div className="resolved-queries-header">
+            <h3>Resolved Queries from Your Domain</h3>
+            <p>Learn from resolved queries submitted by other students in your domain.</p>
           </div>
         )}
-      </div>
 
       <div className="queries-filters">
         <div className="search-box">
@@ -189,17 +253,18 @@ const QueryList = () => {
         <div className="filter-controls">
           <div className="filter-group">
             <label htmlFor="statusFilter">Status:</label>
-            <select
-              id="statusFilter"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="filter-select"
-            >
-              <option value="all">All Status</option>
-              <option value="open">Open</option>
-              <option value="in_progress">In Progress</option>
-              <option value="resolved">Resolved</option>
-            </select>
+            {activeTab !== 'resolved-queries' && (
+              <select 
+                value={statusFilter} 
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="filter-select"
+              >
+                <option value="all">All Status</option>
+                <option value="open">Open</option>
+                <option value="in_progress">In Progress</option>
+                <option value="resolved">Resolved</option>
+              </select>
+            )}
           </div>
           
           {(user?.role === 'expert_reviewer' || user?.role === 'admin') && (
@@ -255,6 +320,9 @@ const QueryList = () => {
                   <Link to={`/queries/${query.id}`} className="query-link">
                     {query.title}
                   </Link>
+                  {activeTab !== 'resolved-queries' && (
+                    <div className="query-id">ID: {query.custom_query_id || query.id}</div>
+                  )}
                 </div>
                 
                 <div className="query-info">
@@ -289,7 +357,7 @@ const QueryList = () => {
                         <FaEdit />
                         Edit
                       </Link>
-                      {query.status === 'resolved' && (
+                      {user?.role === 'admin' && query.status === 'resolved' && (
                         <button 
                           onClick={() => exportSingleQuery(query.id, query.title)}
                           className="btn btn-secondary export-btn"

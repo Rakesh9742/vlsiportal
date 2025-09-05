@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import { FaArrowLeft, FaReply, FaCheck, FaTimes, FaExclamationTriangle, FaTools, FaLayerGroup, FaTag, FaUser, FaCalendar, FaGraduationCap, FaCog, FaComments, FaImage, FaDownload, FaTrash } from 'react-icons/fa';
@@ -8,6 +8,7 @@ import './Queries.css';
 const QueryDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const [query, setQuery] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -20,6 +21,18 @@ const QueryDetail = () => {
   useEffect(() => {
     fetchQuery();
   }, [id]);
+
+  const handleBackNavigation = () => {
+    // Check if user came from admin manage queries page
+    const referrer = location.state?.from;
+    if (referrer && referrer.includes('/admin/queries')) {
+      navigate('/admin/queries');
+    } else if (user?.role === 'admin' && document.referrer.includes('/admin/queries')) {
+      navigate('/admin/queries');
+    } else {
+      navigate('/queries');
+    }
+  };
 
   const fetchQuery = async () => {
     try {
@@ -119,7 +132,7 @@ const QueryDetail = () => {
     return (
       <div className="query-detail-page">
         <div className="error">{error}</div>
-        <button onClick={() => navigate('/queries')} className="btn btn-primary">
+        <button onClick={handleBackNavigation} className="btn btn-primary">
           Back to Queries
         </button>
       </div>
@@ -130,7 +143,7 @@ const QueryDetail = () => {
     return (
       <div className="query-detail-page">
         <div className="error">Query not found</div>
-        <button onClick={() => navigate('/queries')} className="btn btn-primary">
+        <button onClick={handleBackNavigation} className="btn btn-primary">
           Back to Queries
         </button>
       </div>
@@ -141,7 +154,7 @@ const QueryDetail = () => {
     <div className="query-detail-page">
       <div className="page-header">
         <button 
-          onClick={() => navigate('/queries')} 
+          onClick={handleBackNavigation} 
           className="back-btn"
         >
           <FaArrowLeft /> Back to Queries
@@ -368,7 +381,7 @@ const QueryDetail = () => {
                     </span>
                   </div>
                   <div className="response-content">
-                    {response.answer}
+                    {response.content}
                   </div>
                 </div>
               ))}
@@ -476,4 +489,4 @@ const QueryDetail = () => {
   );
 };
 
-export default QueryDetail; 
+export default QueryDetail;

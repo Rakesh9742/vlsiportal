@@ -40,7 +40,6 @@ const ExpertReviewerManagement = () => {
       const response = await axios.get('/auth/expert-reviewers');
       setReviewers(response.data.reviewers);
     } catch (error) {
-      console.error('Error fetching reviewers:', error);
       setError('Failed to load expert reviewers');
     } finally {
       setLoading(false);
@@ -52,7 +51,6 @@ const ExpertReviewerManagement = () => {
       const response = await axios.get('/auth/domains');
       setDomains(response.data.domains);
     } catch (error) {
-      console.error('Error fetching domains:', error);
     }
   };
 
@@ -62,7 +60,6 @@ const ExpertReviewerManagement = () => {
       setWorkload(response.data.workload);
       setShowWorkload(true);
     } catch (error) {
-      console.error('Error fetching workload:', error);
       setError('Failed to load workload data');
     }
   };
@@ -258,28 +255,37 @@ const ExpertReviewerManagement = () => {
 
       <div className="reviewers-list">
         <h3>Expert Reviewers ({reviewers.length})</h3>
-        <div className="reviewers-grid">
-          {reviewers.map(reviewer => (
-            <div key={reviewer.id} className="reviewer-card">
-              <div className="reviewer-header">
-                <h4>{reviewer.full_name}</h4>
-                <div className="reviewer-actions">
-                  <button 
-                    onClick={() => handleDeleteReviewer(reviewer.id)}
-                    className="action-btn delete"
-                    title="Delete Reviewer"
-                  >
-                    <FaTrash />
-                  </button>
-                </div>
-              </div>
-              <div className="reviewer-details">
-                <p><strong>Username:</strong> {reviewer.username}</p>
-                <p><strong>Domain:</strong> {reviewer.domain_name || 'Not assigned'}</p>
-                <p><strong>Created:</strong> {new Date(reviewer.created_at).toLocaleDateString()}</p>
-              </div>
-            </div>
-          ))}
+        <div className="reviewers-table-container">
+          <table className="reviewers-table">
+            <thead>
+              <tr>
+                <th>Full Name</th>
+                <th>Username</th>
+                <th>Domain</th>
+                <th>Created Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {reviewers.map(reviewer => (
+                <tr key={reviewer.id}>
+                  <td className="name-cell">{reviewer.full_name}</td>
+                  <td className="username-cell">{reviewer.username}</td>
+                  <td className="domain-cell">{reviewer.domain_name || 'Not assigned'}</td>
+                  <td className="date-cell">{new Date(reviewer.created_at).toLocaleDateString()}</td>
+                  <td className="actions-cell">
+                    <button 
+                      onClick={() => handleDeleteReviewer(reviewer.id)}
+                      className="action-btn delete"
+                      title="Delete Reviewer"
+                    >
+                      <FaTrash />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
         
         {reviewers.length === 0 && (

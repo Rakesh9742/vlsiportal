@@ -9,8 +9,6 @@ const adminRoutes = require('./routes/admin');
 
 dotenv.config();
 
-console.log('🚀 Starting VLSI Portal Backend...');
-console.log(`📡 Server will run on port: ${process.env.PORT || 3000}`);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -24,13 +22,20 @@ const corsOptions = {
     'http://127.0.0.1:3001',
     'http://127.0.0.1:3000',
     
-    // Production URLs (VNC machine)
+    // Production URLs (AWS server)
+    'http://3.6.88.118:3001',
+    'http://3.6.88.118:3000',
+    'http://3.6.88.118',
+    
+    // Legacy VNC machine URLs (for backward compatibility)
     'http://192.168.92.34:3001',
     'http://192.168.92.34:3000',
     'http://192.168.92.34',
+    'http://192.168.92.34:420',
     'http://192.168.122.1:3001',
     'http://192.168.122.1:3000',
     'http://192.168.122.1',
+    'http://192.168.122.1:420',
     
     // Additional local network URLs
     'http://192.168.1.100:3001',
@@ -64,18 +69,4 @@ app.get('/api/health', (req, res) => {
 
 // Listen on all interfaces for both localhost and production hosting
 app.listen(PORT, '0.0.0.0', () => {
-  console.log('🎉 Server started successfully!');
-  console.log('🌐 Available URLs:');
-  console.log(`   Backend API: http://localhost:${PORT}`);
-  console.log(`   Frontend: http://localhost:3001`);
-  console.log(`   Production Backend: http://192.168.92.34:${PORT}`);
-  console.log(`   Production Frontend: http://192.168.92.34:3001`);
-  console.log(`   Health Check: http://localhost:${PORT}/api/health`);
-  console.log(`   Uploads: http://localhost:${PORT}/uploads`);
-  console.log('📝 API Endpoints:');
-  console.log('   - POST /api/auth/register - Student registration');
-  console.log('   - POST /api/auth/login - User login');
-  console.log('   - GET /api/queries - Get all queries');
-  console.log('   - POST /api/queries - Create new query with images');
-  console.log('   - GET /api/users/profile - Get user profile');
 }); 

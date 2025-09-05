@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
-import { FaArrowLeft, FaSave, FaTimes, FaUser, FaTag, FaLayerGroup, FaCog, FaTools } from 'react-icons/fa';
+import { FaArrowLeft, FaSave, FaTimes, FaUser, FaTag, FaLayerGroup, FaCog, FaTools, FaGraduationCap, FaComments } from 'react-icons/fa';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '../ui/Select';
 import './Queries.css';
 
 const EditQuery = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const [query, setQuery] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -50,12 +51,12 @@ const EditQuery = () => {
     fetchOptions();
   }, [id, user]);
 
-  // Load stages when student domain is available
+  // Load stages when student domain and domains are available
   useEffect(() => {
-    if (studentDomain) {
+    if (studentDomain && domains.length > 0) {
       loadStagesForDomain(studentDomain);
     }
-  }, [studentDomain]);
+  }, [studentDomain, domains]);
 
   // Load tools when student domain and domains list are available
   useEffect(() => {
@@ -77,7 +78,7 @@ const EditQuery = () => {
     if (query && studentDomain && query.stage_id) {
       loadIssueCategories(query.stage_id);
     }
-  }, [query, studentDomain, originalIssueCategoryName]);
+  }, [query, studentDomain]);
 
   const fetchQuery = async () => {
     try {
@@ -86,7 +87,7 @@ const EditQuery = () => {
       setQuery(queryData);
       
       // Populate form data
-      setFormData({
+      const formDataToSet = {
         title: queryData.title || '',
         description: queryData.description || '',
         tool_id: queryData.tool_id || '',
@@ -96,7 +97,8 @@ const EditQuery = () => {
         custom_issue_category: queryData.custom_issue_category || '',
         debug_steps: queryData.debug_steps || '',
         resolution: queryData.resolution || ''
-      });
+      };
+      setFormData(formDataToSet);
       
       // Store the student's domain and original issue category name for validation
       setStudentDomain(queryData.student_domain);
@@ -124,7 +126,6 @@ const EditQuery = () => {
       const domainsRes = await axios.get('/users/domains');
       setDomains(domainsRes.data.domains);
     } catch (error) {
-      console.error('Failed to load options:', error);
     }
   };
 
@@ -140,28 +141,20 @@ const EditQuery = () => {
         setTools(toolsRes.data.tools);
       }
     } catch (error) {
-      console.error('Failed to load tools for domain:', error);
     }
   };
 
   // Load stages based on student's domain
   const loadStagesForDomain = async (domain) => {
     try {
-      if (domain === 'Physical Design') {
-        const stagesRes = await axios.get('/queries/pd-stages');
+      // Find the domain_id for the student's domain
+      const domainObj = domains.find(d => d.name === domain);
+      if (domainObj) {
+        const stagesRes = await axios.get(`/queries/pd-stages?domainId=${domainObj.id}`);
         setStages(stagesRes.data.stages);
       } else {
-        // For other domains, use the domain config
-        const domainConfigRes = await axios.get(`/queries/domain-config/${domain}`);
-        const domainStages = domainConfigRes.data.stages.map((stage, index) => ({
-          id: index + 1,
-          name: stage,
-          description: stage
-        }));
-        setStages(domainStages);
       }
     } catch (error) {
-      console.error('Failed to load stages for domain:', error);
     }
   };
 
@@ -169,13 +162,8 @@ const EditQuery = () => {
     const { name, value } = e.target;
     
     if (name === 'issue_category_id') {
-      console.log('📝 ISSUE CATEGORY CHANGED:', {
-        newValue: value,
-        previousValue: formData.issue_category_id,
-        categoryName: issueCategories.find(cat => cat.id == value)?.name || 'Custom/Others'
-      });
+    } else if (name === 'tool_id') {
     } else {
-      console.log('Form field changed:', name, value);
     }
     
     setFormData(prev => ({
@@ -185,7 +173,6 @@ const EditQuery = () => {
     
     // If stage is selected, load corresponding issue categories
     if (name === 'stage_id' && value) {
-      console.log('Stage selected, loading categories for stage:', value);
       loadIssueCategories(value);
       // Reset issue category when stage changes
       setFormData(prev => ({
@@ -198,7 +185,7 @@ const EditQuery = () => {
     
     // If issue category is "Others", show custom input (but not for Analog Layout)
     if (name === 'issue_category_id') {
-      if (value === 'others' && studentDomain !== 'Analog Layout') {
+      if (value === 'others') {
         setShowCustomCategory(true);
         setFormData(prev => ({
           ...prev,
@@ -216,21 +203,19 @@ const EditQuery = () => {
 
   const loadIssueCategories = async (stageId) => {
     try {
-      console.log('🔄 LOADING ISSUE CATEGORIES - Stage:', stageId, 'Domain:', studentDomain);
       
       // Don't proceed if studentDomain is not set yet
       if (!studentDomain) {
-        console.log('❌ Student domain not set yet, skipping issue categories load');
         return;
       }
       
       if (studentDomain === 'Physical Design') {
         const response = await axios.get(`/queries/pd-issue-categories/${stageId}`);
-        console.log('✅ LOADED PD CATEGORIES:', response.data.categories.map(cat => ({id: cat.id, name: cat.name})));
         setIssueCategories(response.data.categories);
         
         // If we're editing and have an existing issue_category_id, check if it's still valid
-        if (query && query.issue_category_id && !query.custom_issue_category) {
+        // Only reset if this is the initial load and category truly doesn't exist
+        if (query && query.issue_category_id && !query.custom_issue_category && !formData.issue_category_id) {
           const categoryExists = response.data.categories.find(cat => cat.id == query.issue_category_id);
           if (!categoryExists) {
             // If the category doesn't exist anymore, reset it
@@ -243,36 +228,20 @@ const EditQuery = () => {
       } else {
         // For other domains, get categories from database using actual IDs
         const response = await axios.get(`/queries/domain-issue-categories/${stageId}`);
-        console.log('✅ LOADED DOMAIN CATEGORIES:', response.data.categories.map(cat => ({id: cat.id, name: cat.name})));
         setIssueCategories(response.data.categories);
           
         // If we're editing and have an existing issue_category_id, check if it's still valid
-        if (query && query.issue_category_id && !query.custom_issue_category) {
-          console.log('🔍 CHECKING EXISTING ISSUE CATEGORY:', {
-            originalId: query.issue_category_id,
-            originalName: originalIssueCategoryName,
-            availableCategories: response.data.categories.map(cat => ({id: cat.id, name: cat.name}))
-          });
+        // Only reset if this is the initial load and category truly doesn't exist
+        if (query && query.issue_category_id && !query.custom_issue_category && !formData.issue_category_id) {
           
           // Try to find the category by ID first
           let categoryExists = response.data.categories.find(cat => cat.id == query.issue_category_id);
           
-          // If not found by ID, try to find by name (in case the original category name still exists)
-          if (!categoryExists && originalIssueCategoryName) {
-            categoryExists = response.data.categories.find(cat => cat.name === originalIssueCategoryName);
-            if (categoryExists) {
-              console.log('🔄 FOUND CATEGORY BY NAME - Updating ID from', query.issue_category_id, 'to', categoryExists.id);
-              // Update the form data to use the correct ID
-              setFormData(prev => ({
-                ...prev,
-                issue_category_id: categoryExists.id
-              }));
-            }
-          }
+          // If not found by ID, don't automatically update - let user manually select
+          // This prevents automatic form changes when categories have the same name
           
           // If still not found, reset it
           if (!categoryExists) {
-            console.log('❌ CATEGORY NOT FOUND - Resetting issue_category_id');
             setFormData(prev => ({
               ...prev,
               issue_category_id: ''
@@ -282,14 +251,14 @@ const EditQuery = () => {
       }
       
       // After loading categories, set issue_category_id to 'others' if there's a custom category
-      if (query && query.custom_issue_category) {
+      // Only do this once when initially loading, not on every category reload
+      if (query && query.custom_issue_category && !formData.issue_category_id) {
         setFormData(prev => ({
           ...prev,
           issue_category_id: 'others'
         }));
       }
     } catch (error) {
-      console.error('Error loading issue categories:', error);
       setIssueCategories([]);
     }
   };
@@ -316,17 +285,16 @@ const EditQuery = () => {
         }
       });
 
-      console.log('💾 SUBMITTING UPDATE DATA:', updateData);
       
       // Log specific issue category data being saved
       if (updateData.issue_category_id) {
         const categoryName = issueCategories.find(cat => cat.id == updateData.issue_category_id)?.name;
-        console.log('💾 SAVING ISSUE CATEGORY:', {
-          id: updateData.issue_category_id,
-          name: categoryName
-        });
       } else if (updateData.custom_issue_category) {
-        console.log('💾 SAVING CUSTOM ISSUE CATEGORY:', updateData.custom_issue_category);
+      }
+      
+      // Log specific tool data being saved
+      if (updateData.tool_id) {
+        const toolName = tools.find(tool => tool.id == updateData.tool_id)?.name;
       }
 
       await axios.put(`/queries/${id}`, updateData);
@@ -334,10 +302,14 @@ const EditQuery = () => {
       
       // Redirect after a short delay
       setTimeout(() => {
-        navigate(`/queries/${id}`);
+        const referrer = location.state?.from;
+        if (referrer && referrer.includes('/admin/queries')) {
+          navigate('/admin/queries');
+        } else {
+          navigate(`/queries/${id}`);
+        }
       }, 1500);
     } catch (error) {
-      console.error('Update error:', error.response?.data);
       setError(error.response?.data?.message || 'Failed to update query');
     } finally {
       setSaving(false);
@@ -367,7 +339,14 @@ const EditQuery = () => {
     <div className="create-query-page">
       <div className="page-header">
         <button 
-          onClick={() => navigate(`/queries/${id}`)} 
+          onClick={() => {
+            const referrer = location.state?.from;
+            if (referrer && referrer.includes('/admin/queries')) {
+              navigate('/admin/queries');
+            } else {
+              navigate(`/queries/${id}`);
+            }
+          }} 
           className="back-btn"
         >
           <FaArrowLeft /> Back to Query
@@ -477,6 +456,7 @@ const EditQuery = () => {
                         {stage.name}
                       </SelectItem>
                     ))}
+                    <SelectItem value="others">Others</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>
@@ -501,9 +481,7 @@ const EditQuery = () => {
                         {category.name}
                       </SelectItem>
                     ))}
-                    {studentDomain !== 'Analog Layout' && (
-                      <SelectItem value="others">Others</SelectItem>
-                    )}
+                    <SelectItem value="others">Others</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>
@@ -582,6 +560,44 @@ const EditQuery = () => {
           </div>
         </form>
       </div>
+
+      {/* Responses Section */}
+      {query && (
+        <div className="query-responses">
+          <div className="responses-header">
+            <h3>Expert Reviewer Responses</h3>
+          </div>
+
+          {query.responses && query.responses.length > 0 ? (
+            <div className="responses-list">
+              {query.responses.map((response, index) => (
+                <div key={response.id} className="response-item">
+                  <div className="response-header">
+                    <div className="response-author">
+                      <FaGraduationCap className="author-icon" />
+                      <span>{response.teacher_name}</span>
+                    </div>
+                    <span className="response-date">
+                      {new Date(response.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                  <div className="response-content">
+                    {response.content}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-responses">
+              <div className="empty-icon">
+                <FaComments />
+              </div>
+              <h4>No Responses Yet</h4>
+              <p>No expert reviewer responses yet. Check back later for guidance.</p>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="query-tips">
         <h3>{user?.role === 'admin' ? 'Admin Guidelines' : 'Expert Reviewer Guidelines'}</h3>

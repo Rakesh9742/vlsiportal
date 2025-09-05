@@ -27,7 +27,6 @@ const Register = () => {
         const response = await axios.get('/auth/domains');
         setDomains(response.data.domains);
       } catch (error) {
-        console.error('Failed to fetch domains:', error);
       }
     };
     fetchDomains();
@@ -71,7 +70,13 @@ const Register = () => {
         navigate('/login-student');
       }, 2000);
     } catch (error) {
-      setError(error.response?.data?.message || 'Registration failed. Please try again.');
+      if (error.response?.data?.errors) {
+        // Handle validation errors
+        const errorMessages = error.response.data.errors.map(err => err.msg).join(', ');
+        setError(`Validation errors: ${errorMessages}`);
+      } else {
+        setError(error.response?.data?.message || 'Registration failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -79,62 +84,40 @@ const Register = () => {
 
   return (
     <div className="auth-container">
-      <div className="auth-layout">
-        {/* Left Side - Enhanced Realistic Circuit Board Logo */}
-        <div className="logo-section">
-          <div className="logo-container">
-            <div className="logo-circuit">
-              <div className="circuit-board">
-                <div className="circuit-grid"></div>
-                <div className="circuit-nodes">
-                  <div className="circuit-node"></div>
-                  <div className="circuit-node"></div>
-                  <div className="circuit-node"></div>
-                  <div className="circuit-node"></div>
-                  <div className="circuit-node"></div>
-                  <div className="circuit-node"></div>
-                  <div className="circuit-node"></div>
-                  <div className="circuit-node"></div>
-                </div>
-                <div className="circuit-paths">
-                  <div className="circuit-path horizontal"></div>
-                  <div className="circuit-path vertical"></div>
-                  <div className="circuit-path diagonal"></div>
-                  <div className="circuit-path diagonal2"></div>
-                </div>
-                {/* Electronic Components */}
-                <div className="resistor"></div>
-                <div className="resistor"></div>
-                <div className="resistor"></div>
-                <div className="resistor"></div>
-                <div className="capacitor"></div>
-                <div className="capacitor"></div>
-                <div className="capacitor"></div>
-                <div className="capacitor"></div>
-                <div className="ic-chip"></div>
-                <div className="ic-chip"></div>
-                <div className="ic-chip"></div>
-                <div className="ic-chip"></div>
-                {/* Electrons */}
-                <div className="electron"></div>
-                <div className="electron"></div>
-                <div className="electron"></div>
-                <div className="electron"></div>
-                <div className="electron"></div>
-                <div className="electron"></div>
-                <div className="logo-center">
-                  <FaMicrochip className="logo-center-icon" />
-                </div>
-              </div>
-              <div className="logo-glow"></div>
-            </div>
-          </div>
-          <div className="logo-content">
-            <h1 className="logo-title">VLSI Portal</h1>
-            <p className="logo-subtitle">Advanced Learning Management System</p>
+      {/* Full Page 3D Background */}
+      <div className="full-page-3d-bg">
+        <div className="bg-cube-3d"></div>
+        <div className="bg-cube-3d"></div>
+        <div className="bg-cube-3d"></div>
+        <div className="bg-cube-3d"></div>
+        <div className="bg-cube-3d"></div>
+        <div className="bg-cube-3d"></div>
+        <div className="bg-sphere-3d"></div>
+        <div className="bg-sphere-3d"></div>
+        <div className="bg-sphere-3d"></div>
+        <div className="bg-sphere-3d"></div>
+        <div className="bg-sphere-3d"></div>
+        <div className="bg-sphere-3d"></div>
+        <div className="bg-pyramid-3d"></div>
+        <div className="bg-pyramid-3d"></div>
+        <div className="bg-pyramid-3d"></div>
+        <div className="bg-pyramid-3d"></div>
+      </div>
+      
+      <div className="auth-layout student-login">
+        {/* Left Side - Website Name */}
+        <div className="website-section">
+          <div className="website-name">
+            <img src="/logo.png" alt="VLSI Portal Logo" className="website-logo" />
+            <h1 className="website-title">VLSI Portal</h1>
+            <p className="website-subtitle">Advanced Learning Platform</p>
+            <p className="website-description">
+              Empowering students and professionals with cutting-edge VLSI design tools, 
+              comprehensive learning resources, and expert guidance for semiconductor innovation.
+            </p>
           </div>
         </div>
-
+        
         {/* Right Side - Register Form */}
         <div className="form-section">
           <div className="auth-card">

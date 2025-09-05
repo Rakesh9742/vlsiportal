@@ -294,52 +294,101 @@
   font-weight: 600;
 }
 
-.reviewers-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 20px;
-}
-
-.reviewer-card {
-  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-  padding: 20px;
+.reviewers-table-container {
+  background: white;
   border-radius: 12px;
-  border: 1px solid #dee2e6;
-  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  border: 1px solid #e0e0e0;
 }
 
-.reviewer-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+.reviewers-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
 }
 
-.reviewer-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
+.reviewers-table thead {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
 }
 
-.reviewer-header h4 {
-  color: #2c3e50;
-  margin: 0;
-  font-size: 1.2rem;
+.reviewers-table th {
+  padding: 15px 20px;
+  text-align: left;
   font-weight: 600;
+  font-size: 14px;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #5a67d8;
 }
 
-.reviewer-actions {
-  display: flex;
-  gap: 8px;
+.reviewers-table tbody tr {
+  border-bottom: 1px solid #e2e8f0;
+  transition: all 0.2s ease;
 }
 
-.reviewer-details p {
-  margin: 8px 0;
-  color: #6c757d;
-  font-size: 0.95rem;
+.reviewers-table tbody tr:hover {
+  background-color: #f7fafc;
+  transform: scale(1.001);
 }
 
-.reviewer-details strong {
+.reviewers-table tbody tr:nth-child(even) {
+  background-color: #f8f9fa;
+}
+
+.reviewers-table tbody tr:nth-child(even):hover {
+  background-color: #f1f5f9;
+}
+
+.reviewers-table td {
+  padding: 15px 20px;
+  vertical-align: middle;
+  border-right: 1px solid #e2e8f0;
+}
+
+.reviewers-table td:last-child {
+  border-right: none;
+}
+
+.name-cell {
+  font-weight: 600;
   color: #2c3e50;
+}
+
+.username-cell {
+  font-family: 'Courier New', monospace;
+  color: #4a5568;
+}
+
+.domain-cell {
+  color: #6b7280;
+}
+
+.date-cell {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.actions-cell {
+  text-align: center;
+}
+
+.actions-cell .action-btn {
+  padding: 8px 12px;
+  font-size: 12px;
+  border-radius: 6px;
+}
+
+.actions-cell .action-btn.delete {
+  background: #dc3545;
+  color: white;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.actions-cell .action-btn.delete:hover {
+  background: #c82333;
+  transform: scale(1.05);
 }
 
 .empty-state {
@@ -387,8 +436,12 @@
     grid-template-columns: 1fr;
   }
 
-  .reviewers-grid {
-    grid-template-columns: 1fr;
+  .reviewers-table-container {
+    overflow-x: auto;
+  }
+
+  .reviewers-table {
+    min-width: 600px;
   }
 
   .workload-stats {

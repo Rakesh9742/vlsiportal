@@ -46,7 +46,6 @@ const QueryManagement = () => {
       const response = await axios.get('/admin/queries');
       setQueries(response.data.queries);
     } catch (error) {
-      console.error('Error fetching queries:', error);
       setError('Failed to load queries');
     } finally {
       setLoading(false);
@@ -58,7 +57,6 @@ const QueryManagement = () => {
       const response = await axios.get('/auth/domains');
       setDomains(response.data.domains);
     } catch (error) {
-      console.error('Error fetching domains:', error);
     }
   };
 
@@ -71,7 +69,6 @@ const QueryManagement = () => {
       const response = await axios.get(url);
       setReviewers(response.data.assignees);
     } catch (error) {
-      console.error('Error fetching reviewers:', error);
       // Fallback to all reviewers
       if (domainName) {
         fetchReviewers();
@@ -88,7 +85,6 @@ const QueryManagement = () => {
       await axios.delete(`/admin/queries/${queryId}`);
       setQueries(queries.filter(q => q.id !== queryId));
     } catch (error) {
-      console.error('Error deleting query:', error);
       setError('Failed to delete query');
     }
   };
@@ -109,12 +105,18 @@ const QueryManagement = () => {
      e.preventDefault();
      
      try {
+       // Ensure expert_reviewer_id is sent as an integer
+       const dataToSend = {
+         ...assignmentData,
+         expert_reviewer_id: parseInt(assignmentData.expert_reviewer_id, 10)
+       };
+       
        if (selectedQuery.expert_reviewer_id) {
          // Reassign existing assignment
-         await axios.put(`/admin/queries/${selectedQuery.id}/reassign`, assignmentData);
+         await axios.put(`/admin/queries/${selectedQuery.id}/reassign`, dataToSend);
        } else {
          // Create new assignment
-         await axios.post(`/admin/queries/${selectedQuery.id}/assign`, assignmentData);
+         await axios.post(`/admin/queries/${selectedQuery.id}/assign`, dataToSend);
        }
        
        // Refresh queries
@@ -124,10 +126,9 @@ const QueryManagement = () => {
        setSelectedQuery(null);
        setAssignmentData({ expert_reviewer_id: '', notes: '' });
      } catch (error) {
-       console.error('Error assigning query:', error);
        setError('Failed to assign query');
      }
-   };
+    };
 
   const getStatusBadge = (status) => {
     const statusClasses = {
@@ -143,18 +144,14 @@ const QueryManagement = () => {
     );
   };
 
-  const getAssignmentBadge = (assigned) => {
-    return assigned ? (
-      <span className="assignment-badge assigned">ASSIGNED</span>
-    ) : (
-      <span className="assignment-badge unassigned">UNASSIGNED</span>
-    );
-  };
+
 
   const filteredQueries = queries.filter(query => {
     const matchesSearch = query.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          query.student_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         query.description.toLowerCase().includes(searchTerm.toLowerCase());
+                         query.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (query.custom_query_id && query.custom_query_id.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         query.id.toString().includes(searchTerm);
     
     const matchesStatus = statusFilter === 'all' || query.status === statusFilter;
     const matchesDomain = domainFilter === 'all' || query.student_domain === domainFilter;
@@ -257,60 +254,76 @@ const QueryManagement = () => {
           </div>
         </div>
 
-        <div className="queries-list">
-          {filteredQueries.map(query => (
-            <div key={query.id} className="query-row">
-              <div className="query-main-info">
-                <div className="query-title-section">
-                  <h4 className="query-title">{query.title}</h4>
-                  <div className="query-badges">
+        <div className="queries-table-container">
+          <table className="queries-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Student</th>
+                <th>Domain</th>
+                <th>Status</th>
+                <th>Assigned Expert</th>
+                <th>Edit</th>
+                <th>Assign</th>
+                <th>Delete</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredQueries.map(query => (
+                <tr 
+                  key={query.id} 
+                  className="query-table-row"
+                  onClick={() => navigate(`/queries/${query.id}`, { state: { from: '/admin/queries' } })}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <td className="query-id">{query.custom_query_id || query.id}</td>
+                  <td className="query-title-cell">
+                    <div className="title-content">{query.title}</div>
+                  </td>
+                  <td className="student-cell">{query.student_name}</td>
+                  <td className="domain-cell">{query.student_domain || 'Not specified'}</td>
+                  <td className="status-cell">
                     {getStatusBadge(query.status)}
-                    {getAssignmentBadge(query.expert_reviewer_id)}
-                  </div>
-                </div>
-                <div className="query-meta-info">
-                  <span className="meta-item">
-                    <FaUser className="meta-icon" />
-                    {query.student_name}
-                  </span>
-                  <span className="meta-item">
-                    <FaClipboardList className="meta-icon" />
-                    {query.student_domain || 'Not specified'}
-                  </span>
-                </div>
-              </div>
-              <div className="query-actions">
-                 <button 
-                   onClick={() => navigate(`/queries/${query.id}`)}
-                   className="action-btn view"
-                   title="View Query"
-                 >
-                   <FaEye />
-                 </button>
-                 <button 
-                   onClick={() => navigate(`/queries/${query.id}/edit`)}
-                   className="action-btn edit"
-                   title="Edit Query"
-                 >
-                   <FaEdit />
-                 </button>
-                 <button 
-                   onClick={() => handleAssignQuery(query)}
-                   className="action-btn assign"
-                   title={query.expert_reviewer_id ? "Reassign Query" : "Assign Query"}
-                 >
-                   <FaUserPlus />
-                 </button>
-                 <button 
-                   onClick={() => handleDeleteQuery(query.id)}
-                   className="action-btn delete"
-                   title="Delete Query"
-                 >
-                   <FaTrash />
-                 </button>
-               </div>
-            </div>
-          ))}
+                  </td>
+                  <td className="expert-cell">
+                    {query.assigned_expert_name ? (
+                      <span className="assigned-expert">{query.assigned_expert_name}</span>
+                    ) : (
+                      <span className="unassigned-text">Unassigned</span>
+                    )}
+                  </td>
+                  <td className="action-cell edit-cell" onClick={(e) => e.stopPropagation()}>
+                    <button 
+                      onClick={() => navigate(`/queries/${query.id}/edit`, { state: { from: '/admin/queries' } })}
+                      className="action-btn edit"
+                      title="Edit Query"
+                    >
+                      <FaEdit />
+                    </button>
+                  </td>
+                  <td className="action-cell assign-cell" onClick={(e) => e.stopPropagation()}>
+                    <button 
+                      onClick={() => handleAssignQuery(query)}
+                      className="action-btn assign"
+                      title={query.expert_reviewer_id ? "Reassign Query" : "Assign Query"}
+                    >
+                      <FaUserPlus />
+                    </button>
+                  </td>
+                  <td className="action-cell delete-cell" onClick={(e) => e.stopPropagation()}>
+                    <button 
+                      onClick={() => handleDeleteQuery(query.id)}
+                      className="action-btn delete"
+                      title="Delete Query"
+                    >
+                      <FaTrash />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
         
         {filteredQueries.length === 0 && (

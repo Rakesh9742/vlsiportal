@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
-import { FaUsers, FaClipboardList, FaChartBar, FaUserPlus, FaCog, FaSignOutAlt } from 'react-icons/fa';
+import { FaUsers, FaClipboardList, FaChartBar, FaUserPlus, FaCog, FaDownload } from 'react-icons/fa';
+import DomainQueryCharts from './DomainQueryCharts';
 import './AdminDashboard.css';
 
 const AdminDashboard = () => {
@@ -47,16 +48,32 @@ const AdminDashboard = () => {
         totalExpertReviewers
       });
     } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
       setError('Failed to load dashboard statistics');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+
+
+  const handleExportQueries = async () => {
+    try {
+      const response = await axios.get('/queries/export', {
+        responseType: 'blob'
+      });
+      
+      // Create a download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `resolved_queries_${new Date().toISOString().split('T')[0]}.zip`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      setError('Failed to export queries');
+    }
   };
 
   if (loading) {
@@ -73,9 +90,6 @@ const AdminDashboard = () => {
         <h1>Admin Dashboard</h1>
         <div className="admin-user-info">
           <span>Welcome, {user?.fullName}</span>
-          <button onClick={handleLogout} className="logout-btn">
-            <FaSignOutAlt /> Logout
-          </button>
         </div>
       </div>
 
@@ -123,7 +137,33 @@ const AdminDashboard = () => {
         </div>
       </div>
 
+      <DomainQueryCharts />
+
       <div className="admin-actions">
+        <div className="action-section">
+          <h2>Query Management</h2>
+          <div className="action-buttons">
+            <button 
+              onClick={() => navigate('/admin/queries')}
+              className="action-btn"
+            >
+              <FaClipboardList /> Manage Queries
+            </button>
+          </div>
+        </div>
+
+        <div className="action-section">
+          <h2>Data Export</h2>
+          <div className="action-buttons">
+            <button 
+              onClick={handleExportQueries}
+              className="action-btn export-btn"
+            >
+              <FaDownload /> Export Resolved Queries
+            </button>
+          </div>
+        </div>
+
         <div className="action-section">
           <h2>User Management</h2>
           <div className="action-buttons">
@@ -138,24 +178,6 @@ const AdminDashboard = () => {
               className="action-btn"
             >
               <FaUserPlus /> Manage Expert Reviewers
-            </button>
-          </div>
-        </div>
-
-        <div className="action-section">
-          <h2>Query Management</h2>
-          <div className="action-buttons">
-            <button 
-              onClick={() => navigate('/admin/queries')}
-              className="action-btn"
-            >
-              <FaClipboardList /> Manage Queries
-            </button>
-            <button 
-              onClick={() => navigate('/admin/assignments')}
-              className="action-btn"
-            >
-              <FaCog /> Query Assignments
             </button>
           </div>
         </div>

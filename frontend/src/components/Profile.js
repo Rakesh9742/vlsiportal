@@ -40,7 +40,6 @@ const Profile = () => {
       const response = await axios.get('/users/domains');
       setDomains(response.data.domains);
     } catch (error) {
-      console.error('Failed to load domains:', error);
     }
   };
 

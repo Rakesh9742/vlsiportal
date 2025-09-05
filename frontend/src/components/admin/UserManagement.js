@@ -40,7 +40,6 @@ const UserManagement = () => {
       const response = await axios.get('/auth/users');
       setUsers(response.data.users);
     } catch (error) {
-      console.error('Error fetching users:', error);
       setError('Failed to load users');
     } finally {
       setLoading(false);
@@ -52,7 +51,6 @@ const UserManagement = () => {
       const response = await axios.get('/auth/domains');
       setDomains(response.data.domains);
     } catch (error) {
-      console.error('Error fetching domains:', error);
     }
   };
 
@@ -279,34 +277,46 @@ const UserManagement = () => {
 
       <div className="users-list">
         <h3>Users ({filteredUsers.length})</h3>
-        <div className="users-grid">
-          {filteredUsers.map(user => (
-            <div key={user.id} className="user-card">
-              <div className="user-header">
-                <div className="user-info">
-                  {getRoleIcon(user.role)}
-                  <h4>{user.full_name}</h4>
-                </div>
-                <div className="user-actions">
-                  {getRoleBadge(user.role)}
-                  {user.role !== 'admin' && (
-                    <button 
-                      onClick={() => handleDeleteUser(user.id)}
-                      className="action-btn delete"
-                      title="Delete User"
-                    >
-                      <FaTrash />
-                    </button>
-                  )}
-                </div>
-              </div>
-              <div className="user-details">
-                <p><strong>Username:</strong> {user.username}</p>
-                <p><strong>Domain:</strong> {user.domain_name || 'Not assigned'}</p>
-                <p><strong>Created:</strong> {new Date(user.created_at).toLocaleDateString()}</p>
-              </div>
-            </div>
-          ))}
+        <div className="users-table-container">
+          <table className="users-table">
+            <thead>
+              <tr>
+                <th>Role</th>
+                <th>Full Name</th>
+                <th>Username</th>
+                <th>Domain</th>
+                <th>Created Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredUsers.map(user => (
+                <tr key={user.id}>
+                  <td>
+                    <div className="role-cell">
+                      {getRoleIcon(user.role)}
+                      {getRoleBadge(user.role)}
+                    </div>
+                  </td>
+                  <td className="name-cell">{user.full_name}</td>
+                  <td className="username-cell">{user.username}</td>
+                  <td className="domain-cell">{user.domain_name || 'Not assigned'}</td>
+                  <td className="date-cell">{new Date(user.created_at).toLocaleDateString()}</td>
+                  <td className="actions-cell">
+                    {user.role !== 'admin' && (
+                      <button 
+                        onClick={() => handleDeleteUser(user.id)}
+                        className="action-btn delete"
+                        title="Delete User"
+                      >
+                        <FaTrash />
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
         
         {filteredUsers.length === 0 && (

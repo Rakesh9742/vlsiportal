@@ -72,6 +72,12 @@ function App() {
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     setUser(userData);
     setIsAuthenticated(true);
+    // Role-based redirect
+    if (userData.role === 'admin') {
+      window.location.href = '/admin';
+    } else {
+      window.location.href = '/queries';
+    }
   };
 
   const logout = () => {
@@ -98,7 +104,7 @@ function App() {
             <Routes>
               <Route 
                 path="/login" 
-                element={isAuthenticated ? <Navigate to="/queries" /> : <Login onLogin={login} />} 
+                element={isAuthenticated ? (user?.role === 'admin' ? <Navigate to="/admin" /> : <Navigate to="/queries" />) : <Login onLogin={login} />} 
               />
               <Route 
                 path="/login-student" 
@@ -170,7 +176,7 @@ function App() {
               />
               <Route 
                 path="/" 
-                element={isAuthenticated ? <Navigate to="/queries" /> : <Navigate to="/login" />} 
+                element={isAuthenticated ? (user?.role === 'admin' ? <Navigate to="/admin" /> : <Navigate to="/queries" />) : <Navigate to="/login" />} 
               />
             </Routes>
           </div>

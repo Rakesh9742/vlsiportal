@@ -171,9 +171,11 @@ const CreateQuery = () => {
         
         // Fetch domain-specific stages based on user's domain
         if (user.domain === 'Physical Design') {
-          // For Physical Design, use the pd_stages table
-          const stagesRes = await axios.get('/queries/pd-stages');
-          setStages(stagesRes.data.stages);
+          // For Physical Design, use the pd_stages table with domainId
+          if (user.domain_id) {
+            const stagesRes = await axios.get(`/queries/pd-stages?domainId=${user.domain_id}`);
+            setStages(stagesRes.data.stages);
+          }
         } else {
           // For other domains, use the domain_id from user response
           if (user.domain_id) {
@@ -192,7 +194,6 @@ const CreateQuery = () => {
           }
         }
       } catch (error) {
-        console.error('Error fetching data:', error);
       }
     };
     fetchData();
@@ -219,7 +220,7 @@ const CreateQuery = () => {
     
     // If issue category is "Others", show custom input (but not for Analog Layout)
     if (name === 'issue_category_id') {
-      if (value === 'others' && userDomain !== 'Analog Layout') {
+      if (value === 'others') {
         setShowCustomCategory(true);
         setFormData(prev => ({
           ...prev,
@@ -239,21 +240,40 @@ const CreateQuery = () => {
     try {
       // Don't proceed if userDomain is not set yet
       if (!userDomain) {
-        console.log('User domain not set yet, skipping issue categories load');
         return;
       }
+      
+      // Get current user to get domain_id
+      const userRes = await axios.get('/auth/me');
+      const user = userRes.data.user;
       
       if (userDomain === 'Physical Design') {
         // For Physical Design, use pd_issue_categories table
         const response = await axios.get(`/queries/pd-issue-categories/${stageId}`);
         setIssueCategories(response.data.categories);
       } else {
-        // For other domains, use domain_issue_categories table
-        const response = await axios.get(`/queries/domain-issue-categories/${stageId}`);
-        setIssueCategories(response.data.categories);
+        // For other domains, use domain_issue_categories table with domain_id
+        if (user.domain_id) {
+          // Use the domain-specific issue categories endpoint
+          const response = await axios.get(`/queries/domain-issue-categories/${stageId}`);
+          setIssueCategories(response.data.categories);
+        } else {
+          // Fallback to domain config if domain ID is not available
+          const domainConfigRes = await axios.get(`/queries/domain-config/${userDomain}`);
+          const stageConfig = domainConfigRes.data.issueCategories;
+          if (stageConfig && stageConfig[stages.find(s => s.id == stageId)?.name]) {
+            const categories = stageConfig[stages.find(s => s.id == stageId)?.name] || [];
+            setIssueCategories(categories.map((cat, index) => ({
+              id: index + 1,
+              name: cat,
+              description: cat
+            })));
+          } else {
+            setIssueCategories([]);
+          }
+        }
       }
     } catch (error) {
-      console.error('Error loading issue categories:', error);
       setIssueCategories([]);
     }
   };
@@ -316,15 +336,21 @@ const CreateQuery = () => {
       
       // Add form fields
       Object.keys(formData).forEach(key => {
-        if (formData[key]) {
+        if (formData[key] !== '' && formData[key] !== null && formData[key] !== undefined) {
           // If custom category is used, send it instead of issue_category_id
           if (key === 'issue_category_id' && formData[key] === 'others' && formData.custom_issue_category) {
-            submitData.append('custom_issue_category', formData.custom_issue_category);
+            // Don't send issue_category_id when using custom category
+            // The custom_issue_category will be sent separately
           } else if (key !== 'custom_issue_category') {
             submitData.append(key, formData[key]);
           }
         }
       });
+
+      // Handle custom issue category separately
+      if (formData.issue_category_id === 'others' && formData.custom_issue_category) {
+        submitData.append('custom_issue_category', formData.custom_issue_category);
+      }
 
       // Add images
       selectedImages.forEach((file, index) => {
@@ -416,6 +442,7 @@ const CreateQuery = () => {
                         {stage.name}
                       </SelectItem>
                     ))}
+                    <SelectItem value="others">Others</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>
@@ -438,9 +465,7 @@ const CreateQuery = () => {
                         {category.name}
                       </SelectItem>
                     ))}
-                    {userDomain !== 'Analog Layout' && (
-                      <SelectItem value="others">Others</SelectItem>
-                    )}
+                    <SelectItem value="others">Others</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>

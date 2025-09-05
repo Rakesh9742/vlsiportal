@@ -101,7 +101,7 @@ npm run build
 #### Backend Configuration (`backend/.env`)
 ```env
 # VLSI Portal Backend Environment Configuration
-# For CentOS Linux 8 VNC Machine (192.168.92.34)
+# For AWS Server (3.6.88.118)
 
 # Server Configuration
 PORT=5000
@@ -126,11 +126,11 @@ UPLOAD_PATH=./uploads
 #### Frontend Configuration (`frontend/.env`)
 ```env
 # VLSI Portal Frontend Environment Configuration
-# For CentOS Linux 8 VNC Machine (192.168.92.34)
+# For AWS Server (3.6.88.118)
 
 # API Configuration
-REACT_APP_API_URL=http://192.168.92.34:5000
-REACT_APP_BACKEND_URL=http://192.168.92.34:5000
+REACT_APP_API_URL=http://3.6.88.118:5000
+REACT_APP_BACKEND_URL=http://3.6.88.118:5000
 
 # Application Configuration
 REACT_APP_NAME=VLSI Portal

@@ -12,7 +12,6 @@ router.get('/queries', auth, checkRole(['admin']), async (req, res) => {
       SELECT 
         q.*,
         u.full_name as student_name,
-        t.full_name as teacher_name,
         d.name as student_domain,
         ds.name as design_stage_name,
         COALESCE(ic.name, q.custom_issue_category) as issue_category_name,
@@ -25,10 +24,9 @@ router.get('/queries', auth, checkRole(['admin']), async (req, res) => {
       FROM queries q
       JOIN users u ON q.student_id = u.id
       LEFT JOIN domains d ON u.domain_id = d.id
-      LEFT JOIN users t ON q.teacher_id = t.id
       LEFT JOIN tools tool ON q.tool_id = tool.id
-      LEFT JOIN domain_stages ds ON q.stage_id = ds.id
-      LEFT JOIN domain_issue_categories ic ON q.issue_category_id = ic.id
+      LEFT JOIN stages ds ON q.stage_id = ds.id
+      LEFT JOIN issue_categories ic ON q.issue_category_id = ic.id
       LEFT JOIN query_assignments qa ON q.id = qa.query_id
       LEFT JOIN users er ON qa.expert_reviewer_id = er.id
       ORDER BY q.created_at DESC
@@ -56,8 +54,8 @@ router.get('/queries/unassigned', auth, checkRole(['admin']), async (req, res) =
       JOIN users u ON q.student_id = u.id
       LEFT JOIN domains d ON u.domain_id = d.id
       LEFT JOIN tools tool ON q.tool_id = tool.id
-      LEFT JOIN domain_stages ds ON q.stage_id = ds.id
-      LEFT JOIN domain_issue_categories ic ON q.issue_category_id = ic.id
+      LEFT JOIN stages ds ON q.stage_id = ds.id
+      LEFT JOIN issue_categories ic ON q.issue_category_id = ic.id
       WHERE q.id NOT IN (SELECT query_id FROM query_assignments)
       ORDER BY q.created_at DESC
     `);
@@ -94,14 +92,14 @@ router.post('/queries/:id/assign', auth, checkRole(['admin']), [
       return res.status(404).json({ message: 'Query not found' });
     }
 
-    // Check if expert reviewer exists and is an expert reviewer
+    // Check if assignee exists and is an expert reviewer or admin
     const [reviewers] = await db.execute(
-      'SELECT * FROM users WHERE id = ? AND role = ?',
-      [expert_reviewer_id, 'expert_reviewer']
+      'SELECT * FROM users WHERE id = ? AND role IN (?, ?)',
+      [expert_reviewer_id, 'expert_reviewer', 'admin']
     );
 
     if (reviewers.length === 0) {
-      return res.status(400).json({ message: 'Invalid expert reviewer' });
+      return res.status(400).json({ message: 'Invalid assignee - must be expert reviewer or admin' });
     }
 
     // Check if query is already assigned
@@ -122,7 +120,7 @@ router.post('/queries/:id/assign', auth, checkRole(['admin']), [
 
     // Update query status to in_progress
     await db.execute(
-      'UPDATE queries SET status = ?, teacher_id = ? WHERE id = ?',
+      'UPDATE queries SET status = ?, expert_reviewer_id = ? WHERE id = ?',
       ['in_progress', expert_reviewer_id, queryId]
     );
 
@@ -158,14 +156,14 @@ router.put('/queries/:id/reassign', auth, checkRole(['admin']), [
       return res.status(404).json({ message: 'Query not found' });
     }
 
-    // Check if expert reviewer exists and is an expert reviewer
+    // Check if assignee exists and is an expert reviewer or admin
     const [reviewers] = await db.execute(
-      'SELECT * FROM users WHERE id = ? AND role = ?',
-      [expert_reviewer_id, 'expert_reviewer']
+      'SELECT * FROM users WHERE id = ? AND role IN (?, ?)',
+      [expert_reviewer_id, 'expert_reviewer', 'admin']
     );
 
     if (reviewers.length === 0) {
-      return res.status(400).json({ message: 'Invalid expert reviewer' });
+      return res.status(400).json({ message: 'Invalid assignee - must be expert reviewer or admin' });
     }
 
     // Update assignment
@@ -174,9 +172,9 @@ router.put('/queries/:id/reassign', auth, checkRole(['admin']), [
       [expert_reviewer_id, adminId, notes, 'assigned', queryId]
     );
 
-    // Update query teacher_id
+    // Update query expert_reviewer_id
     await db.execute(
-      'UPDATE queries SET teacher_id = ? WHERE id = ?',
+      'UPDATE queries SET expert_reviewer_id = ? WHERE id = ?',
       [expert_reviewer_id, queryId]
     );
 
@@ -208,9 +206,9 @@ router.delete('/queries/:id/assign', auth, checkRole(['admin']), async (req, res
       [queryId]
     );
 
-    // Reset query status and teacher_id
+    // Reset query status and expert_reviewer_id
     await db.execute(
-      'UPDATE queries SET status = ?, teacher_id = NULL WHERE id = ?',
+      'UPDATE queries SET status = ?, expert_reviewer_id = NULL WHERE id = ?',
       ['open', queryId]
     );
 

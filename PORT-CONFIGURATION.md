@@ -37,12 +37,12 @@ cd frontend
 npm run dev
 ```
 
-## Production Environment (VNC Server)
+## Production Environment (AWS Server)
 
 ### Access URLs
-- **Frontend**: http://192.168.92.34:420
-- **Backend API**: http://192.168.92.34:3000
-- **Health Check**: http://192.168.92.34:3000/api/health
+- **Frontend**: http://3.6.88.118:3001
+- **Backend API**: http://3.6.88.118:3000
+- **Health Check**: http://3.6.88.118:3000/api/health
 
 ### Deployment
 ```bash
@@ -58,7 +58,7 @@ npm run dev
 REACT_APP_API_URL=http://localhost:3000
 
 # Backup API URLs (production)
-REACT_APP_BACKUP_API_URL=http://192.168.92.34:3000
+REACT_APP_BACKUP_API_URL=http://3.6.88.118:3000
 
 # Frontend Port Configuration
 PORT=420
@@ -82,7 +82,8 @@ const corsOptions = {
     'http://localhost:420',
     'http://127.0.0.1:420',
     
-    // Production URLs (VNC machine)
+    // Production URLs (AWS server)
+    'http://3.6.88.118:3001',
     'http://192.168.92.34:420',
     'http://192.168.122.1:420',
     
@@ -150,7 +151,7 @@ npm run switch-localhost
 The frontend automatically detects the environment and uses the appropriate API URL:
 
 - **Localhost**: http://localhost:3000
-- **Production**: http://192.168.92.34:3000
+- **Production**: http://3.6.88.118:3000
 
 The configuration is handled in `frontend/src/App.js`:
 

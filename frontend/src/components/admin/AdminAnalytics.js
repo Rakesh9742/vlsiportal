@@ -63,7 +63,6 @@ const AdminAnalytics = () => {
       setWorkload(workloadRes.data.workload);
       setDomainStats(domainStatsRes.data.statistics);
     } catch (error) {
-      console.error('Error fetching analytics:', error);
       setError('Failed to load analytics data');
     } finally {
       setLoading(false);
