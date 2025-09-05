@@ -84,6 +84,16 @@
   cursor: pointer;
 }
 
+.stat-card.clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.stat-card.clickable:active {
+  transform: translateY(-3px) scale(0.98);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
 .stat-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);

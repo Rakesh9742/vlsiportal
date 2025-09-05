@@ -4,7 +4,7 @@ import axios from 'axios';
 import { FaUser, FaLock, FaEye, FaEyeSlash, FaMicrochip } from 'react-icons/fa';
 import './Auth.css';
 
-const Login = ({ onLogin }) => {
+const ProfessionalLogin = ({ onLogin }) => {
   const [formData, setFormData] = useState({
     username: '',
     password: ''
@@ -38,12 +38,12 @@ const Login = ({ onLogin }) => {
 
   return (
     <div className="auth-container">
-      <div className="auth-layout admin-login">
+      <div className="auth-layout professional-login">
         {/* Centered Login Form */}
         <div className="form-section">
           <div className="auth-card">
-            <h2 className="auth-title">Admin Portal</h2>
-            <p className="auth-subtitle">Administrative access to VLSI Portal</p>
+            <h2 className="auth-title">Professional Portal</h2>
+            <p className="auth-subtitle">Advanced VLSI development platform</p>
 
             {error && <div className="error">{error}</div>}
 
@@ -107,11 +107,6 @@ const Login = ({ onLogin }) => {
 
             <div className="form-actions">
               <span>Don't have an account?</span>
-              <Link to="/register" className="register-link">Register as Student</Link>
-            </div>
-            
-            <div className="form-actions">
-              <span>Are you a professional?</span>
               <Link to="/register-professional" className="register-link">Register as Professional</Link>
             </div>
           </div>
@@ -121,4 +116,4 @@ const Login = ({ onLogin }) => {
   );
 };
 
-export default Login;
+export default ProfessionalLogin;

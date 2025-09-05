@@ -10,35 +10,33 @@ const adminRoutes = require('./routes/admin');
 dotenv.config();
 
 console.log('🚀 Starting VLSI Portal Backend...');
-console.log(`📡 Server will run on port: ${process.env.PORT || 520}`);
+console.log(`📡 Server will run on port: ${process.env.PORT || 3000}`);
 
 const app = express();
-const PORT = process.env.PORT || 520;
+const PORT = process.env.PORT || 3000;
 
 // CORS configuration for both localhost and production hosting
 const corsOptions = {
   origin: [
     // Localhost URLs
-    'http://localhost:420',
-    'http://localhost:3000',
     'http://localhost:3001',
-    'http://127.0.0.1:420',
-    'http://127.0.0.1:3000',
+    'http://localhost:3000',
     'http://127.0.0.1:3001',
+    'http://127.0.0.1:3000',
     
     // Production URLs (VNC machine)
-    'http://192.168.92.34:420',
+    'http://192.168.92.34:3001',
     'http://192.168.92.34:3000',
     'http://192.168.92.34',
-    'http://192.168.122.1:420',
+    'http://192.168.122.1:3001',
     'http://192.168.122.1:3000',
     'http://192.168.122.1',
     
     // Additional local network URLs
-    'http://192.168.1.100:420',
-    'http://192.168.1.101:420',
-    'http://192.168.0.100:420',
-    'http://192.168.0.101:420'
+    'http://192.168.1.100:3001',
+    'http://192.168.1.101:3001',
+    'http://192.168.0.100:3001',
+    'http://192.168.0.101:3001'
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -68,12 +66,12 @@ app.get('/api/health', (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log('🎉 Server started successfully!');
   console.log('🌐 Available URLs:');
-  console.log(`   Localhost: http://localhost:${PORT}`);
-  console.log(`   Production: http://192.168.92.34:${PORT}`);
+  console.log(`   Backend API: http://localhost:${PORT}`);
+  console.log(`   Frontend: http://localhost:3001`);
+  console.log(`   Production Backend: http://192.168.92.34:${PORT}`);
+  console.log(`   Production Frontend: http://192.168.92.34:3001`);
   console.log(`   Health Check: http://localhost:${PORT}/api/health`);
-  console.log(`   Health Check: http://192.168.92.34:${PORT}/api/health`);
   console.log(`   Uploads: http://localhost:${PORT}/uploads`);
-  console.log(`   Uploads: http://192.168.92.34:${PORT}/uploads`);
   console.log('📝 API Endpoints:');
   console.log('   - POST /api/auth/register - Student registration');
   console.log('   - POST /api/auth/login - User login');

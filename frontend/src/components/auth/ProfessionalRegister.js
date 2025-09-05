@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { FaUser, FaLock, FaEye, FaEyeSlash, FaUserTie, FaGlobe, FaMicrochip } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaEye, FaEyeSlash, FaUserTie, FaGlobe, FaMicrochip } from 'react-icons/fa';
 import './Auth.css';
 
-const Register = () => {
+const ProfessionalRegister = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    username: '',
+    email: '',
     password: '',
     confirmPassword: '',
     full_name: '',
@@ -49,6 +49,10 @@ const Register = () => {
       setError('Password must be at least 6 characters long');
       return false;
     }
+    if (!formData.email.includes('@')) {
+      setError('Please enter a valid email address');
+      return false;
+    }
     return true;
   };
 
@@ -65,10 +69,10 @@ const Register = () => {
 
     try {
       const { confirmPassword, ...registerData } = formData;
-      await axios.post('/auth/register', registerData);
+      await axios.post('/auth/register-professional', registerData);
       setSuccess('Registration successful! You can now login.');
       setTimeout(() => {
-        navigate('/login-student');
+        navigate('/login-professional');
       }, 2000);
     } catch (error) {
       setError(error.response?.data?.message || 'Registration failed. Please try again.');
@@ -100,13 +104,14 @@ const Register = () => {
                   <div className="circuit-path horizontal"></div>
                   <div className="circuit-path vertical"></div>
                   <div className="circuit-path diagonal"></div>
-                  <div className="circuit-path diagonal2"></div>
+                  <div className="circuit-path curve"></div>
                 </div>
-                {/* Electronic Components */}
+                {/* Resistors */}
                 <div className="resistor"></div>
                 <div className="resistor"></div>
                 <div className="resistor"></div>
                 <div className="resistor"></div>
+                {/* Capacitors */}
                 <div className="capacitor"></div>
                 <div className="capacitor"></div>
                 <div className="capacitor"></div>
@@ -131,15 +136,15 @@ const Register = () => {
           </div>
           <div className="logo-content">
             <h1 className="logo-title">VLSI Portal</h1>
-            <p className="logo-subtitle">Advanced Learning Management System</p>
+            <p className="logo-subtitle">Professional Registration</p>
           </div>
         </div>
 
         {/* Right Side - Register Form */}
         <div className="form-section">
           <div className="auth-card">
-            <h2 className="auth-title">Join VLSI Portal</h2>
-            <p className="auth-subtitle">Create your student account</p>
+            <h2 className="auth-title">Join as Professional</h2>
+            <p className="auth-subtitle">Create your professional account</p>
 
             {error && <div className="error">{error}</div>}
             {success && <div className="success">{success}</div>}
@@ -157,6 +162,23 @@ const Register = () => {
                     value={formData.full_name}
                     onChange={handleChange}
                     placeholder="Enter your full name"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="email">Email Address</label>
+                <div className="input-group">
+                  <FaEnvelope className="input-icon" />
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    className="form-control"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="Enter your email address"
                     required
                   />
                 </div>
@@ -181,23 +203,6 @@ const Register = () => {
                       </option>
                     ))}
                   </select>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="username">Linux Username</label>
-                <div className="input-group">
-                  <FaUser className="input-icon" />
-                  <input
-                    type="text"
-                    id="username"
-                    name="username"
-                    className="form-control"
-                    value={formData.username}
-                    onChange={handleChange}
-                    placeholder="Choose a unique username"
-                    required
-                  />
                 </div>
               </div>
 
@@ -260,19 +265,14 @@ const Register = () => {
                     <span>Creating Account...</span>
                   </div>
                 ) : (
-                  'Create Account'
+                  'Create Professional Account'
                 )}
               </button>
             </form>
 
             <div className="form-actions">
               <span>Already have an account?</span>
-              <Link to="/login" className="register-link">Sign In</Link>
-            </div>
-            
-            <div className="form-actions">
-              <span>Are you a professional?</span>
-              <Link to="/register-professional" className="register-link">Register as Professional</Link>
+              <Link to="/login-professional" className="register-link">Sign In</Link>
             </div>
           </div>
         </div>
@@ -281,4 +281,4 @@ const Register = () => {
   );
 };
 
-export default Register;
+export default ProfessionalRegister;

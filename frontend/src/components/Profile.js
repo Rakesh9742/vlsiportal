@@ -10,7 +10,7 @@ const Profile = () => {
   const [editing, setEditing] = useState(false);
   const [editData, setEditData] = useState({
     full_name: '',
-    domain: ''
+    domain_id: ''
   });
   const [saving, setSaving] = useState(false);
   const [domains, setDomains] = useState([]);
@@ -26,7 +26,7 @@ const Profile = () => {
       setUser(response.data.user);
       setEditData({
         full_name: response.data.user.full_name,
-        domain: response.data.user.domain
+        domain_id: response.data.user.domain_id || ''
       });
     } catch (error) {
       setError('Failed to load profile');
@@ -133,18 +133,18 @@ const Profile = () => {
               </div>
 
               <div className="form-group">
-                <label htmlFor="domain">Domain</label>
+                <label htmlFor="domain_id">Domain</label>
                 <select
-                  id="domain"
-                  name="domain"
+                  id="domain_id"
+                  name="domain_id"
                   className="form-control"
-                  value={editData.domain || ''}
+                  value={editData.domain_id || ''}
                   onChange={handleChange}
                   required
                 >
                   <option value="">Select a domain</option>
                   {domains.map((domain) => (
-                    <option key={domain.id} value={domain.name}>
+                    <option key={domain.id} value={domain.id}>
                       {domain.name}
                     </option>
                   ))}
@@ -242,4 +242,4 @@ const Profile = () => {
   );
 };
 
-export default Profile; 
+export default Profile;

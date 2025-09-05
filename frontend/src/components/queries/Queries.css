@@ -41,7 +41,16 @@
 .jump-to-examples-btn:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
-  background: linear-gradient(135deg, var(--orange-dark) 0%, var(--orange) 100%);
+  background: var(--gradient-orange);
+}
+
+.jump-to-examples-btn:active,
+.jump-to-examples-btn:focus {
+  background: var(--gradient-orange);
+  color: var(--white);
+  outline: none;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
 }
 
 .jump-to-examples-btn svg {
@@ -296,13 +305,76 @@
   background: var(--white);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   color: var(--gray-900);
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-size: 14px;
+  padding-right: 32px;
+  cursor: pointer;
+}
+
+.filter-select:hover {
+  border-color: var(--primary-orange-light);
+  background-color: #fefefe;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
 .filter-select:focus {
   outline: none;
   border-color: var(--primary-orange);
-  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1), 0 2px 8px rgba(0, 0, 0, 0.08);
   transform: translateY(-1px);
+}
+
+/* Custom Select Wrapper for Advanced Styling */
+.select-wrapper {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+.select-wrapper::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid var(--gray-600);
+  pointer-events: none;
+  transition: all 0.3s ease;
+}
+
+.select-wrapper:hover::after {
+  border-top-color: var(--primary-orange);
+}
+
+.select-wrapper.focused::after {
+  transform: translateY(-50%) rotate(180deg);
+  border-top-color: var(--primary-orange);
+}
+
+/* Smooth Animation for Select Options */
+@keyframes selectSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+select.form-control:focus {
+  animation: selectSlideDown 0.2s ease-out;
 }
 
 /* Enhanced Query Items */
@@ -658,6 +730,62 @@
   border-color: var(--primary-orange);
   box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
   transform: translateY(-1px);
+}
+
+/* Enhanced Select Dropdown Styling */
+select.form-control {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 40px;
+  cursor: pointer;
+  background-color: var(--white);
+  position: relative;
+}
+
+select.form-control:hover {
+  border-color: var(--primary-orange-light);
+  background-color: #fefefe;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+select.form-control:focus {
+  border-color: var(--primary-orange);
+  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1), 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+  background-color: var(--white);
+}
+
+select.form-control:disabled {
+  background-color: var(--gray-50);
+  color: var(--gray-400);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Enhanced option styling */
+select.form-control option {
+  padding: 12px 16px;
+  background: var(--white);
+  color: var(--gray-900);
+  border: none;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+select.form-control option:hover {
+  background: var(--gray-50);
+}
+
+select.form-control option:checked {
+  background: var(--primary-orange-light);
+  color: var(--primary-orange-dark);
+  font-weight: 600;
 }
 
 textarea.form-control {
@@ -2180,6 +2308,25 @@ textarea.form-control {
   border-left: 3px solid var(--primary-blue);
 }
 
+.debug-steps,
+.resolution-steps {
+  margin-top: var(--space-2);
+}
+
+.debug-step,
+.resolution-step {
+  color: var(--gray-600);
+  font-size: 14px;
+  line-height: 1.6;
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.debug-step:last-child,
+.resolution-step:last-child {
+  border-bottom: none;
+}
+
 /* Responsive adjustments for sample examples */
 @media (max-width: 768px) {
   .page-header {
@@ -2232,4 +2379,4 @@ textarea.form-control {
     font-size: 13px;
     padding: var(--space-2);
   }
-} 
+}

@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
-import { FaArrowLeft, FaSearch, FaFilter, FaEye, FaEdit, FaTrash, FaUser, FaClipboardList } from 'react-icons/fa';
+import { FaArrowLeft, FaSearch, FaFilter, FaEye, FaEdit, FaTrash, FaUser, FaClipboardList, FaUserPlus } from 'react-icons/fa';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '../ui/Select';
 import './QueryManagement.css';
 
 const QueryManagement = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [queries, setQueries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -15,6 +17,13 @@ const QueryManagement = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [domainFilter, setDomainFilter] = useState('all');
   const [domains, setDomains] = useState([]);
+  const [reviewers, setReviewers] = useState([]);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [selectedQuery, setSelectedQuery] = useState(null);
+  const [assignmentData, setAssignmentData] = useState({
+    expert_reviewer_id: '',
+    notes: ''
+  });
 
   useEffect(() => {
     if (user?.role !== 'admin') {
@@ -22,9 +31,15 @@ const QueryManagement = () => {
       return;
     }
     
+    // Set initial filters based on URL parameters
+    const filter = searchParams.get('filter');
+    if (filter === 'unassigned') {
+      setStatusFilter('open'); // Show open queries for unassigned filter
+    }
+    
     fetchQueries();
     fetchDomains();
-  }, [user, navigate]);
+  }, [user, navigate, searchParams]);
 
   const fetchQueries = async () => {
     try {
@@ -47,18 +62,72 @@ const QueryManagement = () => {
     }
   };
 
+  const fetchReviewers = async (domainName = null) => {
+    try {
+      let url = '/auth/assignees';
+      if (domainName) {
+        url = `/auth/assignees/domain/${encodeURIComponent(domainName)}`;
+      }
+      const response = await axios.get(url);
+      setReviewers(response.data.assignees);
+    } catch (error) {
+      console.error('Error fetching reviewers:', error);
+      // Fallback to all reviewers
+      if (domainName) {
+        fetchReviewers();
+      }
+    }
+  };
+
   const handleDeleteQuery = async (queryId) => {
     if (!window.confirm('Are you sure you want to delete this query? This action cannot be undone.')) {
       return;
     }
 
     try {
-      await axios.delete(`/queries/${queryId}`);
+      await axios.delete(`/admin/queries/${queryId}`);
       setQueries(queries.filter(q => q.id !== queryId));
     } catch (error) {
-      setError(error.response?.data?.message || 'Failed to delete query');
+      console.error('Error deleting query:', error);
+      setError('Failed to delete query');
     }
   };
+
+  const handleAssignQuery = async (query) => {
+    setSelectedQuery(query);
+    setAssignmentData({
+      expert_reviewer_id: '',
+      notes: ''
+    });
+    
+    // Fetch reviewers for the specific domain
+    await fetchReviewers(query.student_domain);
+    setShowAssignModal(true);
+  };
+
+  const handleAssignmentSubmit = async (e) => {
+     e.preventDefault();
+     
+     try {
+       if (selectedQuery.expert_reviewer_id) {
+         // Reassign existing assignment
+         await axios.put(`/admin/queries/${selectedQuery.id}/reassign`, assignmentData);
+       } else {
+         // Create new assignment
+         await axios.post(`/admin/queries/${selectedQuery.id}/assign`, assignmentData);
+       }
+       
+       // Refresh queries
+       await fetchQueries();
+       
+       setShowAssignModal(false);
+       setSelectedQuery(null);
+       setAssignmentData({ expert_reviewer_id: '', notes: '' });
+     } catch (error) {
+       console.error('Error assigning query:', error);
+       setError('Failed to assign query');
+     }
+   };
 
   const getStatusBadge = (status) => {
     const statusClasses = {
@@ -90,7 +159,11 @@ const QueryManagement = () => {
     const matchesStatus = statusFilter === 'all' || query.status === statusFilter;
     const matchesDomain = domainFilter === 'all' || query.student_domain === domainFilter;
     
-    return matchesSearch && matchesStatus && matchesDomain;
+    // Handle unassigned filter from URL parameter
+    const filter = searchParams.get('filter');
+    const matchesAssignment = filter === 'unassigned' ? !query.expert_reviewer_id : true;
+    
+    return matchesSearch && matchesStatus && matchesDomain && matchesAssignment;
   });
 
   if (loading) {
@@ -110,7 +183,9 @@ const QueryManagement = () => {
         >
           <FaArrowLeft /> Back to Admin Dashboard
         </button>
-        <h1>Query Management</h1>
+        <h1>
+          {searchParams.get('filter') === 'unassigned' ? 'Unassigned Queries' : 'Query Management'}
+        </h1>
       </div>
 
       {error && <div className="error-message">{error}</div>}
@@ -130,34 +205,44 @@ const QueryManagement = () => {
         <div className="filter-controls">
           <div className="filter-group">
             <label htmlFor="status-filter">Status:</label>
-            <select
-              id="status-filter"
+            <Select
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="filter-select"
+              onValueChange={(value) => setStatusFilter(value)}
             >
-              <option value="all">All Statuses</option>
-              <option value="open">Open</option>
-              <option value="in_progress">In Progress</option>
-              <option value="resolved">Resolved</option>
-            </select>
+              <SelectTrigger className="filter-select">
+                <SelectValue placeholder="All Statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="resolved">Resolved</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="filter-group">
             <label htmlFor="domain-filter">Domain:</label>
-            <select
-              id="domain-filter"
+            <Select
               value={domainFilter}
-              onChange={(e) => setDomainFilter(e.target.value)}
-              className="filter-select"
+              onValueChange={(value) => setDomainFilter(value)}
             >
-              <option value="all">All Domains</option>
-              {domains.map(domain => (
-                <option key={domain.id} value={domain.name}>
-                  {domain.name}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="filter-select">
+                <SelectValue placeholder="All Domains" />
+              </SelectTrigger>
+              <SelectContent>
+                 <SelectGroup>
+                   <SelectItem value="all">All Domains</SelectItem>
+                   {domains.map(domain => (
+                     <SelectItem key={domain.id} value={domain.name}>
+                       {domain.name}
+                     </SelectItem>
+                   ))}
+                 </SelectGroup>
+               </SelectContent>
+             </Select>
           </div>
         </div>
       </div>
@@ -172,77 +257,58 @@ const QueryManagement = () => {
           </div>
         </div>
 
-        <div className="queries-grid">
+        <div className="queries-list">
           {filteredQueries.map(query => (
-            <div key={query.id} className="query-card">
-              <div className="query-header">
-                <div className="query-title">
-                  <h4>{query.title}</h4>
+            <div key={query.id} className="query-row">
+              <div className="query-main-info">
+                <div className="query-title-section">
+                  <h4 className="query-title">{query.title}</h4>
                   <div className="query-badges">
                     {getStatusBadge(query.status)}
                     {getAssignmentBadge(query.expert_reviewer_id)}
                   </div>
                 </div>
-                <div className="query-actions">
-                  <button 
-                    onClick={() => navigate(`/queries/${query.id}`)}
-                    className="action-btn view"
-                    title="View Query"
-                  >
-                    <FaEye />
-                  </button>
-                  <button 
-                    onClick={() => navigate(`/queries/${query.id}/edit`)}
-                    className="action-btn edit"
-                    title="Edit Query"
-                  >
-                    <FaEdit />
-                  </button>
-                  <button 
-                    onClick={() => handleDeleteQuery(query.id)}
-                    className="action-btn delete"
-                    title="Delete Query"
-                  >
-                    <FaTrash />
-                  </button>
-                </div>
-              </div>
-
-              <div className="query-details">
-                <div className="detail-row">
-                  <span className="detail-label">Student:</span>
-                  <span className="detail-value">
-                    <FaUser className="detail-icon" />
+                <div className="query-meta-info">
+                  <span className="meta-item">
+                    <FaUser className="meta-icon" />
                     {query.student_name}
                   </span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Domain:</span>
-                  <span className="detail-value">{query.student_domain || 'Not specified'}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Stage:</span>
-                  <span className="detail-value">{query.design_stage_name || 'Not specified'}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">Tool:</span>
-                  <span className="detail-value">{query.tool_name || 'Not specified'}</span>
-                </div>
-                {query.expert_reviewer_id && (
-                  <div className="detail-row">
-                    <span className="detail-label">Assigned to:</span>
-                    <span className="detail-value">{query.assigned_expert_name}</span>
-                  </div>
-                )}
-                <div className="detail-row">
-                  <span className="detail-label">Created:</span>
-                  <span className="detail-value">{new Date(query.created_at).toLocaleDateString()}</span>
+                  <span className="meta-item">
+                    <FaClipboardList className="meta-icon" />
+                    {query.student_domain || 'Not specified'}
+                  </span>
                 </div>
               </div>
-
-              <div className="query-description">
-                <p>{query.description.length > 150 ? `${query.description.substring(0, 150)}...` : query.description}</p>
-              </div>
+              <div className="query-actions">
+                 <button 
+                   onClick={() => navigate(`/queries/${query.id}`)}
+                   className="action-btn view"
+                   title="View Query"
+                 >
+                   <FaEye />
+                 </button>
+                 <button 
+                   onClick={() => navigate(`/queries/${query.id}/edit`)}
+                   className="action-btn edit"
+                   title="Edit Query"
+                 >
+                   <FaEdit />
+                 </button>
+                 <button 
+                   onClick={() => handleAssignQuery(query)}
+                   className="action-btn assign"
+                   title={query.expert_reviewer_id ? "Reassign Query" : "Assign Query"}
+                 >
+                   <FaUserPlus />
+                 </button>
+                 <button 
+                   onClick={() => handleDeleteQuery(query.id)}
+                   className="action-btn delete"
+                   title="Delete Query"
+                 >
+                   <FaTrash />
+                 </button>
+               </div>
             </div>
           ))}
         </div>
@@ -254,6 +320,106 @@ const QueryManagement = () => {
           </div>
         )}
       </div>
+
+      {/* Assignment Modal */}
+      {showAssignModal && selectedQuery && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h3>{selectedQuery.expert_reviewer_id ? 'Reassign Query' : 'Assign Query'}</h3>
+              <button 
+                onClick={() => setShowAssignModal(false)}
+                className="modal-close"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="modal-body">
+              <div className="query-summary">
+                <h4>{selectedQuery.title}</h4>
+                <div className="summary-details">
+                  <span><FaUser /> {selectedQuery.student_name}</span>
+                  <span><FaClipboardList /> {selectedQuery.student_domain || 'Not specified'}</span>
+                  <span>Status: {selectedQuery.status}</span>
+                </div>
+              </div>
+              
+              <form onSubmit={handleAssignmentSubmit}>
+                <div className="form-group">
+                  <label htmlFor="expert_reviewer_id">
+                    Expert Reviewer *
+                    {selectedQuery.student_domain && (
+                      <span className="domain-filter-note">
+                        (Filtered for {selectedQuery.student_domain} domain)
+                        <button 
+                          type="button"
+                          onClick={() => fetchReviewers()}
+                          className="btn-link"
+                        >
+                          Show all
+                        </button>
+                      </span>
+                    )}
+                  </label>
+                  <Select
+                    value={assignmentData.expert_reviewer_id}
+                    onValueChange={(value) => setAssignmentData(prev => ({
+                      ...prev,
+                      expert_reviewer_id: value
+                    }))}
+                    required
+                  >
+                    <SelectTrigger className="form-control">
+                      <SelectValue placeholder="Select Expert Reviewer" />
+                    </SelectTrigger>
+                    <SelectContent>
+                       <SelectGroup>
+                         {reviewers.map(reviewer => (
+                           <SelectItem key={reviewer.id} value={reviewer.id}>
+                             {reviewer.full_name} ({reviewer.domain_name})
+                           </SelectItem>
+                         ))}
+                       </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                </div>
+                
+                <div className="form-group">
+                  <label htmlFor="notes">Notes (Optional)</label>
+                  <textarea
+                    id="notes"
+                    value={assignmentData.notes}
+                    onChange={(e) => setAssignmentData(prev => ({
+                      ...prev,
+                      notes: e.target.value
+                    }))}
+                    placeholder="Add any notes for the assignment..."
+                    rows="3"
+                  />
+                </div>
+                
+                <div className="modal-actions">
+                  <button 
+                    type="button" 
+                    onClick={() => setShowAssignModal(false)}
+                    className="btn-secondary"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit" 
+                    className="btn-primary"
+                    disabled={!assignmentData.expert_reviewer_id}
+                  >
+                    {selectedQuery.expert_reviewer_id ? 'Reassign' : 'Assign'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

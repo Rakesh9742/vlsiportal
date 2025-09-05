@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { FaPaperPlane, FaArrowLeft, FaExclamationTriangle, FaTools, FaLayerGroup, FaTag, FaImage, FaTimes, FaArrowDown } from 'react-icons/fa';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '../ui/Select';
 import './Queries.css';
 
 const CreateQuery = () => {
@@ -33,31 +34,24 @@ const CreateQuery = () => {
     const examples = {
       'Physical Design': [
         {
-          title: "Clock tree synthesis failing with high skew in 28nm design",
-          description: "I'm working on a 28nm design with multiple clock domains. During CTS, I'm getting high clock skew (&gt;500ps) between clock sinks. The design has 3 clock domains: clk_core (500MHz), clk_mem (200MHz), and clk_io (100MHz). I've tried adjusting the clock tree constraints but the skew remains high. The clock tree is using H-tree topology.",
-          stage: "Clock Tree Synthesis",
-          category: "Timing Issues",
+          title: "Clock Domain Crossing Violations in Multi-Clock Design",
+          description: "Getting setup violations between fast clock domain clk1 (500MHz) and slow clock domain clk2 (300MHz) in design. The violations appear in synthesis timing reports after optimization step. Synthesis tool is reporting timing paths that cross between clk1 and clk2 domains.",
+          stage: "Synthesis",
+          category: "Timing Violations",
           tool: "Synopsys Design Compiler",
-          technology: "TSMC 28nm",
-          debugSteps: "1. Checked clock tree constraints 2. Verified clock domain definitions 3. Analyzed clock tree reports 4. Tried different buffer types"
+          technology: "28nm",
+          debugSteps: "1. Checked SDC constraints for both clock domains\n2. Verified clock definitions and periods in constraint file\n3. Ran report_timing -from clk1 -to clk2 to analyze cross-domain paths\n4. Checked if sdc is having asynchronous clock defined for these clock groups using set_clock_groups command.",
+          resolution: "1. Updated SDC with below SDC command to define clk1 & clk2 as asynchronous after verifying with designer.\n   set_clock_groups -asynchronous -group clk1 -group clk2 -name asyn_clks\n2. Reran synthesis with updated SDC\n3. Verified timing reports, to check if violations are resolved.\n4. Also, verified by running below command in interactive session to check if constriants are applied correctly.\n   report_timing -from clk1 -to clk2\n   Now, tool reports as No paths.\n5. Attached the timing report snapshots before and after fix for reference."
         },
         {
-          title: "Place and route congestion in high-density design",
-          description: "My 16nm design is experiencing severe routing congestion in the memory array area. The congestion is around 85% and causing timing violations. I've tried adjusting the placement density and routing constraints, but the congestion persists. The design has 8 memory banks with tight spacing requirements.",
-          stage: "Place and Route",
-          category: "Congestion Issues",
+          title: "High congestion in macro channels due to missing soft blockages",
+          description: "Experiencing severe routing congestion (with hotspot score > 500) in channels between SRAM macros after placement. The placement tool placed many standard cells in the macro channel, leaving insufficient routing channels. This is causing lot of congestion overflow GRCs in macro channels.",
+          stage: "Placement",
+          category: "Congestion",
           tool: "Cadence Innovus",
-          technology: "TSMC 16nm",
-          debugSteps: "1. Analyzed congestion maps 2. Adjusted placement density 3. Modified routing constraints 4. Checked memory array spacing"
-        },
-        {
-          title: "Power analysis showing IR drop violations",
-          description: "Power analysis in my 7nm design shows IR drop violations in the core logic area. The voltage drop is exceeding 5% of VDD in several regions. I've added decoupling capacitors and power straps, but the violations persist. The design operates at 2.5GHz with multiple power domains.",
-          stage: "Power Analysis",
-          category: "Power Issues",
-          tool: "Synopsys PrimeTime",
-          technology: "TSMC 7nm",
-          debugSteps: "1. Added decoupling capacitors 2. Increased power strap density 3. Analyzed power grid resistance 4. Checked power domain boundaries"
+          technology: "28nm",
+          debugSteps: "1. Generated congestion hotspot score report using report_congestion -hotpsot command\n2. Checked if current macro channel spacing is sufficient based on pin count of macros\n3. Analyzed cell density in channel region using cell density map\n4. Reviewed the type of cells placed in the channel region using below procedure\n5. Selected all instances placed in channel region by using select_obj [get_obj_in_area -area {llx lly urx ury} -object_type inst]; where llx lly urx ury are coordinates of channel region\n6. Identified the library cell types by using get_db selected .base_cell.name\n7. Noticed that many sequential cells and other combinational cells placed in channel region\n8. So identified issue as there is no soft blockage tool has placed many other type of cells which is increasing the no. of nets in channel and leading to congestion",
+          resolution: "1. Reran placement by creating soft placement blockages in macro channel regions.\n   Command used: create_place_blockage -type soft -area {llx lly urx ury} -name PB_SOFT1\n2. Verified congestion report after place_opt_design, now the hotpsot score reduced to 50.\n3. Attached snapshot of congestion reports & maps before and after fix for reference."
         }
       ],
       'Analog Layout': [
@@ -408,40 +402,48 @@ const CreateQuery = () => {
           <div className="form-row">
             <div className="form-group">
               <label htmlFor="stage_id">Design Stage</label>
-              <select
-                id="stage_id"
-                name="stage_id"
-                className="form-control"
+              <Select
                 value={formData.stage_id}
-                onChange={handleChange}
+                onValueChange={(value) => handleChange({ target: { name: 'stage_id', value } })}
               >
-                <option value="">Select Design Stage</option>
-                {stages.map(stage => (
-                  <option key={stage.id} value={stage.id}>
-                    {stage.name}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="form-control">
+                  <SelectValue placeholder="Select Design Stage" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {stages.map(stage => (
+                      <SelectItem key={stage.id} value={stage.id}>
+                        {stage.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="form-group">
               <label htmlFor="issue_category_id">Issue Category</label>
-              <select
-                id="issue_category_id"
-                name="issue_category_id"
-                className="form-control"
+              <Select
                 value={formData.issue_category_id}
-                onChange={handleChange}
+                onValueChange={(value) => handleChange({ target: { name: 'issue_category_id', value } })}
                 disabled={!formData.stage_id}
               >
-                <option value="">{formData.stage_id ? 'Select Issue Category' : 'Select a stage first'}</option>
-                {issueCategories.map(category => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-                {userDomain !== 'Analog Layout' && <option value="others">Others</option>}
-              </select>
+                <SelectTrigger className="form-control">
+                  <SelectValue placeholder={formData.stage_id ? 'Select Issue Category' : 'Select a stage first'} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {issueCategories.map(category => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                    {userDomain !== 'Analog Layout' && (
+                      <SelectItem value="others">Others</SelectItem>
+                    )}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </div>
             
             {showCustomCategory && (
@@ -463,20 +465,23 @@ const CreateQuery = () => {
 
           <div className="form-group">
             <label htmlFor="tool_id">Tool</label>
-            <select
-              id="tool_id"
-              name="tool_id"
-              className="form-control"
+            <Select
               value={formData.tool_id}
-              onChange={handleChange}
+              onValueChange={(value) => handleChange({ target: { name: 'tool_id', value } })}
             >
-              <option value="">Select Tool</option>
-              {tools.map(tool => (
-                <option key={tool.id} value={tool.id}>
-                  {tool.name}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="form-control">
+                <SelectValue placeholder="Select Tool" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  {tools.map(tool => (
+                    <SelectItem key={tool.id} value={tool.id}>
+                      {tool.name}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="form-group">
@@ -629,8 +634,23 @@ const CreateQuery = () => {
                   <strong>Technology:</strong> {example.technology}
                 </div>
                 <div className="example-field">
-                  <strong>Debug Steps:</strong> {example.debugSteps}
+                  <strong>Debug Steps:</strong>
+                  <div className="debug-steps">
+                    {example.debugSteps.split('\n').map((step, stepIndex) => (
+                      <div key={stepIndex} className="debug-step">{step}</div>
+                    ))}
+                  </div>
                 </div>
+                {example.resolution && (
+                  <div className="example-field">
+                    <strong>Resolution:</strong>
+                    <div className="resolution-steps">
+                      {example.resolution.split('\n').map((step, stepIndex) => (
+                        <div key={stepIndex} className="resolution-step">{step}</div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -640,4 +660,4 @@ const CreateQuery = () => {
   );
 };
 
-export default CreateQuery; 
+export default CreateQuery;

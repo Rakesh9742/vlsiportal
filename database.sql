@@ -205,7 +205,7 @@ INSERT INTO pd_issue_categories (stage_id, name, description) VALUES
 (2, 'Netlist', 'Netlist file issues'),
 (2, 'SDC', 'SDC file issues'),
 (2, 'MMMC', 'MMMC file issues'),
-(2, 'others', 'Other initialization issues'),
+(2, 'Others', 'Other initialization issues'),
 
 -- Floorplan categories
 (3, 'Macro placement', 'Macro cell placement issues'),
@@ -214,7 +214,7 @@ INSERT INTO pd_issue_categories (stage_id, name, description) VALUES
 (3, 'tap cells', 'Tap cell issues'),
 (3, 'Placement blockages', 'Placement blockage issues'),
 (3, 'Marco halo (keepout)', 'Macro halo keepout issues'),
-(3, 'others', 'Other floorplan issues'),
+(3, 'Others', 'Other floorplan issues'),
 
 -- Placement categories
 (4, 'SDC', 'SDC constraints during placement'),
@@ -227,7 +227,7 @@ INSERT INTO pd_issue_categories (stage_id, name, description) VALUES
 (4, 'congestion', 'Congestion issues'),
 (4, 'Optimization', 'Placement optimization issues'),
 (4, 'Scan reordering', 'Scan chain reordering'),
-(4, 'others', 'Other placement issues'),
+(4, 'Others', 'Other placement issues'),
 
 -- CTS categories
 (5, 'Clock skew', 'Clock skew issues'),
@@ -406,7 +406,7 @@ INSERT INTO domain_issue_categories (domain_id, stage_id, name, description) VAL
 (5, 2, 'Netlist', 'Netlist file issues'),
 (5, 2, 'SDC', 'SDC file issues'),
 (5, 2, 'MMMC', 'MMMC file issues'),
-(5, 2, 'others', 'Other initialization issues'),
+(5, 2, 'Others', 'Other initialization issues'),
 
 -- Floorplan categories
 (5, 3, 'Macro placement', 'Macro cell placement issues'),
@@ -415,7 +415,7 @@ INSERT INTO domain_issue_categories (domain_id, stage_id, name, description) VAL
 (5, 3, 'tap cells', 'Tap cell issues'),
 (5, 3, 'Placement blockages', 'Placement blockage issues'),
 (5, 3, 'Marco halo (keepout)', 'Macro halo keepout issues'),
-(5, 3, 'others', 'Other floorplan issues'),
+(5, 3, 'Others', 'Other floorplan issues'),
 
 -- Placement categories
 (5, 4, 'SDC', 'SDC constraints during placement'),
@@ -428,7 +428,7 @@ INSERT INTO domain_issue_categories (domain_id, stage_id, name, description) VAL
 (5, 4, 'congestion', 'Congestion issues'),
 (5, 4, 'Optimization', 'Placement optimization issues'),
 (5, 4, 'Scan reordering', 'Scan chain reordering'),
-(5, 4, 'others', 'Other placement issues'),
+(5, 4, 'Others', 'Other placement issues'),
 
 -- CTS categories
 (5, 5, 'Clock skew', 'Clock skew issues'),

@@ -6,7 +6,10 @@ import './App.css';
 // Components
 import Navbar from './components/Navbar';
 import Login from './components/auth/Login';
+import StudentLogin from './components/auth/StudentLogin';
+import ProfessionalLogin from './components/auth/ProfessionalLogin';
 import Register from './components/auth/Register';
+import ProfessionalRegister from './components/auth/ProfessionalRegister';
 import Dashboard from './components/Dashboard';
 import Analytics from './components/Analytics';
 import QueryList from './components/queries/QueryList';
@@ -28,10 +31,10 @@ import { AuthProvider } from './context/AuthContext';
 const getApiUrl = () => {
   // Check if we're in development mode (localhost)
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    return process.env.REACT_APP_API_URL || 'http://localhost:3000';
   }
   // Production mode - use backup URL or fallback to localhost
-  return process.env.REACT_APP_BACKUP_API_URL || process.env.REACT_APP_API_URL || 'http://localhost:5000';
+  return process.env.REACT_APP_BACKUP_API_URL || process.env.REACT_APP_API_URL || 'http://localhost:3000';
 };
 
 axios.defaults.baseURL = getApiUrl() + '/api';
@@ -98,8 +101,20 @@ function App() {
                 element={isAuthenticated ? <Navigate to="/queries" /> : <Login onLogin={login} />} 
               />
               <Route 
+                path="/login-student" 
+                element={isAuthenticated ? <Navigate to="/queries" /> : <StudentLogin onLogin={login} />} 
+              />
+              <Route 
+                path="/login-professional" 
+                element={isAuthenticated ? <Navigate to="/queries" /> : <ProfessionalLogin onLogin={login} />} 
+              />
+              <Route 
                 path="/register" 
                 element={isAuthenticated ? <Navigate to="/queries" /> : <Register />} 
+              />
+              <Route 
+                path="/register-professional" 
+                element={isAuthenticated ? <Navigate to="/queries" /> : <ProfessionalRegister />} 
               />
               <Route 
                 path="/dashboard" 
@@ -165,4 +180,4 @@ function App() {
   );
 }
 
-export default App; 
+export default App;

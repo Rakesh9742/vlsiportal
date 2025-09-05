@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FaUser, FaSignOutAlt, FaBars, FaTimes, FaMicrochip } from 'react-icons/fa';
+import { FaUser, FaSignOutAlt, FaBars, FaTimes, FaMicrochip, FaHome } from 'react-icons/fa';
 import './Navbar.css';
 
 const Navbar = () => {
@@ -11,7 +11,14 @@ const Navbar = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    // Redirect to appropriate login page based on user role
+    if (user?.role === 'student') {
+      navigate('/login-student');
+    } else if (user?.role === 'professional') {
+      navigate('/login-professional');
+    } else {
+      navigate('/login'); // admin and expert_reviewer go to main login
+    }
   };
 
   const toggleMenu = () => {
@@ -33,6 +40,10 @@ const Navbar = () => {
         </Link>
 
         <div className={`navbar-menu ${isMenuOpen ? 'active' : ''}`}>
+          <Link to="/queries" className="nav-link" onClick={() => setIsMenuOpen(false)}>
+            <FaHome style={{ marginRight: '6px' }} />
+            Home
+          </Link>
           {user?.role === 'admin' ? (
             <>
               <Link to="/admin" className="nav-link" onClick={() => setIsMenuOpen(false)}>
@@ -82,4 +93,4 @@ const Navbar = () => {
   );
 };
 
-export default Navbar; 
+export default Navbar;

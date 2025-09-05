@@ -51,7 +51,7 @@ sudo npm install -g pm2
 
 print_status "Setting up firewall..."
 sudo firewall-cmd --permanent --add-port=420/tcp
-sudo firewall-cmd --permanent --add-port=520/tcp
+sudo firewall-cmd --permanent --add-port=3000/tcp
 sudo firewall-cmd --reload
 
 print_status "Creating application directory..."
@@ -91,7 +91,7 @@ module.exports = {
       max_memory_restart: '1G',
       env: {
         NODE_ENV: 'production',
-        PORT: 520
+        PORT: 3000
       }
     },
     {
@@ -157,8 +157,8 @@ echo "4. Start the application: ./start-vlsi.sh"
 echo ""
 echo "🌐 Access URLs:"
 echo "   Frontend: http://192.168.92.34:420"
-echo "   Backend API: http://192.168.92.34:520"
-echo "   Health Check: http://192.168.92.34:520/api/health"
+echo "   Backend API: http://192.168.92.34:3000"
+echo "   Health Check: http://192.168.92.34:3000/api/health"
 echo ""
 echo "🔧 Management Commands:"
 echo "   View logs: pm2 logs"

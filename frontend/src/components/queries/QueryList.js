@@ -138,7 +138,7 @@ const QueryList = () => {
               )}
             </button>
           )}
-          {user?.role === 'student' && (
+          {(user?.role === 'student' || user?.role === 'professional') && (
             <Link to="/queries/new" className="btn btn-primary">
               <FaPlus />
               New Query
@@ -240,7 +240,7 @@ const QueryList = () => {
         {filteredQueries.length === 0 ? (
           <div className="empty-state">
             <p>No queries found matching your criteria.</p>
-            {user?.role === 'student' && (
+            {(user?.role === 'student' || user?.role === 'professional') && (
               <Link to="/queries/new" className="btn btn-primary">
                 <FaPlus />
                 Create Your First Query
@@ -315,4 +315,4 @@ const QueryList = () => {
   );
 };
 
-export default QueryList; 
+export default QueryList;

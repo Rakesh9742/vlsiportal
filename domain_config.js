@@ -22,23 +22,23 @@ const domainConfig = {
       'LEC'
     ],
     issueCategories: {
-      'Synthesis': ['SDC', 'RTL', '.lib', 'Optimization', 'Timing', 'Area', 'Power', 'Clock gating', 'multibit flops', 'Others'],
-      'Design initilization': ['Tech LEF', 'LEF', 'NDM', 'ITF', 'TLUPLUS', 'QRC tech', 'Netlist', 'SDC', 'MMMC', 'others'],
-      'Floorplan': ['Macro placement', 'power planning', 'endcap', 'tap cells', 'Placement blockages', 'Marco halo (keepout)', 'others'],
-      'Placement': ['SDC', 'Bounds', 'Port buffers', 'Setup timing', 'DRVs', 'Cell denisty', 'Pin density', 'congestion', 'Optimization', 'Scan reordering', 'others'],
-      'CTS': ['Clock skew', 'Clock latency', 'Clock tree exceptions', 'Clock cells', 'clock NDR', 'Clock routing', 'Congestion', 'cell density', 'CCD', 'CCOPT', 'Setup timing', 'Clock path DRVs', 'Clock gating setup'],
-      'Post CTS opt': ['Hold cells', 'hold timing', 'setup timing', 'Congestion', 'cell density', 'DRVs', 'Clock path DRVs', 'Clock NDR', 'Clock routing', 'Clock gating setup', 'Clock gating hold'],
-      'Routing': ['Antenna', 'Crosstalk', 'Detour', 'Open', 'short', 'DRCs', 'Setup timing', 'Hold Timing', 'DRVs', 'Clock DRVs', 'Clock DRCs', 'Preroute to postroute correlation'],
-      'Post route opt': ['Antenna', 'Crosstalk', 'Detour', 'Open', 'short', 'DRCs', 'Setup timing', 'Hold Timing', 'DRVs', 'Clock DRVs', 'Clock DRCs', 'Preroute to postroute correlation'],
-      'Filler insertion': ['Filler gaps', 'Decap density', 'flow issue', 'cell padding'],
-      'PD outputs': ['DEF', 'LEF', 'Netlist', 'Physical Netlist', 'GDS'],
-      'RC extraction': ['SPEF', 'Flow', 'Inputs', 'Shorts', 'Opens'],
-      'ECO': ['Setup timing fixes', 'Hold timing fixes', 'ECO implementation', 'ECO flow', 'DRV fixes', 'Crosstalk delay fixes', 'Crosstalk noise fixes'],
-      'STA': ['SDC', 'Flow', 'DMSA', 'Annotation', 'Setup timing', 'Hold timing', 'DRVs', 'Crosstalk Delay', 'Crosstalk noise', 'Clock DRVs', 'Clock gating Violations', 'ECO generation', 'Physical aware eco'],
-      'EMIR': ['Static IR drop analysis', 'Dynamic vectorless analysis', 'Dynamic vectored analysis', 'Power EM', 'Signal EM', 'IR fix', 'IR hotspots', 'EM fix', 'Ploc file', 'Inputs', 'VCD', 'Others'],
-      'Physical verification': ['DRC', 'LVS', 'Antenna', 'ERC', 'PERC', 'Bump', 'ESD'],
-      'CLP': ['Isolation cell', 'Level shifter', 'Power switch', 'UPF'],
-      'LEC': ['Settings', 'Debug Analysis']
+      'Synthesis': ['SDC', 'RTL', '.lib', 'Optimization', 'Timing', 'Area', 'Power', 'Clock gating', 'multibit flops', 'Tool', 'Others'],
+      'Design initilization': ['Tech LEF', 'LEF', 'NDM', 'ITF', 'TLUPLUS', 'QRC tech', 'Netlist', 'SDC', 'MMMC', 'Tool', 'Others'],
+      'Floorplan': ['Macro placement', 'power planning', 'endcap', 'tap cells', 'Placement blockages', 'Marco halo (keepout)', 'Tool', 'Others'],
+      'Placement': ['SDC', 'Bounds', 'Port buffers', 'Setup timing', 'DRVs', 'Cell denisty', 'Pin density', 'congestion', 'Optimization', 'Scan reordering', 'Tool', 'Others'],
+      'CTS': ['Clock skew', 'Clock latency', 'Clock tree exceptions', 'Clock cells', 'clock NDR', 'Clock routing', 'Congestion', 'cell density', 'CCD', 'CCOPT', 'Setup timing', 'Clock path DRVs', 'Clock gating setup', 'Tool'],
+      'Post CTS opt': ['Hold cells', 'hold timing', 'setup timing', 'Congestion', 'cell density', 'DRVs', 'Clock path DRVs', 'Clock NDR', 'Clock routing', 'Clock gating setup', 'Clock gating hold', 'Tool'],
+      'Routing': ['Antenna', 'Crosstalk', 'Detour', 'Open', 'short', 'DRCs', 'Setup timing', 'Hold Timing', 'DRVs', 'Clock DRVs', 'Clock DRCs', 'Preroute to postroute correlation', 'Tool'],
+      'Post route opt': ['Antenna', 'Crosstalk', 'Detour', 'Open', 'short', 'DRCs', 'Setup timing', 'Hold Timing', 'DRVs', 'Clock DRVs', 'Clock DRCs', 'Preroute to postroute correlation', 'Tool'],
+      'Filler insertion': ['Filler gaps', 'Decap density', 'flow issue', 'cell padding', 'Tool'],
+      'PD outputs': ['DEF', 'LEF', 'Netlist', 'Physical Netlist', 'GDS', 'Tool'],
+      'RC extraction': ['SPEF', 'Flow', 'Inputs', 'Shorts', 'Opens', 'Tool'],
+      'ECO': ['Setup timing fixes', 'Hold timing fixes', 'ECO implementation', 'ECO flow', 'DRV fixes', 'Crosstalk delay fixes', 'Crosstalk noise fixes', 'Tool'],
+      'STA': ['SDC', 'Flow', 'DMSA', 'Annotation', 'Setup timing', 'Hold timing', 'DRVs', 'Crosstalk Delay', 'Crosstalk noise', 'Clock DRVs', 'Clock gating Violations', 'ECO generation', 'Physical aware eco', 'Tool'],
+      'EMIR': ['Static IR drop analysis', 'Dynamic vectorless analysis', 'Dynamic vectored analysis', 'Power EM', 'Signal EM', 'IR fix', 'IR hotspots', 'EM fix', 'Ploc file', 'Inputs', 'VCD', 'Tool', 'Others'],
+      'Physical verification': ['DRC', 'LVS', 'Antenna', 'ERC', 'PERC', 'Bump', 'ESD', 'Tool'],
+      'CLP': ['Isolation cell', 'Level shifter', 'Power switch', 'UPF', 'Tool'],
+      'LEC': ['Settings', 'Debug Analysis', 'Tool']
     }
   },
   
@@ -53,12 +53,12 @@ const domainConfig = {
       'Verification Plan'
     ],
     issueCategories: {
-      'Requirements Analysis': ['Ambiguous Requirements', 'Missing Requirements', 'Conflicting Requirements', 'Incomplete Requirements', 'Others'],
-      'Functional Specification': ['Functional Gaps', 'Interface Issues', 'Protocol Issues', 'Others'],
-      'Performance Specification': ['Performance Targets', 'Power Budget', 'Area Budget', 'Timing Constraints', 'Others'],
-      'Interface Specification': ['Interface Definition', 'Protocol Specification', 'Signal Integrity', 'Others'],
-      'Design Constraints': ['Timing Constraints', 'Power Constraints', 'Area Constraints', 'Others'],
-      'Verification Plan': ['Coverage Plan', 'Test Strategy', 'Others']
+      'Requirements Analysis': ['Ambiguous Requirements', 'Missing Requirements', 'Conflicting Requirements', 'Incomplete Requirements', 'Tool', 'Others'],
+      'Functional Specification': ['Functional Gaps', 'Interface Issues', 'Protocol Issues', 'Tool', 'Others'],
+      'Performance Specification': ['Performance Targets', 'Power Budget', 'Area Budget', 'Timing Constraints', 'Tool', 'Others'],
+      'Interface Specification': ['Interface Definition', 'Protocol Specification', 'Signal Integrity', 'Tool', 'Others'],
+      'Design Constraints': ['Timing Constraints', 'Power Constraints', 'Area Constraints', 'Tool', 'Others'],
+      'Verification Plan': ['Coverage Plan', 'Test Strategy', 'Tool', 'Others']
     }
   },
   
@@ -73,12 +73,12 @@ const domainConfig = {
       'Memory Architecture'
     ],
     issueCategories: {
-      'System Architecture': ['Architecture Gaps', 'Performance Issues', 'Scalability Issues', 'Others'],
-      'Block Level Design': ['Block Interface', 'Block Functionality', 'Block Integration', 'Others'],
-      'Interface Design': ['Interface Protocol', 'Interface Timing', 'Interface Power', 'Others'],
-      'Power Architecture': ['Power Distribution', 'Power Management', 'Power Efficiency', 'Others'],
-      'Clock Architecture': ['Clock Distribution', 'Clock Domain', 'Clock Synchronization', 'Others'],
-      'Memory Architecture': ['Memory Hierarchy', 'Memory Interface', 'Memory Performance', 'Others']
+      'System Architecture': ['Architecture Gaps', 'Performance Issues', 'Scalability Issues', 'Tool', 'Others'],
+      'Block Level Design': ['Block Interface', 'Block Functionality', 'Block Integration', 'Tool', 'Others'],
+      'Interface Design': ['Interface Protocol', 'Interface Timing', 'Interface Power', 'Tool', 'Others'],
+      'Power Architecture': ['Power Distribution', 'Power Management', 'Power Efficiency', 'Tool', 'Others'],
+      'Clock Architecture': ['Clock Distribution', 'Clock Domain', 'Clock Synchronization', 'Tool', 'Others'],
+      'Memory Architecture': ['Memory Hierarchy', 'Memory Interface', 'Memory Performance', 'Tool', 'Others']
     }
   },
   
@@ -93,12 +93,12 @@ const domainConfig = {
       'Area Analysis'
     ],
     issueCategories: {
-      'RTL Design': ['RTL Coding', 'RTL Optimization', 'RTL Integration', 'Others'],
-      'RTL Verification': ['Functional Verification', 'Code Coverage', 'Others'],
-      'Synthesis': ['Synthesis Issues', 'Timing Issues', 'Area Issues', 'Power Issues', 'Others'],
-      'Timing Analysis': ['Setup Timing', 'Hold Timing', 'Clock Issues', 'Others'],
-      'Power Analysis': ['Power Consumption', 'Power Distribution', 'Power Management', 'Others'],
-      'Area Analysis': ['Area Utilization', 'Area Optimization', 'Others']
+      'RTL Design': ['RTL Coding', 'RTL Optimization', 'RTL Integration', 'Tool', 'Others'],
+      'RTL Verification': ['Functional Verification', 'Code Coverage', 'Tool', 'Others'],
+      'Synthesis': ['Synthesis Issues', 'Timing Issues', 'Area Issues', 'Power Issues', 'Tool', 'Others'],
+      'Timing Analysis': ['Setup Timing', 'Hold Timing', 'Clock Issues', 'Tool', 'Others'],
+      'Power Analysis': ['Power Consumption', 'Power Distribution', 'Power Management', 'Tool', 'Others'],
+      'Area Analysis': ['Area Utilization', 'Area Optimization', 'Tool', 'Others']
     }
   },
   
@@ -113,12 +113,12 @@ const domainConfig = {
       'Emulation'
     ],
     issueCategories: {
-      'Test Plan': ['Test Strategy', 'Coverage Plan', 'Test Environment', 'Others'],
-      'Testbench Development': ['Testbench Architecture', 'Testbench Components', 'Testbench Integration', 'Others'],
-      'Functional Verification': ['Functional Coverage', 'Bug Detection', 'Test Execution', 'Others'],
-      'Coverage Analysis': ['Code Coverage', 'Functional Coverage', 'Coverage Closure', 'Others'],
-      'Formal Verification': ['Property Verification', 'Equivalence Checking', 'Others'],
-      'Emulation': ['Emulation Setup', 'Emulation Execution', 'Emulation Debug', 'Others']
+      'Test Plan': ['Test Strategy', 'Coverage Plan', 'Test Environment', 'Tool', 'Others'],
+      'Testbench Development': ['Testbench Architecture', 'Testbench Components', 'Testbench Integration', 'Tool', 'Others'],
+      'Functional Verification': ['Functional Coverage', 'Bug Detection', 'Test Execution', 'Tool', 'Others'],
+      'Coverage Analysis': ['Code Coverage', 'Functional Coverage', 'Coverage Closure', 'Tool', 'Others'],
+      'Formal Verification': ['Property Verification', 'Equivalence Checking', 'Tool', 'Others'],
+      'Emulation': ['Emulation Setup', 'Emulation Execution', 'Emulation Debug', 'Tool', 'Others']
     }
   },
   
@@ -133,12 +133,12 @@ const domainConfig = {
       'Test Application'
     ],
     issueCategories: {
-      'Scan Design': ['Scan Chain', 'Scan Compression', 'Scan Timing', 'Others'],
-      'BIST Design': ['BIST Architecture', 'BIST Controller', 'BIST Pattern', 'Others'],
-      'Boundary Scan': ['Boundary Scan Chain', 'Boundary Scan Control', 'Others'],
-      'Memory BIST': ['Memory BIST Controller', 'Memory Test Algorithm', 'Others'],
-      'Test Pattern Generation': ['ATPG', 'Test Pattern Optimization', 'Others'],
-      'Test Application': ['Test Application Setup', 'Test Execution', 'Test Debug', 'Others']
+      'Scan Design': ['Scan Chain', 'Scan Compression', 'Scan Timing', 'Tool', 'Others'],
+      'BIST Design': ['BIST Architecture', 'BIST Controller', 'BIST Pattern', 'Tool', 'Others'],
+      'Boundary Scan': ['Boundary Scan Chain', 'Boundary Scan Control', 'Tool', 'Others'],
+      'Memory BIST': ['Memory BIST Controller', 'Memory Test Algorithm', 'Tool', 'Others'],
+      'Test Pattern Generation': ['ATPG', 'Test Pattern Optimization', 'Tool', 'Others'],
+      'Test Application': ['Test Application Setup', 'Test Execution', 'Test Debug', 'Tool', 'Others']
     }
   },
   
@@ -161,20 +161,20 @@ const domainConfig = {
       'Project Release & QA'
     ],
     issueCategories: {
-      'Schematic design inputs': ['Matching (devices, nets - resistances, capacitance)', 'High speed', 'High Voltage', 'Different voltage domains', 'Clk & Data paths', 'Power (current & voltage) ratings', 'Branch currents', 'Node Voltages in cross voltage domains'],
-      'Floorplan': ['Devices Placement', 'Macro placement', 'Power planning', 'Different types of MOS devices', 'Different types of devices', 'Blocks integration', 'Analog & Digital blocks integration', 'Area', 'ESD & Clamps integration', 'Latchup'],
-      'Routing': ['Opens', 'Shorts', 'DRCs', 'High Speed signal routing', 'High Current', 'Power mesh', 'Crosstalk'],
-      'AL outputs': ['GDS', 'LEF', 'DEF', 'Netlist', 'PV reports', 'PERC & ESD reports'],
-      'RC extraction': ['Design updates', 'Post layout sims', 'LVS fail'],
-      'ECO': ['Design updates', 'Post layout sims updates', 'Clk & Data Timing'],
-      'EMIR': ['Static IR drop analysis', 'Dynamic IR drop analysis', 'Power EM Iavg', 'Power EM Irms', 'Signal EM Iavg', 'Signal EM Irms', 'EMIR calculations'],
-      'Physical verification': ['DRC', 'DFM', 'ANT', 'LVS', 'ERC', 'PERC', 'Bump', 'ESD', 'Density'],
-      'ESD': ['ESD types', 'ESD sizes', 'Clamps', 'Resistance', 'ESD voltage values'],
-      'Pads': ['Bond Pads', 'Different types of Bond pads', 'Probe pads', 'RDL Routing'],
-      'Package': ['CSP (Chip Scale package)', 'Wire bond'],
-      'Technology & PDKs': ['PDKs', 'Tech file', 'Display file', 'Metal stack (FEOL, MEOL, BEOL)', 'DRM (Design Rule Manual)', 'Rule decks'],
-      'DB Version control': ['Project DB', 'Layout Design DB', 'Schematic design DB', 'Check list DB', 'Design DB check-in', 'Design DB check-out', 'Design DB access or edit permission'],
-      'Project Release & QA': ['Devices used', 'Additional cost Masks', 'DB Prefixing', 'Shapes out side of Boundary', 'LEF vs GDS', 'LEF vs Verilog', 'Design Reviews', 'Cross team release']
+      'Schematic design inputs': ['Matching (devices, nets - resistances, capacitance)', 'High speed', 'High Voltage', 'Different voltage domains', 'Clk & Data paths', 'Power (current & voltage) ratings', 'Branch currents', 'Node Voltages in cross voltage domains', 'Tool'],
+      'Floorplan': ['Devices Placement', 'Macro placement', 'Power planning', 'Different types of MOS devices', 'Different types of devices', 'Blocks integration', 'Analog & Digital blocks integration', 'Area', 'ESD & Clamps integration', 'Latchup', 'Tool'],
+      'Routing': ['Opens', 'Shorts', 'DRCs', 'High Speed signal routing', 'High Current', 'Power mesh', 'Crosstalk', 'Tool'],
+      'AL outputs': ['GDS', 'LEF', 'DEF', 'Netlist', 'PV reports', 'PERC & ESD reports', 'Tool'],
+      'RC extraction': ['Design updates', 'Post layout sims', 'LVS fail', 'Tool'],
+      'ECO': ['Design updates', 'Post layout sims updates', 'Clk & Data Timing', 'Tool'],
+      'EMIR': ['Static IR drop analysis', 'Dynamic IR drop analysis', 'Power EM Iavg', 'Power EM Irms', 'Signal EM Iavg', 'Signal EM Irms', 'EMIR calculations', 'Tool'],
+      'Physical verification': ['DRC', 'DFM', 'ANT', 'LVS', 'ERC', 'PERC', 'Bump', 'ESD', 'Density', 'Tool'],
+      'ESD': ['ESD types', 'ESD sizes', 'Clamps', 'Resistance', 'ESD voltage values', 'Tool'],
+      'Pads': ['Bond Pads', 'Different types of Bond pads', 'Probe pads', 'RDL Routing', 'Tool'],
+      'Package': ['CSP (Chip Scale package)', 'Wire bond', 'Tool'],
+      'Technology & PDKs': ['PDKs', 'Tech file', 'Display file', 'Metal stack (FEOL, MEOL, BEOL)', 'DRM (Design Rule Manual)', 'Rule decks', 'Tool'],
+      'DB Version control': ['Project DB', 'Layout Design DB', 'Schematic design DB', 'Check list DB', 'Design DB check-in', 'Design DB check-out', 'Design DB access or edit permission', 'Tool'],
+      'Project Release & QA': ['Devices used', 'Additional cost Masks', 'DB Prefixing', 'Shapes out side of Boundary', 'LEF vs GDS', 'LEF vs Verilog', 'Design Reviews', 'Cross team release', 'Tool']
     }
   },
   
@@ -189,12 +189,12 @@ const domainConfig = {
       'Corner Analysis'
     ],
     issueCategories: {
-      'Circuit Design': ['Circuit Topology', 'Component Sizing', 'Circuit Analysis', 'Others'],
-      'Circuit Simulation': ['DC Analysis', 'AC Analysis', 'Transient Analysis', 'Others'],
-      'Performance Analysis': ['Gain Analysis', 'Noise Analysis', 'Power Analysis', 'Others'],
-      'Design Optimization': ['Performance Optimization', 'Power Optimization', 'Area Optimization', 'Others'],
-      'Monte Carlo Analysis': ['Process Variation', 'Mismatch Analysis', 'Yield Analysis', 'Others'],
-      'Corner Analysis': ['Process Corners', 'Temperature Corners', 'Voltage Corners', 'Others']
+      'Circuit Design': ['Circuit Topology', 'Component Sizing', 'Circuit Analysis', 'Tool', 'Others'],
+      'Circuit Simulation': ['DC Analysis', 'AC Analysis', 'Transient Analysis', 'Tool', 'Others'],
+      'Performance Analysis': ['Gain Analysis', 'Noise Analysis', 'Power Analysis', 'Tool', 'Others'],
+      'Design Optimization': ['Performance Optimization', 'Power Optimization', 'Area Optimization', 'Tool', 'Others'],
+      'Monte Carlo Analysis': ['Process Variation', 'Mismatch Analysis', 'Yield Analysis', 'Tool', 'Others'],
+      'Corner Analysis': ['Process Corners', 'Temperature Corners', 'Voltage Corners', 'Tool', 'Others']
     }
   }
 };

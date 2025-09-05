@@ -82,7 +82,7 @@ const AdminDashboard = () => {
       {error && <div className="error-message">{error}</div>}
 
       <div className="stats-grid">
-        <div className="stat-card">
+        <div className="stat-card clickable" onClick={() => navigate('/admin/users')}>
           <div className="stat-icon">
             <FaUsers />
           </div>
@@ -92,7 +92,7 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        <div className="stat-card">
+        <div className="stat-card clickable" onClick={() => navigate('/admin/queries')}>
           <div className="stat-icon">
             <FaClipboardList />
           </div>
@@ -102,7 +102,7 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        <div className="stat-card">
+        <div className="stat-card clickable" onClick={() => navigate('/admin/queries?filter=unassigned')}>
           <div className="stat-icon">
             <FaChartBar />
           </div>
@@ -112,7 +112,7 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        <div className="stat-card">
+        <div className="stat-card clickable" onClick={() => navigate('/admin/expert-reviewers')}>
           <div className="stat-icon">
             <FaUserPlus />
           </div>

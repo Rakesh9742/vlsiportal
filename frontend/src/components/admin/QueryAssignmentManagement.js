@@ -20,6 +20,7 @@ import {
   FaTools,
   FaCheckCircle
 } from 'react-icons/fa';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '../ui/Select';
 import './QueryAssignmentManagement.css';
 
 const QueryAssignmentManagement = () => {
@@ -63,9 +64,9 @@ const QueryAssignmentManagement = () => {
       const unassignedRes = await axios.get('/admin/queries/unassigned');
       setUnassignedQueries(unassignedRes.data.queries);
       
-      // Fetch expert reviewers
-      const reviewersRes = await axios.get('/auth/expert-reviewers');
-      setReviewers(reviewersRes.data.reviewers);
+      // Fetch assignees (expert reviewers and admins)
+      const assigneesRes = await axios.get('/auth/assignees');
+      setReviewers(assigneesRes.data.assignees);
     } catch (error) {
       console.error('Error fetching data:', error);
       setError('Failed to load data');
@@ -81,21 +82,21 @@ const QueryAssignmentManagement = () => {
       notes: ''
     });
     
-    // Fetch reviewers for the specific domain
+    // Fetch assignees for the specific domain
     try {
       if (query.student_domain) {
-        const domainReviewersRes = await axios.get(`/auth/expert-reviewers/domain/${encodeURIComponent(query.student_domain)}`);
-        setReviewers(domainReviewersRes.data.reviewers);
+        const domainAssigneesRes = await axios.get(`/auth/assignees/domain/${encodeURIComponent(query.student_domain)}`);
+        setReviewers(domainAssigneesRes.data.assignees);
       } else {
-        // If no domain, fetch all reviewers
-        const reviewersRes = await axios.get('/auth/expert-reviewers');
-        setReviewers(reviewersRes.data.reviewers);
+        // If no domain, fetch all assignees
+        const assigneesRes = await axios.get('/auth/assignees');
+        setReviewers(assigneesRes.data.assignees);
       }
     } catch (error) {
-      console.error('Error fetching domain reviewers:', error);
-      // Fallback to all reviewers
-      const reviewersRes = await axios.get('/auth/expert-reviewers');
-      setReviewers(reviewersRes.data.reviewers);
+      console.error('Error fetching domain assignees:', error);
+      // Fallback to all assignees
+      const assigneesRes = await axios.get('/auth/assignees');
+      setReviewers(assigneesRes.data.assignees);
     }
     
     setShowAssignmentModal(true);
@@ -449,8 +450,8 @@ const QueryAssignmentManagement = () => {
                           type="button"
                           onClick={async () => {
                             try {
-                              const allReviewersRes = await axios.get('/auth/expert-reviewers');
-                              setReviewers(allReviewersRes.data.reviewers);
+                              const allAssigneesRes = await axios.get('/auth/assignees');
+                            setReviewers(allAssigneesRes.data.assignees);
                             } catch (error) {
                               console.error('Error fetching all reviewers:', error);
                             }
@@ -463,29 +464,33 @@ const QueryAssignmentManagement = () => {
                       </span>
                     )}
                   </label>
-                  <select
-                    id="expert_reviewer_id"
-                    name="expert_reviewer_id"
+                  <Select
                     value={assignmentData.expert_reviewer_id}
-                    onChange={(e) => setAssignmentData(prev => ({
+                    onValueChange={(value) => setAssignmentData(prev => ({
                       ...prev,
-                      expert_reviewer_id: e.target.value
+                      expert_reviewer_id: value
                     }))}
                     required
                   >
-                    <option value="">Select Expert Reviewer</option>
-                    {reviewers.length > 0 ? (
-                      reviewers.map(reviewer => (
-                        <option key={reviewer.id} value={reviewer.id}>
-                          {reviewer.full_name} ({reviewer.domain_name})
-                        </option>
-                      ))
-                    ) : (
-                      <option value="" disabled>
-                        No reviewers available for this domain
-                      </option>
-                    )}
-                  </select>
+                    <SelectTrigger className="form-control">
+                      <SelectValue placeholder="Select Expert Reviewer" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectGroup>
+                        {reviewers.length > 0 ? (
+                           reviewers.map(reviewer => (
+                             <SelectItem key={reviewer.id} value={reviewer.id}>
+                               {reviewer.full_name} ({reviewer.domain_name})
+                             </SelectItem>
+                           ))
+                         ) : (
+                           <SelectItem value="" disabled>
+                             No reviewers available for this domain
+                           </SelectItem>
+                         )}
+                       </SelectGroup>
+                     </SelectContent>
+                   </Select>
                   {selectedQuery.student_domain && reviewers.length === 0 && (
                     <div className="form-help">
                       No expert reviewers found for the {selectedQuery.student_domain} domain. 
@@ -493,8 +498,8 @@ const QueryAssignmentManagement = () => {
                         type="button"
                         onClick={async () => {
                           try {
-                            const allReviewersRes = await axios.get('/auth/expert-reviewers');
-                            setReviewers(allReviewersRes.data.reviewers);
+                            const allAssigneesRes = await axios.get('/auth/assignees');
+                            setReviewers(allAssigneesRes.data.assignees);
                           } catch (error) {
                             console.error('Error fetching all reviewers:', error);
                           }

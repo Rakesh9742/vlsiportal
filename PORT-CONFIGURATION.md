@@ -4,7 +4,7 @@
 The VLSI Portal has been configured to use specific ports for both development and production environments:
 
 - **Frontend**: Port 420
-- **Backend**: Port 520
+- **Backend**: Port 3000
 
 ## Development Environment
 
@@ -28,7 +28,7 @@ npm run dev
 
 ### Manual Start
 ```bash
-# Start backend on port 520
+# Start backend on port 3000
 cd backend
 npm run dev
 
@@ -41,8 +41,8 @@ npm run dev
 
 ### Access URLs
 - **Frontend**: http://192.168.92.34:420
-- **Backend API**: http://192.168.92.34:520
-- **Health Check**: http://192.168.92.34:520/api/health
+- **Backend API**: http://192.168.92.34:3000
+- **Health Check**: http://192.168.92.34:3000/api/health
 
 ### Deployment
 ```bash
@@ -55,10 +55,10 @@ npm run dev
 ### Frontend (.env)
 ```env
 # API Configuration - Primary URL (localhost for development)
-REACT_APP_API_URL=http://localhost:520
+REACT_APP_API_URL=http://localhost:3000
 
 # Backup API URLs (production)
-REACT_APP_BACKUP_API_URL=http://192.168.92.34:520
+REACT_APP_BACKUP_API_URL=http://192.168.92.34:3000
 
 # Frontend Port Configuration
 PORT=420
@@ -67,7 +67,7 @@ PORT=420
 ### Backend (.env)
 ```env
 # Server Configuration
-PORT=520
+PORT=3000
 NODE_ENV=production
 ```
 
@@ -106,22 +106,31 @@ If you get a "port already in use" error:
 1. **Windows**: 
    ```cmd
    netstat -ano | findstr :420
-   netstat -ano | findstr :520
+   netstat -ano | findstr :3000
    taskkill /PID <PID> /F
    ```
 
 2. **Unix/Linux**:
    ```bash
    lsof -i :420
-   lsof -i :520
+   lsof -i :3000
    kill -9 <PID>
+   ```
+
+### Permission Denied Error (Linux)
+If you get "EACCES: permission denied" error on Linux:
+
+1. **Use higher port numbers** (above 1024) - This is already configured
+2. **Or run with sudo** (not recommended for production):
+   ```bash
+   sudo npm run dev
    ```
 
 ### Firewall Issues
 Make sure the ports are open in your firewall:
 
-- **Windows**: Add ports 420 and 520 to Windows Firewall
-- **Linux**: Use `sudo ufw allow 420` and `sudo ufw allow 520`
+- **Windows**: Add ports 420 and 3000 to Windows Firewall
+- **Linux**: Use `sudo ufw allow 420` and `sudo ufw allow 3000`
 - **VNC Server**: The deployment script automatically configures the firewall
 
 ## Switching Between Environments
@@ -140,16 +149,16 @@ npm run switch-localhost
 
 The frontend automatically detects the environment and uses the appropriate API URL:
 
-- **Localhost**: http://localhost:520
-- **Production**: http://192.168.92.34:520
+- **Localhost**: http://localhost:3000
+- **Production**: http://192.168.92.34:3000
 
 The configuration is handled in `frontend/src/App.js`:
 
 ```javascript
 const getApiUrl = () => {
   if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return process.env.REACT_APP_API_URL || 'http://localhost:520';
+    return process.env.REACT_APP_API_URL || 'http://localhost:3000';
   }
-  return process.env.REACT_APP_BACKUP_API_URL || process.env.REACT_APP_API_URL || 'http://localhost:520';
+  return process.env.REACT_APP_BACKUP_API_URL || process.env.REACT_APP_API_URL || 'http://localhost:3000';
 };
 ```

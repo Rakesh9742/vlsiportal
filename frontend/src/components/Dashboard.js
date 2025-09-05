@@ -163,7 +163,7 @@ const Dashboard = () => {
             <FaQuestionCircle className="empty-icon" />
             <h3>No queries yet</h3>
             <p>Start by creating your first query</p>
-            {user?.role === 'student' && (
+            {(user?.role === 'student' || user?.role === 'professional') && (
               <Link to="/queries/new" className="btn btn-primary">
                 <FaPlus /> Create Query
               </Link>
@@ -235,6 +235,31 @@ const Dashboard = () => {
         </div>
       )}
 
+      {user?.role === 'professional' && (
+        <div className="dashboard-section">
+          <div className="section-header">
+            <h2>Quick Actions</h2>
+          </div>
+          <div className="quick-actions">
+            <Link to="/queries/new" className="action-card">
+              <FaPlus className="action-icon" />
+              <h3>Create New Query</h3>
+              <p>Ask a question to expert reviewers</p>
+            </Link>
+            <Link to="/queries" className="action-card">
+              <FaQuestionCircle className="action-icon" />
+              <h3>View My Queries</h3>
+              <p>Check your query history</p>
+            </Link>
+            <Link to="/profile" className="action-card">
+              <FaUser className="action-icon" />
+              <h3>Update Profile</h3>
+              <p>Manage your account</p>
+            </Link>
+          </div>
+        </div>
+      )}
+
       {user?.role === 'expert_reviewer' && (
         <div className="dashboard-section">
           <div className="section-header">
@@ -258,4 +283,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard; 
+export default Dashboard;

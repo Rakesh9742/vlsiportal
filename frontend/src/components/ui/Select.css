@@ -1,0 +1,232 @@
+/* Select Container */
+.select-container {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+/* Select Trigger */
+.select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 16px;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+  box-shadow: 0 1px 3px rgb(217, 213, 213);
+  min-height: 44px;
+}
+
+.select-trigger:hover {
+  border-color: #cbd5e0;
+  box-shadow: 0 2px 8px rgb(251, 251, 251);
+  transform: translateY(-1px);
+}
+
+.select-trigger:focus,
+.select-trigger--open {
+  border-color: #3182ce;
+  box-shadow: 0 0 0 3px rgb(255, 255, 255), 0 4px 12px rgb(255, 254, 254);
+  transform: translateY(-1px);
+}
+
+.select-trigger--disabled {
+  background-color: #f7fafc;
+  color: #a0aec0;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.select-trigger--disabled:hover {
+  border-color: #e2e8f0;
+  box-shadow: 0 1px 3px rgba(255, 255, 255, 0.966);
+  transform: none;
+}
+
+/* Select Trigger Content */
+.select-trigger__content {
+  flex: 1;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Select Trigger Icon */
+.select-trigger__icon {
+  margin-left: 8px;
+  font-size: 12px;
+  color: #718096;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+}
+
+.select-trigger__icon--rotated {
+  transform: rotate(180deg);
+}
+
+/* Select Value */
+.select-value {
+  color: #374151;
+  font-weight: 500;
+}
+
+/* Select Content */
+.select-content {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  min-width: 8rem;
+  overflow: hidden;
+  border-radius: 0.375rem;
+  border: 1px solid #e5e7eb;
+  background-color: white;
+  color: #374151;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  animation: slideDown 0.2s ease-out;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.select-content__inner {
+  padding: 4px;
+}
+
+/* Select Group */
+.select-group {
+  padding: 0;
+}
+
+/* Select Label */
+.select-label {
+  padding: 8px 12px 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #718096;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 4px;
+}
+
+/* Select Item */
+.select-item {
+  position: relative;
+  display: flex;
+  width: 100%;
+  cursor: pointer;
+  select: none;
+  align-items: center;
+  border-radius: 0.125rem;
+  padding: 0.375rem 0.5rem;
+  padding-left: 2rem;
+  font-size: 0.875rem;
+  outline: none;
+  transition: background-color 0.15s ease-in-out;
+}
+
+.select-item:hover {
+  background-color: #f3f4f6;
+}
+
+.select-item:focus {
+  background-color: #f3f4f6;
+}
+
+.select-item--selected {
+  background-color: #ebf8ff;
+  color: #2b6cb0;
+  font-weight: 600;
+}
+
+.select-item--selected:hover {
+  background-color: #bee3f8;
+}
+
+.select-item--disabled {
+  color: #a0aec0;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.select-item--disabled:hover {
+  background-color: transparent;
+  transform: none;
+}
+
+/* Select Item Content */
+.select-item__content {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Select Item Check */
+.select-item__check {
+  margin-left: 8px;
+  font-size: 12px;
+  color: #3182ce;
+  flex-shrink: 0;
+}
+
+/* Animations */
+@keyframes selectSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Custom Scrollbar for Select Content */
+.select-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.select-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.select-content::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 3px;
+}
+
+.select-content::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .select-trigger {
+    padding: 10px 14px;
+    font-size: 16px; /* Prevent zoom on iOS */
+    min-height: 44px;
+  }
+  
+  .select-content {
+    max-height: 250px;
+  }
+  
+  .select-item {
+    padding: 12px 14px;
+    font-size: 16px;
+  }
+}
+
+/* Force light theme - removed dark mode auto-detection */
