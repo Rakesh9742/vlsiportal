@@ -58,7 +58,8 @@ const AdminDashboard = () => {
 
   const handleExportQueries = async () => {
     try {
-      const response = await axios.get('/queries/export', {
+      setError(''); // Clear any previous errors
+      const response = await axios.get('/queries/export-new', {
         responseType: 'blob'
       });
       
@@ -72,7 +73,8 @@ const AdminDashboard = () => {
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      setError('Failed to export queries');
+      console.error('Export error:', error);
+      setError('Failed to export queries: ' + (error.response?.data?.message || error.message));
     }
   };
 
@@ -88,9 +90,6 @@ const AdminDashboard = () => {
     <div className="admin-dashboard">
       <div className="admin-header">
         <h1>Admin Dashboard</h1>
-        <div className="admin-user-info">
-          <span>Welcome, {user?.fullName}</span>
-        </div>
       </div>
 
       {error && <div className="error-message">{error}</div>}
@@ -159,7 +158,7 @@ const AdminDashboard = () => {
               onClick={handleExportQueries}
               className="action-btn export-btn"
             >
-              <FaDownload /> Export Resolved Queries
+              <FaDownload /> Export Resolved Queries (Fixed)
             </button>
           </div>
         </div>

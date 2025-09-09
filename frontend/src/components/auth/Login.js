@@ -38,32 +38,25 @@ const Login = ({ onLogin }) => {
 
   return (
     <div className="auth-container">
-      {/* Full Page 3D Background */}
+      {/* Video Background */}
       <div className="full-page-3d-bg">
-        <div className="bg-cube-3d"></div>
-        <div className="bg-cube-3d"></div>
-        <div className="bg-cube-3d"></div>
-        <div className="bg-cube-3d"></div>
-        <div className="bg-cube-3d"></div>
-        <div className="bg-cube-3d"></div>
-        <div className="bg-sphere-3d"></div>
-        <div className="bg-sphere-3d"></div>
-        <div className="bg-sphere-3d"></div>
-        <div className="bg-sphere-3d"></div>
-        <div className="bg-sphere-3d"></div>
-        <div className="bg-sphere-3d"></div>
-        <div className="bg-pyramid-3d"></div>
-        <div className="bg-pyramid-3d"></div>
-        <div className="bg-pyramid-3d"></div>
-        <div className="bg-pyramid-3d"></div>
+        <video 
+          autoPlay 
+          loop 
+          muted 
+          playsInline 
+          className="background-video"
+        >
+          <source src="/Video_Colorization_and_Slow_Motion.mp4" type="video/mp4" />
+        </video>
       </div>
       
       <div className="auth-layout admin-login">
         {/* Left Side - Website Name */}
         <div className="website-section">
           <div className="website-name">
-            <img src="/logo.png" alt="VLSI Portal Logo" className="website-logo" />
-            <h1 className="website-title">VLSI Portal</h1>
+            <img src="/logo.png" alt="vlsiforum Logo" className="website-logo" />
+            <h1 className="website-title">vlsiforum</h1>
             <p className="website-subtitle">Advanced Learning Platform</p>
             <p className="website-description">
               Empowering students and professionals with cutting-edge VLSI design tools, 
@@ -75,8 +68,8 @@ const Login = ({ onLogin }) => {
         {/* Right Side - Login Form */}
         <div className="form-section">
           <div className="auth-card">
-            <h2 className="auth-title">Admin Portal</h2>
-            <p className="auth-subtitle">Administrative access to VLSI Portal</p>
+            <h2 className="auth-title">Admin Login</h2>
+            <p className="auth-subtitle">Administrative access to vlsiforum</p>
 
             {error && <div className="error">{error}</div>}
 

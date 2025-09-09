@@ -5,6 +5,7 @@ const { auth, checkRole } = require('../middleware/auth');
 const { uploadImages, handleUploadError } = require('../middleware/upload');
 const domainConfig = require('../../domain_config');
 const { generateUniqueCustomQueryId } = require('../utils/queryIdGenerator');
+const { createNotification } = require('./notifications');
 const archiver = require('archiver');
 
 const router = express.Router();
@@ -24,7 +25,8 @@ router.get('/pd-stages', async (req, res) => {
     );
     res.json({ stages });
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error in POST /:id/responses:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
@@ -233,8 +235,13 @@ router.post('/', auth, checkRole(['student', 'professional']), uploadImages, han
   body('description').notEmpty().withMessage('Description is required'),
   body('tool_id').optional().isInt().withMessage('Tool ID must be a number'),
   body('technology').optional().isString().withMessage('Technology must be a string'),
-  body('stage_id').optional().isInt().withMessage('Stage ID must be a number'),
+  body('stage_id').optional().custom((value) => {
+    if (value === null || value === undefined || value === '') return true;
+    if (value === 'others') return true; // Allow custom stage
+    return Number.isInteger(Number(value));
+  }).withMessage('Stage ID must be a number or "others" for custom stage'),
   body('custom_issue_category').optional(),
+  body('custom_stage').optional(),
   body('debug_steps').optional(),
   body('resolution').optional()
 ], async (req, res) => {
@@ -244,13 +251,14 @@ router.post('/', auth, checkRole(['student', 'professional']), uploadImages, han
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { 
-      title, 
-      description, 
+    const {
+      title,
+      description,
       tool_id,
       technology,
       stage_id,
       custom_issue_category,
+      custom_stage,
       debug_steps,
       resolution
     } = req.body;
@@ -279,8 +287,11 @@ router.post('/', auth, checkRole(['student', 'professional']), uploadImages, han
 
     try {
       // Build query fields and values (including custom_query_id)
-      const queryFields = ['student_id', 'custom_query_id', 'title', 'description', 'tool_id', 'technology', 'stage_id', 'debug_steps', 'resolution'];
-      const queryValues = [studentId, customQueryId, title, description, tool_id, technology, stage_id, debug_steps, resolution];
+      const queryFields = ['student_id', 'custom_query_id', 'title', 'description', 'tool_id', 'technology', 'stage_id', 'custom_stage', 'debug_steps', 'resolution'];
+      // Handle custom stage - set stage_id to null when "others" is selected
+      const processedStageId = stage_id === 'others' ? null : stage_id;
+      const processedCustomStage = stage_id === 'others' ? custom_stage : null;
+      const queryValues = [studentId, customQueryId, title, description, tool_id, technology, processedStageId, processedCustomStage, debug_steps, resolution];
       
       // Handle custom issue category
       let issue_category_id = null;
@@ -317,19 +328,41 @@ router.post('/', auth, checkRole(['student', 'professional']), uploadImages, han
       await connection.commit();
       connection.release();
 
-      res.status(201).json({
-        message: 'Query created successfully',
+      // Send notification to all admins when a new query is created
+      try {
+        const [admins] = await db.execute(
+          'SELECT id FROM users WHERE role = "admin"'
+        );
+        
+        for (const admin of admins) {
+          await createNotification(
+            admin.id,
+            queryId,
+            'query_created',
+            'New Query Created',
+            `A new query "${title}" has been created by ${studentInfo[0].full_name}`,
+            { student_id: studentId, student_name: studentInfo[0].full_name }
+          );
+        }
+      } catch (notificationError) {
+        console.error('Error sending notifications to admins:', notificationError);
+        // Don't fail the query creation if notification fails
+      }
+
+    res.status(201).json({ 
+      message: 'Query created successfully',
         queryId: queryId,
         customQueryId: customQueryId,
         imagesUploaded: req.files ? req.files.length : 0
-      });
+    });
     } catch (error) {
       await connection.rollback();
       connection.release();
       throw error;
     }
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error creating query:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
@@ -354,7 +387,7 @@ router.get('/resolved-domain', auth, checkRole(['student', 'professional']), asy
     const query = `
       SELECT q.*, u.full_name as student_name, t.full_name as teacher_name,
              tool.name as tool_name, d.name as student_domain,
-             ds.name as design_stage_name,
+             COALESCE(ds.name, q.custom_stage) as design_stage_name,
              COALESCE(ic.name, q.custom_issue_category) as issue_category_name,
              q.custom_query_id
       FROM queries q
@@ -487,7 +520,7 @@ router.get('/export-resolved-domain', auth, checkRole(['student', 'professional'
     const [queries] = await db.execute(`
       SELECT q.*, u.full_name as student_name, t.full_name as teacher_name,
              tool.name as tool_name, d.name as student_domain,
-             ds.name as design_stage_name,
+             COALESCE(ds.name, q.custom_stage) as design_stage_name,
              COALESCE(ic.name, q.custom_issue_category) as issue_category_name,
              q.custom_query_id
       FROM queries q
@@ -561,9 +594,175 @@ router.get('/export-resolved-domain', auth, checkRole(['student', 'professional'
   }
 });
 
+// New Export queries to ZIP with CSV and images (admins only) - Fixed version
+router.get('/export-new', auth, checkRole(['admin']), async (req, res) => {
+  try {
+    console.log('NEW Export function called by user:', req.user.userId, 'role:', req.user.role);
+    const archiver = require('archiver');
+    const fs = require('fs');
+    const path = require('path');
+
+    // Get all resolved queries with a simpler query
+    const [queries] = await db.execute(`
+      SELECT 
+        q.id,
+        q.title,
+        q.description,
+        q.status,
+        q.resolution_attempts,
+        q.debug_steps,
+        q.resolution,
+        q.created_at,
+        q.updated_at,
+        u.full_name as student_name,
+        d.name as student_domain,
+        t.full_name as teacher_name,
+        ds.name as design_stage_name,
+        COALESCE(ic.name, q.custom_issue_category) as issue_category_name,
+        tool.name as tool_name
+      FROM queries q
+      JOIN users u ON q.student_id = u.id
+      LEFT JOIN domains d ON u.domain_id = d.id
+      LEFT JOIN users t ON q.expert_reviewer_id = t.id
+      LEFT JOIN tools tool ON q.tool_id = tool.id
+      LEFT JOIN stages ds ON q.stage_id = ds.id
+      LEFT JOIN issue_categories ic ON q.issue_category_id = ic.id
+      WHERE q.status = 'resolved'
+      ORDER BY q.created_at DESC
+    `);
+
+    console.log(`NEW Export: Found ${queries.length} resolved queries`);
+
+    if (queries.length === 0) {
+      return res.status(404).json({ message: 'No resolved queries found for export' });
+    }
+
+    // Create CSV content
+    const csvHeaders = [
+      'Title', 'Description', 'Status', 'Student Name', 'Student Domain',
+      'Expert Reviewer Name', 'Design Stage', 'Issue Category', 'Tool',
+      'Debug Steps', 'Resolution', 'Created Date', 'Updated Date', 'Answer', 'Images'
+    ];
+
+    const csvRows = [];
+    let totalImages = 0;
+    let addedImages = 0;
+
+    // Process each query
+    for (const query of queries) {
+      console.log(`Processing query ${query.id}: ${query.title}`);
+      
+      // Get responses
+      const [responses] = await db.execute(`
+        SELECT content FROM responses 
+        WHERE query_id = ? 
+        ORDER BY created_at DESC 
+        LIMIT 1
+      `, [query.id]);
+      
+      // Get images
+      const [images] = await db.execute(`
+        SELECT original_name, file_path FROM query_images 
+        WHERE query_id = ? 
+        ORDER BY created_at ASC
+      `, [query.id]);
+      
+      console.log(`Query ${query.id}: Found ${images.length} images`);
+      
+      const answer = responses.length > 0 ? responses[0].content : '';
+      const imageNames = images.map(img => img.original_name).join('; ');
+      
+      // Format dates
+      const formatDate = (dateString) => {
+        try {
+          const date = new Date(dateString);
+          if (isNaN(date.getTime())) return 'Invalid Date';
+          const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          const day = days[date.getDay()];
+          const month = months[date.getMonth()];
+          const dateNum = date.getDate().toString().padStart(2, '0');
+          const year = date.getFullYear();
+          return `${day} ${month} ${dateNum} ${year}`;
+        } catch (dateError) {
+          return 'Invalid Date';
+        }
+      };
+      
+      const createdDate = formatDate(query.created_at);
+      const updatedDate = formatDate(query.updated_at);
+      
+      csvRows.push({
+        csvRow: [
+          `"${(query.title || '').replace(/"/g, '""')}"`,
+          `"${(query.description || '').replace(/"/g, '""')}"`,
+          query.status,
+          `"${(query.student_name || '').replace(/"/g, '""')}"`,
+          `"${(query.student_domain || '').replace(/"/g, '""')}"`,
+          `"${(query.teacher_name || '').replace(/"/g, '""')}"`,
+          `"${(query.design_stage_name || '').replace(/"/g, '""')}"`,
+          `"${(query.issue_category_name || '').replace(/"/g, '""')}"`,
+          `"${(query.tool_name || '').replace(/"/g, '""')}"`,
+          `"${(query.debug_steps || '').replace(/"/g, '""')}"`,
+          `"${(query.resolution || '').replace(/"/g, '""')}"`,
+          createdDate,
+          updatedDate,
+          `"${answer.replace(/"/g, '""')}"`,
+          `"${imageNames.replace(/"/g, '""')}"`
+        ],
+        images: images
+      });
+      
+      totalImages += images.length;
+    }
+
+    const csvContent = [csvHeaders.join(','), ...csvRows.map(row => row.csvRow.join(','))].join('\n');
+
+    // Create ZIP archive
+    const archive = archiver('zip', { zlib: { level: 9 } });
+    
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="resolved_queries_${new Date().toISOString().split('T')[0]}.zip"`);
+    
+    archive.pipe(res);
+    
+    // Add CSV file
+    archive.append(csvContent, { name: 'queries.csv' });
+    
+    // Add images
+    console.log('Adding images to archive...');
+    for (const row of csvRows) {
+      for (const image of row.images) {
+        let imagePath = image.file_path;
+        if (!path.isAbsolute(imagePath)) {
+          imagePath = path.join(__dirname, imagePath);
+        }
+        
+        if (fs.existsSync(imagePath)) {
+          const fileName = `${image.original_name}`;
+          archive.file(imagePath, { name: `images/${fileName}` });
+          addedImages++;
+          console.log(`Added image: ${fileName}`);
+        } else {
+          console.log(`Image not found: ${imagePath}`);
+        }
+      }
+    }
+    
+    console.log(`NEW Export summary: ${addedImages}/${totalImages} images added to archive`);
+    
+    await archive.finalize();
+    
+  } catch (error) {
+    console.error('NEW Export error:', error);
+    res.status(500).json({ message: 'Failed to export queries' });
+  }
+});
+
 // Export queries to ZIP with CSV and images (admins only)
 router.get('/export', auth, checkRole(['admin']), async (req, res) => {
   try {
+    console.log('Export function called by user:', req.user.userId, 'role:', req.user.role);
     const archiver = require('archiver');
     const fs = require('fs');
     const path = require('path');
@@ -602,6 +801,14 @@ router.get('/export', auth, checkRole(['admin']), async (req, res) => {
     
     const [queries] = await db.execute(query, params);
 
+    console.log(`Found ${queries.length} resolved queries for export`);
+    if (queries.length > 0) {
+      console.log('Sample resolved query:', {
+        id: queries[0].id,
+        title: queries[0].title,
+        status: queries[0].status
+      });
+    }
 
     // Check if there are any resolved queries
     if (queries.length === 0) {
@@ -628,24 +835,38 @@ router.get('/export', auth, checkRole(['admin']), async (req, res) => {
     ];
 
     // Get answers and images for all queries
+    console.log('Starting to process queries for CSV and images...');
     const csvRows = await Promise.all(queries.map(async (query) => {
       try {
+        console.log(`Processing query ${query.id}: ${query.title}`);
         // Get the latest response for this query
         const [responses] = await db.execute(`
-          SELECT answer FROM responses 
+          SELECT content FROM responses 
           WHERE query_id = ? 
           ORDER BY created_at DESC 
           LIMIT 1
         `, [query.id]);
         
         // Get images for this query
+        console.log(`Fetching images for query ${query.id}...`);
         const [images] = await db.execute(`
           SELECT original_name, file_path FROM query_images 
           WHERE query_id = ? 
           ORDER BY created_at ASC
         `, [query.id]);
         
-        const answer = responses.length > 0 ? responses[0].answer : '';
+        console.log(`Query ${query.id} (${query.title}): Found ${images.length} images`);
+        if (images.length > 0) {
+          console.log('Sample image:', images[0]);
+        } else {
+          // Debug: Check if there are any images for this query at all
+          const [allImages] = await db.execute(`
+            SELECT * FROM query_images WHERE query_id = ?
+          `, [query.id]);
+          console.log(`Debug: All images for query ${query.id}:`, allImages);
+        }
+        
+        const answer = responses.length > 0 ? responses[0].content : '';
         const imageNames = images.map(img => img.original_name).join('; ');
         
         // Format dates to show only date without timezone - use consistent format
@@ -735,19 +956,39 @@ router.get('/export', auth, checkRole(['admin']), async (req, res) => {
     archive.append(csvContent, { name: 'queries.csv' });
 
     // Add images to archive
+    console.log('Starting to add images to archive...');
+    let totalImages = 0;
+    let addedImages = 0;
     for (const queryData of csvRows) {
+      console.log(`Processing ${queryData.images.length} images for query data`);
       for (const image of queryData.images) {
-        if (fs.existsSync(image.file_path)) {
+        totalImages++;
+        console.log(`Processing image ${totalImages}: ${image.original_name} at ${image.file_path}`);
+        // Handle both absolute and relative paths
+        let imagePath = image.file_path;
+        if (!path.isAbsolute(imagePath)) {
+          // If it's a relative path, make it absolute
+          imagePath = path.join(__dirname, imagePath);
+        }
+        // If it's already absolute, use it as is
+        
+        if (fs.existsSync(imagePath)) {
           const fileName = `${image.original_name}`;
-          archive.file(image.file_path, { name: `images/${fileName}` });
+          archive.file(imagePath, { name: `images/${fileName}` });
+          addedImages++;
+        } else {
+          console.log(`Image file not found: ${imagePath} (original path: ${image.file_path})`);
         }
       }
     }
+    
+    console.log(`Export summary: ${addedImages}/${totalImages} images added to archive`);
 
     // Finalize the archive
     await archive.finalize();
 
   } catch (error) {
+    console.error('Export queries error:', error);
     res.status(500).json({ message: 'Failed to export queries' });
   }
 });
@@ -758,12 +999,16 @@ router.get('/:id', auth, async (req, res) => {
     const queryId = req.params.id;
     let sqlQuery;
     let params = [queryId];
+    
+    // Determine if queryId is numeric (database ID) or custom_query_id
+    const isNumericId = /^\d+$/.test(queryId);
+    const idField = isNumericId ? 'q.id' : 'q.custom_query_id';
 
     if (req.user.role === 'student') {
       sqlQuery = `
         SELECT q.*, u.full_name as student_name, t.full_name as teacher_name,
                tool.name as tool_name, d.name as student_domain,
-               ds.name as design_stage_name,
+               COALESCE(ds.name, q.custom_stage) as design_stage_name,
                COALESCE(ic.name, q.custom_issue_category) as issue_category_name
         FROM queries q
         JOIN users u ON q.student_id = u.id
@@ -772,7 +1017,7 @@ router.get('/:id', auth, async (req, res) => {
         LEFT JOIN tools tool ON q.tool_id = tool.id
         LEFT JOIN stages ds ON q.stage_id = ds.id
         LEFT JOIN issue_categories ic ON q.issue_category_id = ic.id
-        WHERE q.id = ? AND (q.student_id = ? OR (q.status = 'resolved' AND d.id = ?))
+        WHERE ${idField} = ? AND (q.student_id = ? OR (q.status = 'resolved' AND d.id = ?))
       `;
       params = [queryId, req.user.userId, req.user.domainId];
     } else if (req.user.role === 'expert_reviewer') {
@@ -780,7 +1025,7 @@ router.get('/:id', auth, async (req, res) => {
       sqlQuery = `
         SELECT q.*, u.full_name as student_name, t.full_name as teacher_name,
                tool.name as tool_name, d.name as student_domain,
-               ds.name as design_stage_name,
+               COALESCE(ds.name, q.custom_stage) as design_stage_name,
                COALESCE(ic.name, q.custom_issue_category) as issue_category_name
         FROM queries q
         JOIN query_assignments qa ON q.id = qa.query_id
@@ -790,7 +1035,7 @@ router.get('/:id', auth, async (req, res) => {
         LEFT JOIN tools tool ON q.tool_id = tool.id
         LEFT JOIN stages ds ON q.stage_id = ds.id
         LEFT JOIN issue_categories ic ON q.issue_category_id = ic.id
-        WHERE q.id = ? AND qa.expert_reviewer_id = ?
+        WHERE ${idField} = ? AND qa.expert_reviewer_id = ?
       `;
       params = [queryId, req.user.userId];
     } else if (req.user.role === 'professional') {
@@ -798,7 +1043,7 @@ router.get('/:id', auth, async (req, res) => {
       sqlQuery = `
         SELECT q.*, u.full_name as student_name, t.full_name as teacher_name,
                tool.name as tool_name, d.name as student_domain,
-               ds.name as design_stage_name,
+               COALESCE(ds.name, q.custom_stage) as design_stage_name,
                COALESCE(ic.name, q.custom_issue_category) as issue_category_name
         FROM queries q
         JOIN users u ON q.student_id = u.id
@@ -807,7 +1052,7 @@ router.get('/:id', auth, async (req, res) => {
         LEFT JOIN tools tool ON q.tool_id = tool.id
         LEFT JOIN stages ds ON q.stage_id = ds.id
         LEFT JOIN issue_categories ic ON q.issue_category_id = ic.id
-        WHERE q.id = ? AND (q.student_id = ? OR (q.status = 'resolved' AND d.id = ?))
+        WHERE ${idField} = ? AND (q.student_id = ? OR (q.status = 'resolved' AND d.id = ?))
       `;
       params = [queryId, req.user.userId, req.user.domainId];
     } else {
@@ -815,7 +1060,7 @@ router.get('/:id', auth, async (req, res) => {
       sqlQuery = `
         SELECT q.*, u.full_name as student_name, t.full_name as teacher_name,
                tool.name as tool_name, d.name as student_domain,
-               ds.name as design_stage_name,
+               COALESCE(ds.name, q.custom_stage) as design_stage_name,
                COALESCE(ic.name, q.custom_issue_category) as issue_category_name
         FROM queries q
         JOIN users u ON q.student_id = u.id
@@ -824,7 +1069,7 @@ router.get('/:id', auth, async (req, res) => {
         LEFT JOIN tools tool ON q.tool_id = tool.id
         LEFT JOIN stages ds ON q.stage_id = ds.id
         LEFT JOIN issue_categories ic ON q.issue_category_id = ic.id
-        WHERE q.id = ?
+        WHERE ${idField} = ?
       `;
     }
 
@@ -834,6 +1079,9 @@ router.get('/:id', auth, async (req, res) => {
       return res.status(404).json({ message: 'Query not found' });
     }
 
+    const query = queries[0];
+    const numericQueryId = query.id; // Use the actual numeric ID from the database
+
     // Get responses for this query
     const [responses] = await db.execute(
       `SELECT r.*, u.full_name as teacher_name
@@ -841,7 +1089,7 @@ router.get('/:id', auth, async (req, res) => {
        JOIN users u ON r.responder_id = u.id
        WHERE r.query_id = ?
        ORDER BY r.created_at ASC`,
-      [queryId]
+      [numericQueryId]
     );
 
     // Get images for this query
@@ -850,10 +1098,9 @@ router.get('/:id', auth, async (req, res) => {
        FROM query_images 
        WHERE query_id = ?
        ORDER BY created_at ASC`,
-      [queryId]
+      [numericQueryId]
     );
 
-    const query = queries[0];
     query.responses = responses;
     query.images = images;
 
@@ -905,13 +1152,101 @@ router.post('/:id/responses', auth, checkRole(['expert_reviewer', 'admin']), [
       [queryId, teacherId, answer]
     );
 
-          // Update query status and assign expert reviewer
+    // Update query status and assign expert reviewer
     await db.execute(
       'UPDATE queries SET status = ?, expert_reviewer_id = ? WHERE id = ?',
       ['in_progress', teacherId, queryId]
     );
 
+    // Get responder name for notification
+    const [responder] = await db.execute(
+      'SELECT full_name FROM users WHERE id = ?',
+      [teacherId]
+    );
+
+    // Create notification for query owner
+    const query = queries[0];
+    await createNotification(
+      query.student_id,
+      queryId,
+      'response_added',
+      'New Response to Your Query',
+      `${responder[0].full_name} has responded to your query: "${query.title}"`,
+      { responder_id: teacherId, responder_name: responder[0].full_name }
+    );
+
     res.json({ message: 'Response added successfully' });
+  } catch (error) {
+    console.error('Error in POST /:id/responses:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Update response (expert reviewers and admins)
+router.put('/:id/responses/:responseId', auth, checkRole(['expert_reviewer', 'admin']), [
+  body('content').notEmpty().withMessage('Content is required')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const queryId = req.params.id;
+    const responseId = req.params.responseId;
+    const { content } = req.body;
+    const userId = req.user.userId;
+
+    // Check if response exists and belongs to the user (for expert reviewers) or allow admin to edit any
+    let responseCheckSql;
+    let responseCheckParams;
+    
+    if (req.user.role === 'expert_reviewer') {
+      responseCheckSql = `
+        SELECT r.* FROM responses r
+        WHERE r.id = ? AND r.query_id = ? AND r.responder_id = ?
+      `;
+      responseCheckParams = [responseId, queryId, userId];
+    } else {
+      responseCheckSql = 'SELECT * FROM responses WHERE id = ? AND query_id = ?';
+      responseCheckParams = [responseId, queryId];
+    }
+    
+    const [responses] = await db.execute(responseCheckSql, responseCheckParams);
+
+    if (responses.length === 0) {
+      return res.status(404).json({ message: 'Response not found or not authorized to edit' });
+    }
+
+    // Update response
+    await db.execute(
+      'UPDATE responses SET content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [content, responseId]
+    );
+
+    // Get query and responder info for notification
+    const [queryInfo] = await db.execute(
+      `SELECT q.student_id, q.title, u.full_name as responder_name 
+       FROM queries q 
+       JOIN responses r ON q.id = r.query_id 
+       JOIN users u ON r.responder_id = u.id 
+       WHERE q.id = ? AND r.id = ?`,
+      [queryId, responseId]
+    );
+
+    if (queryInfo.length > 0) {
+      // Create notification for query owner
+      await createNotification(
+        queryInfo[0].student_id,
+        queryId,
+        'response_updated',
+        'Response Updated on Your Query',
+        `${queryInfo[0].responder_name} has updated their response to your query: "${queryInfo[0].title}"`,
+        { responder_id: userId, responder_name: queryInfo[0].responder_name }
+      );
+    }
+
+    res.json({ message: 'Response updated successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }
@@ -957,6 +1292,25 @@ router.put('/:id/status', auth, checkRole(['expert_reviewer', 'admin']), [
       'UPDATE queries SET status = ? WHERE id = ?',
       [status, queryId]
     );
+
+    // Get query info for notification
+    const query = queries[0];
+    const [updaterInfo] = await db.execute(
+      'SELECT full_name FROM users WHERE id = ?',
+      [req.user.userId]
+    );
+
+    if (updaterInfo.length > 0) {
+      // Create notification for query owner
+      await createNotification(
+        query.student_id,
+        queryId,
+        'status_changed',
+        'Query Status Updated',
+        `${updaterInfo[0].full_name} has updated the status of your query "${query.title}" to ${status}`,
+        { updater_id: req.user.userId, updater_name: updaterInfo[0].full_name, new_status: status }
+      );
+    }
 
     res.json({ message: 'Query status updated successfully' });
   } catch (error) {
@@ -1039,10 +1393,105 @@ router.put('/:id', auth, [
 
     updateValues.push(queryId);
 
+    // Store original query data for comparison
+    const originalQuery = queries[0];
+    
+    // Track edit history for each changed field with readable values
+    const editHistoryPromises = [];
+    
+    for (const fieldName of Object.keys(req.body)) {
+      if (req.body[fieldName] !== undefined && originalQuery[fieldName] !== req.body[fieldName]) {
+        let oldValue = originalQuery[fieldName];
+        let newValue = req.body[fieldName];
+        
+        // Convert IDs to readable names for better history display
+        if (fieldName === 'stage_id') {
+          // Get stage names
+          if (oldValue) {
+            const [oldStage] = await db.execute('SELECT name FROM stages WHERE id = ?', [oldValue]);
+            oldValue = oldStage.length > 0 ? oldStage[0].name : oldValue;
+          }
+          if (newValue) {
+            const [newStage] = await db.execute('SELECT name FROM stages WHERE id = ?', [newValue]);
+            newValue = newStage.length > 0 ? newStage[0].name : newValue;
+          }
+        } else if (fieldName === 'tool_id') {
+          // Get tool names
+          if (oldValue) {
+            const [oldTool] = await db.execute('SELECT name FROM tools WHERE id = ?', [oldValue]);
+            oldValue = oldTool.length > 0 ? oldTool[0].name : oldValue;
+          }
+          if (newValue) {
+            const [newTool] = await db.execute('SELECT name FROM tools WHERE id = ?', [newValue]);
+            newValue = newTool.length > 0 ? newTool[0].name : newValue;
+          }
+        } else if (fieldName === 'issue_category_id') {
+          // Get issue category names
+          if (oldValue) {
+            const [oldCategory] = await db.execute('SELECT name FROM issue_categories WHERE id = ?', [oldValue]);
+            oldValue = oldCategory.length > 0 ? oldCategory[0].name : oldValue;
+          }
+          if (newValue) {
+            const [newCategory] = await db.execute('SELECT name FROM issue_categories WHERE id = ?', [newValue]);
+            newValue = newCategory.length > 0 ? newCategory[0].name : newValue;
+          }
+        }
+        
+        editHistoryPromises.push(
+          db.execute(
+            `INSERT INTO query_edit_history (query_id, editor_id, editor_role, field_name, old_value, new_value) 
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [queryId, userId, userRole, fieldName, oldValue, newValue]
+          )
+        );
+      }
+    }
+    
+    // Execute all edit history inserts
+    if (editHistoryPromises.length > 0) {
+      await Promise.all(editHistoryPromises);
+    }
+    
+    // Update the query with is_edited flag and increment edit_count
+    const updateFieldsWithEdit = [...updateFields, 'is_edited = TRUE', 'edit_count = edit_count + 1', 'updated_at = CURRENT_TIMESTAMP'];
     await db.execute(
-      `UPDATE queries SET ${updateFields.join(', ')} WHERE id = ?`,
-      updateValues
+      `UPDATE queries SET ${updateFieldsWithEdit.join(', ')} WHERE id = ?`,
+      [...updateValues.slice(0, -1), queryId] // Remove the last queryId and add it back
     );
+
+    // Send notification if student or professional edited their own query
+    if ((userRole === 'student' || userRole === 'professional') && originalQuery.student_id === userId) {
+      // Get user info for notification
+      const [userInfo] = await db.execute(
+        'SELECT full_name FROM users WHERE id = ?',
+        [userId]
+      );
+      
+      // Get assigned expert reviewer for notification
+      const [assignedExpert] = await db.execute(
+        `SELECT u.id, u.full_name 
+         FROM users u 
+         JOIN query_assignments qa ON u.id = qa.expert_reviewer_id 
+         WHERE qa.query_id = ?`,
+        [queryId]
+      );
+      
+      if (assignedExpert.length > 0 && userInfo.length > 0) {
+        // Create notification for assigned expert reviewer
+        await createNotification(
+          assignedExpert[0].id,
+          queryId,
+          'query_edited',
+          'Query Updated by Student',
+          `${userInfo[0].full_name} has edited their query: "${originalQuery.title}"`,
+          { 
+            editor_id: userId, 
+            editor_name: userInfo[0].full_name,
+            edited_fields: Object.keys(req.body)
+          }
+        );
+      }
+    }
 
     res.json({ message: 'Query updated successfully' });
   } catch (error) {
@@ -1099,8 +1548,20 @@ router.delete('/:id/images/:imageId', auth, async (req, res) => {
 
     // Delete file from filesystem
     const fs = require('fs');
-    if (fs.existsSync(image.file_path)) {
-      fs.unlinkSync(image.file_path);
+    const path = require('path');
+    
+    // Handle both absolute and relative paths
+    let imagePath = image.file_path;
+    if (!path.isAbsolute(imagePath)) {
+      // If it's a relative path, make it absolute
+      imagePath = path.join(__dirname, imagePath);
+    }
+    // If it's already absolute, use it as is
+    
+    if (fs.existsSync(imagePath)) {
+      fs.unlinkSync(imagePath);
+    } else {
+      console.log(`Image file not found for deletion: ${imagePath} (original path: ${image.file_path})`);
     }
 
     // Delete from database
@@ -1138,7 +1599,7 @@ router.get('/:id/export', auth, checkRole(['admin']), async (req, res) => {
         u.full_name as student_name,
         d.name as student_domain,
         t.full_name as teacher_name,
-        ds.name as design_stage_name,
+        COALESCE(ds.name, q.custom_stage) as design_stage_name,
         COALESCE(ic.name, q.custom_issue_category) as issue_category_name,
         tool.name as tool_name
       FROM queries q
@@ -1284,12 +1745,28 @@ router.get('/:id/export', auth, checkRole(['admin']), async (req, res) => {
     archive.append(csvContent, { name: 'query.csv' });
 
     // Add images to archive
+    let totalImages = 0;
+    let addedImages = 0;
     for (const image of images) {
-      if (fs.existsSync(image.file_path)) {
+      totalImages++;
+      // Handle both absolute and relative paths
+      let imagePath = image.file_path;
+      if (!path.isAbsolute(imagePath)) {
+        // If it's a relative path, make it absolute
+        imagePath = path.join(__dirname, imagePath);
+      }
+      // If it's already absolute, use it as is
+      
+      if (fs.existsSync(imagePath)) {
         const fileName = `${image.original_name}`;
-        archive.file(image.file_path, { name: `images/${fileName}` });
+        archive.file(imagePath, { name: `images/${fileName}` });
+        addedImages++;
+      } else {
+        console.log(`Image file not found: ${imagePath} (original path: ${image.file_path})`);
       }
     }
+    
+    console.log(`Single query export summary: ${addedImages}/${totalImages} images added to archive`);
 
     // Finalize the archive
     await archive.finalize();
@@ -1342,6 +1819,55 @@ router.delete('/:id', auth, checkRole(['admin']), async (req, res) => {
     res.json({ message: 'Query deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get edit history for a specific query
+router.get('/:id/edit-history', auth, async (req, res) => {
+  try {
+    const { id: queryId } = req.params;
+    const { userId, userRole } = req.user;
+
+    // Check if user has permission to view edit history
+    const [queries] = await db.execute(
+      'SELECT * FROM queries WHERE id = ?',
+      [queryId]
+    );
+
+    if (queries.length === 0) {
+      return res.status(404).json({ error: 'Query not found' });
+    }
+
+    const query = queries[0];
+
+    // Check permissions
+    if (userRole === 'student' || userRole === 'professional') {
+      if (query.student_id !== userId) {
+        return res.status(403).json({ error: 'Access denied' });
+      }
+    }
+
+    // Fetch edit history with user details
+    const [editHistory] = await db.execute(
+      `SELECT 
+        qeh.*,
+        u.full_name as editor_name,
+        u.email as editor_email
+      FROM query_edit_history qeh
+      JOIN users u ON qeh.editor_id = u.id
+      WHERE qeh.query_id = ?
+      ORDER BY qeh.created_at DESC`,
+      [queryId]
+    );
+
+    res.json({
+      query_id: queryId,
+      edit_history: editHistory,
+      total_edits: editHistory.length
+    });
+  } catch (error) {
+    console.error('Error fetching edit history:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

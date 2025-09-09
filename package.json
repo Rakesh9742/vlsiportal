@@ -1,7 +1,7 @@
 {
-  "name": "vlsi-portal",
+  "name": "vlsiforum",
   "version": "1.0.0",
-  "description": "VLSI Portal for Students and Teachers",
+  "description": "vlsiforum - Community Platform for Students and Teachers",
   "main": "index.js",
   "scripts": {
     "start": "npm run dev",
@@ -23,7 +23,7 @@
     "node",
     "mysql"
   ],
-  "author": "VLSI Portal Team",
+  "author": "vlsiforum Team",
   "license": "MIT",
   "devDependencies": {
     "concurrently": "^8.2.2"

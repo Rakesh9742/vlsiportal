@@ -102,7 +102,7 @@ const Dashboard = () => {
     <div className="dashboard">
       <div className="dashboard-header">
         <h1>Welcome back, {user?.fullName}!</h1>
-        <p>Here's what's happening in your VLSI Portal</p>
+        <p>Here's what's happening in your vlsiforum</p>
       </div>
 
       <div className="dashboard-grid">

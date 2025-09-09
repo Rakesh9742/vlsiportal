@@ -1,7 +1,7 @@
 {
-  "name": "vlsi-portal-backend",
+  "name": "vlsiforum-backend",
   "version": "1.0.0",
-  "description": "Backend for VLSI Portal",
+  "description": "Backend for vlsiforum",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -21,4 +21,4 @@
   "devDependencies": {
     "nodemon": "^3.0.2"
   }
-} 
+}

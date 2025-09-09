@@ -25,17 +25,25 @@ async function generateCustomQueryId(studentId, domainName) {
     // Get domain abbreviation
     const domainAbbrev = domainAbbreviations[domainName] || 'GN'; // 'GN' for general if not found
 
-    // Get the count of existing queries for this student in this domain
-    const [countResult] = await db.execute(`
-      SELECT COUNT(*) as count 
+    // Get the highest existing counter for this student and domain
+    const [existingIds] = await db.execute(`
+      SELECT custom_query_id 
       FROM queries q
       JOIN users u ON q.student_id = u.id
       JOIN domains d ON u.domain_id = d.id
-      WHERE q.student_id = ? AND d.name = ?
-    `, [studentId, domainName]);
+      WHERE q.student_id = ? AND d.name = ? AND custom_query_id LIKE ?
+      ORDER BY custom_query_id DESC
+    `, [studentId, domainName, `S${studentId}${domainAbbrev}%`]);
 
-    const count = countResult[0].count;
-    const nextNumber = count + 1;
+    let nextNumber = 1;
+    if (existingIds.length > 0) {
+      // Extract the counter from the most recent ID
+      const lastId = existingIds[0].custom_query_id;
+      const counterMatch = lastId.match(/\d{3}$/);
+      if (counterMatch) {
+        nextNumber = parseInt(counterMatch[0]) + 1;
+      }
+    }
 
     // Format the counter with leading zeros (3 digits)
     const formattedCounter = nextNumber.toString().padStart(3, '0');

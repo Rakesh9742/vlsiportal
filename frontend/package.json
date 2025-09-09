@@ -1,7 +1,7 @@
 {
-  "name": "vlsi-portal-frontend",
+  "name": "vlsiforum-frontend",
   "version": "1.0.0",
-  "description": "Frontend for VLSI Portal",
+  "description": "Frontend for vlsiforum",
   "private": true,
   "dependencies": {
     "@testing-library/jest-dom": "^5.17.0",

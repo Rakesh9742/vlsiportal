@@ -301,4 +301,50 @@ router.get('/statistics/domains', auth, checkRole(['admin']), async (req, res) =
   }
 });
 
+// Admin: Delete query
+router.delete('/queries/:id', auth, checkRole(['admin']), async (req, res) => {
+  try {
+    const queryId = req.params.id;
+
+    // Check if query exists
+    const [queries] = await db.execute(
+      'SELECT * FROM queries WHERE id = ?',
+      [queryId]
+    );
+
+    if (queries.length === 0) {
+      return res.status(404).json({ message: 'Query not found' });
+    }
+
+    // Delete query assignments first (due to foreign key constraint)
+    await db.execute(
+      'DELETE FROM query_assignments WHERE query_id = ?',
+      [queryId]
+    );
+
+    // Delete responses first (due to foreign key constraint)
+    await db.execute(
+      'DELETE FROM responses WHERE query_id = ?',
+      [queryId]
+    );
+
+    // Delete query images first (due to foreign key constraint)
+    await db.execute(
+      'DELETE FROM query_images WHERE query_id = ?',
+      [queryId]
+    );
+
+    // Delete the query
+    await db.execute(
+      'DELETE FROM queries WHERE id = ?',
+      [queryId]
+    );
+
+    res.json({ message: 'Query deleted successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 module.exports = router;

@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# VLSI Portal Deployment Script for AWS Server
-# IP: 3.6.88.118
+# VLSI Portal Deployment Script for Production Server
+# Domain: vlsiforum.sumedhait.com
 
-echo "🚀 Starting VLSI Portal Deployment on CentOS Linux 8..."
-echo "📍 Target IP: 3.6.88.118"
+echo "🚀 Starting VLSI Portal Deployment..."
+echo "📍 Target Domain: vlsiforum.sumedhait.com"
 
 # Colors for output
 RED='\033[0;31m'
@@ -156,9 +156,9 @@ echo "3. Import database schema: mysql -u root -p vlsi_portal < backend/config/d
 echo "4. Start the application: ./start-vlsi.sh"
 echo ""
 echo "🌐 Access URLs:"
-echo "   Frontend: http://3.6.88.118:3001"
-echo "   Backend API: http://3.6.88.118:3000"
-echo "   Health Check: http://3.6.88.118:3000/api/health"
+echo "   Frontend: http://vlsiforum.sumedhait.com"
+echo "   Backend API: http://vlsiforum.sumedhait.com/api"
+echo "   Health Check: http://vlsiforum.sumedhait.com/api/health"
 echo ""
 echo "🔧 Management Commands:"
 echo "   View logs: pm2 logs"

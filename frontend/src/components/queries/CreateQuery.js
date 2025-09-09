@@ -15,6 +15,7 @@ const CreateQuery = () => {
     stage_id: '',
     issue_category_id: '',
     custom_issue_category: '',
+    custom_stage: '',
     debug_steps: '',
     resolution: ''
   });
@@ -28,6 +29,7 @@ const CreateQuery = () => {
   const [imagePreview, setImagePreview] = useState([]);
   const [userDomain, setUserDomain] = useState(null);
   const [showCustomCategory, setShowCustomCategory] = useState(false);
+  const [showCustomStage, setShowCustomStage] = useState(false);
 
   // Function to get domain-specific examples
   const getDomainExamples = (domain) => {
@@ -56,31 +58,22 @@ const CreateQuery = () => {
       ],
       'Analog Layout': [
         {
-          title: "Differential pair matching issues in current mirror layout",
-          description: "I'm designing a current mirror with 1:5 ratio in 22nm technology. The differential pair shows significant mismatch (&gt;2%) in simulation. I've used common centroid layout and dummy devices, but the matching is still poor. The devices are sized at W/L = 10μm/0.5μm.",
-          stage: "Layout Design",
-          category: "Matching Issues",
-          tool: "Cadence Virtuoso",
-          technology: "GlobalFoundries 22nm",
-          debugSteps: "1. Verified common centroid placement 2. Added dummy devices 3. Checked device orientation 4. Analyzed process variations"
-        },
-        {
-          title: "Parasitic extraction showing unexpected coupling",
-          description: "Parasitic extraction in my analog layout shows unexpected coupling between sensitive analog nets and digital switching signals. The coupling is causing noise injection into the analog circuits. I've tried shielding and spacing, but the coupling remains significant.",
-          stage: "Parasitic Extraction",
-          category: "Noise Issues",
-          tool: "Synopsys StarRC",
+          title: "Multi-finger / Multiplier Device Parameter Mismatch (W, L, NF, M)",
+          description: "Layout-extracted MOS device parameters (effective W, L, finger count, multipliers) do not match the schematic netlist device parameters. Symptoms include LVS device mismatch lines showing differing W/L/NF/M, unexpected extra devices due to finger splitting.",
+          stage: "Physical verification",
+          category: "LVS",
+          tool: "Calibre",
           technology: "TSMC 28nm",
-          debugSteps: "1. Added shielding layers 2. Increased spacing between nets 3. Analyzed coupling capacitance 4. Checked guard ring placement"
+          debugSteps: "1. Open LVS report and locate mismatched device instance(s); jump to layout coordinates in the LVS viewer 2. Inspect physical device: count poly fingers, measure drawn W & L, check diffusion segmentation (is OD continuous or split by slots) 3. Compare extracted layout vs schematic values — note if dummy gates or diffusion extensions are being counted 4. Check whether schematic used M (multiplier) vs NF (multi-finger): convert schematic representation or enable tool options to merge/split fingers consistently 5. Verify pin mapping (S/D orientation); enable S/D permutation in runset only if PDK permits 6. Enable device reduction or refactor layout to maintain continuous OD/poly in LVS deck 7. Re-run leaf cell LVS after each change; record which change fixed the parameter delta"
         },
         {
-          title: "LVS verification failing due to device mismatch",
-          description: "LVS verification is failing because the extracted netlist doesn't match the schematic. The issue is with device parameter extraction, particularly with custom device definitions. The devices are properly defined in the PDK, but the extraction is not recognizing them correctly.",
-          stage: "LVS Verification",
-          category: "Verification Issues",
-          tool: "Calibre LVS",
-          technology: "GlobalFoundries 14nm",
-          debugSteps: "1. Checked device definitions 2. Verified PDK setup 3. Analyzed extraction rules 4. Reviewed device parameters"
+          title: "Floating/Incorrect Substrate & Well Connectivity (DNW islands, missing taps)",
+          description: "Bulk/well nets in layout are isolated, tied to wrong supplies, or form islands (deep n-well or p-sub islands). LVS shows unmatched substrate/well nets, extra diodes, or bulk pin mismatches for MOS devices.",
+          stage: "Physical verification",
+          category: "LVS",
+          tool: "Calibre",
+          technology: "TSMC 28nm",
+          debugSteps: "1. Identify the devices reporting bulk/well mismatches; highlight their bulk pins in schematic and layout 2. Inspect layout for well rings, DNW closures, and tap placements—verify tap spacing and enclosure rules per LVS deck 3. Check for isolated diffusion or well islands 4. Ensure guard rings and domain boundaries are continuous 5. Add/relocate well taps or explicit bulk connections where required; if LVS expects explicit bulk pins in schematic, connect them to the correct net"
         }
       ],
       'RTL Design': [
@@ -208,14 +201,27 @@ const CreateQuery = () => {
     
     // If stage is selected, load corresponding issue categories
     if (name === 'stage_id' && value) {
-      loadIssueCategories(value);
-      // Reset issue category when stage changes
-      setFormData(prev => ({
-        ...prev,
-        issue_category_id: '',
-        custom_issue_category: ''
-      }));
-      setShowCustomCategory(false);
+      if (value === 'others') {
+        setShowCustomStage(true);
+        setFormData(prev => ({
+          ...prev,
+          issue_category_id: '',
+          custom_issue_category: '',
+          custom_stage: ''
+        }));
+        setShowCustomCategory(false);
+      } else {
+        setShowCustomStage(false);
+        loadIssueCategories(value);
+        // Reset issue category when stage changes
+        setFormData(prev => ({
+          ...prev,
+          issue_category_id: '',
+          custom_issue_category: '',
+          custom_stage: ''
+        }));
+        setShowCustomCategory(false);
+      }
     }
     
     // If issue category is "Others", show custom input (but not for Analog Layout)
@@ -341,7 +347,7 @@ const CreateQuery = () => {
           if (key === 'issue_category_id' && formData[key] === 'others' && formData.custom_issue_category) {
             // Don't send issue_category_id when using custom category
             // The custom_issue_category will be sent separately
-          } else if (key !== 'custom_issue_category') {
+          } else if (key !== 'custom_issue_category' && key !== 'custom_stage') {
             submitData.append(key, formData[key]);
           }
         }
@@ -350,6 +356,11 @@ const CreateQuery = () => {
       // Handle custom issue category separately
       if (formData.issue_category_id === 'others' && formData.custom_issue_category) {
         submitData.append('custom_issue_category', formData.custom_issue_category);
+      }
+
+      // Handle custom stage separately
+      if (formData.stage_id === 'others' && formData.custom_stage) {
+        submitData.append('custom_stage', formData.custom_stage);
       }
 
       // Add images
@@ -446,6 +457,22 @@ const CreateQuery = () => {
                   </SelectGroup>
                 </SelectContent>
               </Select>
+              
+              {showCustomStage && (
+                <div className="form-group" style={{ marginTop: '10px' }}>
+                  <label htmlFor="custom_stage">Custom Design Stage</label>
+                  <input
+                    type="text"
+                    id="custom_stage"
+                    name="custom_stage"
+                    className="form-control"
+                    value={formData.custom_stage}
+                    onChange={handleChange}
+                    placeholder="Enter your custom design stage"
+                    required
+                  />
+                </div>
+              )}
             </div>
 
             <div className="form-group">

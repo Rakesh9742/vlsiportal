@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FaUser, FaSignOutAlt, FaBars, FaTimes, FaMicrochip, FaChevronDown, FaCog, FaBell, FaSearch } from 'react-icons/fa';
+import { FaUser, FaSignOutAlt, FaBars, FaTimes, FaMicrochip, FaChevronDown, FaBell } from 'react-icons/fa';
 import './Navbar.css';
 
 const Navbar = () => {
@@ -10,8 +10,7 @@ const Navbar = () => {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+
 
   const handleLogout = () => {
     logout();
@@ -33,28 +32,9 @@ const Navbar = () => {
     setIsUserDropdownOpen(!isUserDropdownOpen);
   };
 
-  const toggleSearch = () => {
-    setIsSearchOpen(!isSearchOpen);
-    if (!isSearchOpen) {
-      // Focus search input when opening
-      setTimeout(() => {
-        const searchInput = document.getElementById('navbar-search');
-        if (searchInput) searchInput.focus();
-      }, 100);
-    } else {
-      setSearchQuery('');
-    }
-  };
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      // Navigate to search results or perform search
-      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-      setSearchQuery('');
-      setIsSearchOpen(false);
-    }
-  };
+
+
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -62,17 +42,14 @@ const Navbar = () => {
       if (isUserDropdownOpen && !event.target.closest('.user-dropdown-container')) {
         setIsUserDropdownOpen(false);
       }
-      if (isSearchOpen && !event.target.closest('.search-container')) {
-        setIsSearchOpen(false);
-        setSearchQuery('');
-      }
+
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isUserDropdownOpen, isSearchOpen]);
+  }, [isUserDropdownOpen]);
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -90,9 +67,9 @@ const Navbar = () => {
         <Link to={user?.role === 'admin' ? '/admin' : '/queries'} className="navbar-brand">
           <div className="brand-logo">
             <FaMicrochip className="brand-icon" />
-            <span>VLSI</span>
+            <span>vlsi</span>
           </div>
-          <span className="brand-text">Portal</span>
+          <span className="brand-text">forum</span>
           {user?.domain && user?.role !== 'admin' && (
             <span className="domain-badge">{user.domain}</span>
           )}
@@ -161,31 +138,7 @@ const Navbar = () => {
         </div>
 
         <div className="navbar-actions">
-          <div className="search-container">
-            <button className="search-toggle-btn" onClick={toggleSearch}>
-              <FaSearch />
-            </button>
-            {isSearchOpen && (
-              <div className="search-dropdown">
-                <form onSubmit={handleSearch} className="search-form">
-                  <div className="search-input-container">
-                    <FaSearch className="search-icon" />
-                    <input
-                      id="navbar-search"
-                      type="text"
-                      placeholder="Search queries, users, or content..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="search-input"
-                    />
-                  </div>
-                  <button type="submit" className="search-submit-btn">
-                    Search
-                  </button>
-                </form>
-              </div>
-            )}
-          </div>
+
           
           <div className="user-dropdown-container">
             <div className="user-info" onClick={toggleUserDropdown}>
@@ -216,10 +169,6 @@ const Navbar = () => {
                   <Link to="/notifications" className="dropdown-item" onClick={() => setIsUserDropdownOpen(false)}>
                     <FaBell />
                     <span>Notifications</span>
-                  </Link>
-                  <Link to="/settings" className="dropdown-item" onClick={() => setIsUserDropdownOpen(false)}>
-                    <FaCog />
-                    <span>Settings</span>
                   </Link>
                 </div>
                 <div className="dropdown-divider"></div>

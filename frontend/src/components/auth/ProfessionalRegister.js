@@ -88,24 +88,17 @@ const ProfessionalRegister = () => {
 
   return (
     <div className="auth-container">
-      {/* Full Page 3D Background */}
+      {/* Video Background */}
       <div className="full-page-3d-bg">
-        <div className="bg-cube-3d"></div>
-        <div className="bg-cube-3d"></div>
-        <div className="bg-cube-3d"></div>
-        <div className="bg-cube-3d"></div>
-        <div className="bg-cube-3d"></div>
-        <div className="bg-cube-3d"></div>
-        <div className="bg-sphere-3d"></div>
-        <div className="bg-sphere-3d"></div>
-        <div className="bg-sphere-3d"></div>
-        <div className="bg-sphere-3d"></div>
-        <div className="bg-sphere-3d"></div>
-        <div className="bg-sphere-3d"></div>
-        <div className="bg-pyramid-3d"></div>
-        <div className="bg-pyramid-3d"></div>
-        <div className="bg-pyramid-3d"></div>
-        <div className="bg-pyramid-3d"></div>
+        <video 
+          autoPlay 
+          loop 
+          muted 
+          playsInline 
+          className="background-video"
+        >
+          <source src="/Video_Colorization_and_Slow_Motion.mp4" type="video/mp4" />
+        </video>
       </div>
       
       <div className="auth-layout professional-login">

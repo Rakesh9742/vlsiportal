@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
-import { FaPlus, FaSearch, FaEdit, FaEye, FaCalendar, FaUser, FaDownload, FaQuestionCircle, FaCheckCircle } from 'react-icons/fa';
+import { FaPlus, FaSearch, FaEdit, FaEye, FaCalendar, FaUser, FaDownload, FaQuestionCircle, FaCheckCircle, FaHistory, FaClock } from 'react-icons/fa';
 import './Queries.css';
+import EditHistory from './EditHistory';
 
 const QueryList = () => {
   const { user } = useAuth();
@@ -18,6 +19,8 @@ const QueryList = () => {
   const [exporting, setExporting] = useState(false);
   const [activeTab, setActiveTab] = useState('my-queries');
   const [resolvedLoading, setResolvedLoading] = useState(false);
+  const [showEditHistory, setShowEditHistory] = useState(false);
+  const [selectedQueryId, setSelectedQueryId] = useState(null);
 
   useEffect(() => {
     fetchQueries();
@@ -314,11 +317,17 @@ const QueryList = () => {
           </div>
         ) : (
           filteredQueries.map(query => (
-            <div key={query.id} className={`query-item ${query.status}`}>
+            <div key={query.id} className={`query-item ${query.status} ${query.is_edited ? 'edited' : ''}`}>
               <div className="query-row">
                 <div className="query-title">
                   <Link to={`/queries/${query.id}`} className="query-link">
                     {query.title}
+                    {query.is_edited && (
+                      <span className="edit-indicator" title={`Edited ${query.edit_count} time(s)`}>
+                        <FaHistory className="edit-icon" />
+                        <span className="edit-count">{query.edit_count}</span>
+                      </span>
+                    )}
                   </Link>
                   {activeTab !== 'resolved-queries' && (
                     <div className="query-id">ID: {query.custom_query_id || query.id}</div>
@@ -351,6 +360,19 @@ const QueryList = () => {
                 </div>
 
                 <div className="query-actions">
+                  {query.is_edited && (
+                    <button 
+                      onClick={() => {
+                        setSelectedQueryId(query.id);
+                        setShowEditHistory(true);
+                      }}
+                      className="btn btn-outline edit-history-btn"
+                      title="View edit history"
+                    >
+                      <FaHistory />
+                      History
+                    </button>
+                  )}
                   {(user?.role === 'expert_reviewer' || user?.role === 'admin') && (
                     <>
                       <Link to={`/queries/${query.id}/edit`} className="edit-query-btn">
@@ -379,6 +401,15 @@ const QueryList = () => {
           ))
         )}
       </div>
+      
+      <EditHistory 
+        queryId={selectedQueryId}
+        isOpen={showEditHistory}
+        onClose={() => {
+          setShowEditHistory(false);
+          setSelectedQueryId(null);
+        }}
+      />
     </div>
   );
 };

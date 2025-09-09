@@ -23,18 +23,16 @@ import QueryAssignmentManagement from './components/admin/QueryAssignmentManagem
 import UserManagement from './components/admin/UserManagement';
 import QueryManagement from './components/admin/QueryManagement';
 import AdminAnalytics from './components/admin/AdminAnalytics';
+import NotificationBanner from './components/notifications/NotificationBanner';
+import NotificationsPage from './components/notifications/NotificationsPage';
 
 // Context
 import { AuthProvider } from './context/AuthContext';
 
 // Configure axios defaults with dynamic URL support
 const getApiUrl = () => {
-  // Check if we're in development mode (localhost)
-  if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-    return process.env.REACT_APP_API_URL || 'http://localhost:3000';
-  }
-  // Production mode - use backup URL or fallback to localhost
-  return process.env.REACT_APP_BACKUP_API_URL || process.env.REACT_APP_API_URL || 'http://localhost:3000';
+  // Always use the primary API URL from environment variables
+  return process.env.REACT_APP_API_URL || 'http://localhost:3000';
 };
 
 axios.defaults.baseURL = getApiUrl() + '/api';
@@ -90,7 +88,7 @@ function App() {
   if (loading) {
     return (
       <div className="loading">
-        <div>Loading VLSI Portal...</div>
+        <div>Loading vlsiforum...</div>
       </div>
     );
   }
@@ -100,6 +98,7 @@ function App() {
       <Router>
         <div className="App">
           {isAuthenticated && <Navbar />}
+          {isAuthenticated && <NotificationBanner />}
           <div className="container">
             <Routes>
               <Route 
@@ -149,6 +148,10 @@ function App() {
               <Route 
                 path="/profile" 
                 element={isAuthenticated ? <Profile /> : <Navigate to="/login" />} 
+              />
+              <Route 
+                path="/notifications" 
+                element={isAuthenticated ? <NotificationsPage /> : <Navigate to="/login" />} 
               />
               <Route 
                 path="/admin" 

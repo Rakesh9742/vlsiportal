@@ -1,6 +1,6 @@
-# VLSI Portal
+# vlsiforum
 
-A comprehensive web application for VLSI students and teachers to manage queries and responses. Built with React.js, Node.js, and MySQL.
+A comprehensive web application for students and teachers to manage queries and responses. Built with React.js, Node.js, and MySQL.
 
 ## Features
 
@@ -279,4 +279,4 @@ npm run client
 
 ## License
 
-MIT License - feel free to use this project for educational purposes. 
+MIT License - feel free to use this project for educational purposes.

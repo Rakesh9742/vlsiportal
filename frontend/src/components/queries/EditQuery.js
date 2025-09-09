@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
-import { FaArrowLeft, FaSave, FaTimes, FaUser, FaTag, FaLayerGroup, FaCog, FaTools, FaGraduationCap, FaComments } from 'react-icons/fa';
+import { FaArrowLeft, FaSave, FaTimes, FaUser, FaTag, FaLayerGroup, FaCog, FaTools, FaGraduationCap, FaComments, FaEdit, FaCheck } from 'react-icons/fa';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '../ui/Select';
 import './Queries.css';
 
@@ -40,6 +40,11 @@ const EditQuery = () => {
   const [domains, setDomains] = useState([]);
   const [showCustomCategory, setShowCustomCategory] = useState(false);
   const [originalIssueCategoryName, setOriginalIssueCategoryName] = useState(null);
+  
+  // Response editing state
+  const [editingResponseId, setEditingResponseId] = useState(null);
+  const [editingContent, setEditingContent] = useState('');
+  const [savingResponse, setSavingResponse] = useState(false);
 
   useEffect(() => {
     if (user?.role !== 'expert_reviewer' && user?.role !== 'admin') {
@@ -316,6 +321,59 @@ const EditQuery = () => {
     }
   };
 
+  // Response editing functions
+  const handleEditResponse = (response) => {
+    setEditingResponseId(response.id);
+    setEditingContent(response.content);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingResponseId(null);
+    setEditingContent('');
+  };
+
+  const handleSaveResponse = async (responseId) => {
+    if (!editingContent.trim()) {
+      setError('Response content cannot be empty');
+      return;
+    }
+
+    setSavingResponse(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      await axios.put(`/queries/${id}/responses/${responseId}`, {
+        content: editingContent
+      });
+      
+      // Update the response in the local state
+      setQuery(prev => ({
+        ...prev,
+        responses: prev.responses.map(response => 
+          response.id === responseId 
+            ? { ...response, content: editingContent }
+            : response
+        )
+      }));
+      
+      setSuccess('Response updated successfully!');
+      setEditingResponseId(null);
+      setEditingContent('');
+    } catch (error) {
+      setError(error.response?.data?.message || 'Failed to update response');
+    } finally {
+      setSavingResponse(false);
+    }
+  };
+
+  // Check if user can edit a response
+  const canEditResponse = (response) => {
+    if (user?.role === 'admin') return true;
+    if (user?.role === 'expert_reviewer' && response.responder_id === user.userId) return true;
+    return false;
+  };
+
   if (loading) {
     return (
       <div className="create-query-page">
@@ -577,12 +635,62 @@ const EditQuery = () => {
                       <FaGraduationCap className="author-icon" />
                       <span>{response.teacher_name}</span>
                     </div>
-                    <span className="response-date">
-                      {new Date(response.created_at).toLocaleDateString()}
-                    </span>
+                    <div className="response-actions">
+                      <span className="response-date">
+                        {new Date(response.created_at).toLocaleDateString()}
+                      </span>
+                      {canEditResponse(response) && editingResponseId !== response.id && (
+                        <button
+                          onClick={() => handleEditResponse(response)}
+                          className="btn btn-sm btn-outline"
+                          title="Edit Response"
+                        >
+                          <FaEdit />
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div className="response-content">
-                    {response.content}
+                    {editingResponseId === response.id ? (
+                      <div className="response-edit-form">
+                        <textarea
+                          value={editingContent}
+                          onChange={(e) => setEditingContent(e.target.value)}
+                          className="form-control"
+                          rows="4"
+                          placeholder="Edit your response..."
+                        />
+                        <div className="edit-actions">
+                          <button
+                            onClick={() => handleSaveResponse(response.id)}
+                            className="btn btn-sm btn-primary"
+                            disabled={savingResponse}
+                          >
+                            {savingResponse ? (
+                              <>
+                                <div className="spinner"></div>
+                                Saving...
+                              </>
+                            ) : (
+                              <>
+                                <FaCheck />
+                                Save
+                              </>
+                            )}
+                          </button>
+                          <button
+                            onClick={handleCancelEdit}
+                            className="btn btn-sm btn-outline"
+                            disabled={savingResponse}
+                          >
+                            <FaTimes />
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      response.content
+                    )}
                   </div>
                 </div>
               ))}

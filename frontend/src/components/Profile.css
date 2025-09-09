@@ -139,12 +139,12 @@
 }
 
 .role-student {
-  background: rgba(16, 185, 129, 0.2);
+  background: white;
   border-color: rgba(16, 185, 129, 0.3);
 }
 
 .role-teacher {
-  background: rgba(239, 68, 68, 0.2);
+  background: white;
   border-color: rgba(239, 68, 68, 0.3);
 }
 
@@ -337,4 +337,4 @@
   .profile-note {
     padding: var(--space-4) var(--space-6);
   }
-} 
+}

@@ -3,6 +3,8 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import { FaArrowLeft, FaReply, FaCheck, FaTimes, FaExclamationTriangle, FaTools, FaLayerGroup, FaTag, FaUser, FaCalendar, FaGraduationCap, FaCog, FaComments, FaImage, FaDownload, FaTrash } from 'react-icons/fa';
+import { getImageUrl } from '../../config/api';
+import Chat from '../chat/Chat';
 import './Queries.css';
 
 const QueryDetail = () => {
@@ -17,10 +19,17 @@ const QueryDetail = () => {
   const [answer, setAnswer] = useState('');
   const [showResponseForm, setShowResponseForm] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [showChat, setShowChat] = useState(false);
 
   useEffect(() => {
     fetchQuery();
-  }, [id]);
+    
+    // Check if we should auto-open chat from URL parameter
+    const urlParams = new URLSearchParams(location.search);
+    if (urlParams.get('openChat') === 'true') {
+      setShowChat(true);
+    }
+  }, [id, location.search]);
 
   const handleBackNavigation = () => {
     // Check if user came from admin manage queries page
@@ -261,7 +270,7 @@ const QueryDetail = () => {
               {query.images.map((image) => (
                 <div key={image.id} className="query-image-item">
                   <img 
-                    src={`http://192.168.92.34:5000/uploads/${image.filename}`} 
+                    src={getImageUrl(image.filename)} 
                     alt={image.original_name}
                     onClick={() => setSelectedImage(image)}
                   />
@@ -271,7 +280,7 @@ const QueryDetail = () => {
                   </div>
                   <div className="image-actions">
                     <a
-                      href={`http://192.168.92.34:5000/uploads/${image.filename}`}
+                      href={getImageUrl(image.filename)}
                       download={image.original_name}
                       className="image-action-btn"
                       title="Download"
@@ -402,6 +411,25 @@ const QueryDetail = () => {
           )}
         </div>
 
+        {/* Chat Section */}
+        <div className="query-chat-section">
+          <div className="chat-header">
+            <h3>Discussion</h3>
+            <button
+              onClick={() => setShowChat(!showChat)}
+              className={`btn ${showChat ? 'btn-secondary' : 'btn-primary'}`}
+            >
+              <FaComments />
+              {showChat ? 'Hide Discussion' : 'Open Discussion'}
+            </button>
+          </div>
+          {showChat && (
+            <div className="chat-container">
+              <Chat queryId={id} />
+            </div>
+          )}
+        </div>
+
         {/* Expert Reviewer and Admin Actions */}
         {(user?.role === 'expert_reviewer' || user?.role === 'admin') && query.status !== 'resolved' && (
           <div className="teacher-actions">
@@ -474,7 +502,7 @@ const QueryDetail = () => {
               <FaTimes />
             </button>
             <img 
-              src={`http://192.168.92.34:5000/uploads/${selectedImage.filename}`} 
+              src={getImageUrl(selectedImage.filename)} 
               alt={selectedImage.original_name}
             />
             <div className="image-modal-info">
