@@ -1,6 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const { body, validationResult } = require('express-validator');
 const db = require('../config/database');
 const { auth, checkRole } = require('../middleware/auth');
@@ -427,6 +428,112 @@ router.get('/assignees/domain/:domain', auth, async (req, res) => {
     );
 
     res.json({ assignees });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Forgot Password - Verify username exists
+router.post('/forgot-password', [
+  body('username').notEmpty().withMessage('Username is required')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { username } = req.body;
+
+    // Find user with domain name
+    const [users] = await db.execute(
+      `SELECT u.id, u.username, u.role, u.full_name, u.domain_id, d.name as domain_name 
+       FROM users u 
+       LEFT JOIN domains d ON u.domain_id = d.id 
+       WHERE u.username = ?`,
+      [username]
+    );
+
+    if (users.length === 0) {
+      return res.status(400).json({ message: 'Username not found' });
+    }
+
+    const user = users[0];
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour from now
+
+    // Store reset token in database
+    await db.execute(
+      'UPDATE users SET reset_token = ?, reset_token_expiry = ? WHERE id = ?',
+      [resetToken, resetTokenExpiry, user.id]
+    );
+
+    res.json({
+      message: 'Username verified successfully',
+      user: {
+        id: user.id,
+        username: user.username,
+        role: user.role,
+        fullName: user.full_name,
+        domain: user.domain_name,
+        domainId: user.domain_id,
+        resetToken: resetToken
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Reset Password - Update password with token
+router.post('/reset-password', [
+  body('username').notEmpty().withMessage('Username is required'),
+  body('token').notEmpty().withMessage('Reset token is required'),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { username, token, password } = req.body;
+
+    // Find user with reset token
+    const [users] = await db.execute(
+      `SELECT u.id, u.username, u.reset_token, u.reset_token_expiry 
+       FROM users u 
+       WHERE u.username = ? AND u.reset_token = ?`,
+      [username, token]
+    );
+
+    if (users.length === 0) {
+      return res.status(400).json({ message: 'Invalid reset token' });
+    }
+
+    const user = users[0];
+
+    // Check if token is expired
+    if (new Date() > new Date(user.reset_token_expiry)) {
+      return res.status(400).json({ message: 'Reset token has expired' });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Update password and clear reset token
+    await db.execute(
+      'UPDATE users SET password = ?, reset_token = NULL, reset_token_expiry = NULL WHERE id = ?',
+      [hashedPassword, user.id]
+    );
+
+    res.json({
+      message: 'Password reset successfully'
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error' });

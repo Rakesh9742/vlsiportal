@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { FaUser, FaSignOutAlt, FaBars, FaTimes, FaMicrochip, FaChevronDown, FaBell } from 'react-icons/fa';
+import { FaUser, FaSignOutAlt, FaBars, FaTimes, FaChevronDown, FaBell } from 'react-icons/fa';
 import './Navbar.css';
 
 const Navbar = () => {
@@ -65,11 +65,7 @@ const Navbar = () => {
     <nav className="navbar">
       <div className="navbar-container">
         <Link to={user?.role === 'admin' ? '/admin' : '/queries'} className="navbar-brand">
-          <div className="brand-logo">
-            <FaMicrochip className="brand-icon" />
-            <span>vlsi</span>
-          </div>
-          <span className="brand-text">forum</span>
+          <span className="brand-text">VLSI FORUM</span>
           {user?.domain && user?.role !== 'admin' && (
             <span className="domain-badge">{user.domain}</span>
           )}

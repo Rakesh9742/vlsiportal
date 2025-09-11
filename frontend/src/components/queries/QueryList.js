@@ -52,7 +52,8 @@ const QueryList = () => {
       const response = await axios.get('/queries/resolved-domain');
       setResolvedQueries(response.data.queries || []);
     } catch (error) {
-      setError('Failed to fetch resolved queries');
+      console.error('Error fetching resolved queries:', error);
+      setError('Failed to fetch resolved queries: ' + (error.response?.data?.message || error.message));
     } finally {
       setResolvedLoading(false);
     }
@@ -237,7 +238,7 @@ const QueryList = () => {
       {activeTab === 'resolved-queries' && (
           <div className="resolved-queries-header">
             <h3>Resolved Queries from Your Domain</h3>
-            <p>Learn from resolved queries submitted by other students in your domain.</p>
+            <p>Learn from resolved queries submitted by students in your domain, including your own resolved queries.</p>
           </div>
         )}
 
@@ -307,12 +308,33 @@ const QueryList = () => {
       <div className="queries-list">
         {filteredQueries.length === 0 ? (
           <div className="empty-state">
-            <p>No queries found matching your criteria.</p>
-            {(user?.role === 'student' || user?.role === 'professional') && (
-              <Link to="/queries/new" className="btn btn-primary">
-                <FaPlus />
-                Create Your First Query
-              </Link>
+            {activeTab === 'resolved-queries' ? (
+              <>
+                <div className="empty-state-icon">
+                  <FaCheckCircle style={{ fontSize: '48px', color: '#ccc', marginBottom: '16px' }} />
+                </div>
+                <h3>No resolved queries found yet</h3>
+                <p>There are no resolved queries in your domain ({user?.domain || 'your domain'}) yet.</p>
+                <p>This section will show resolved queries from students in your domain, including your own, to help you learn from solutions.</p>
+                <div style={{ marginTop: '16px', padding: '12px', backgroundColor: '#f8f9fa', borderRadius: '8px', fontSize: '14px', color: '#666' }}>
+                  <strong>Why am I not seeing queries?</strong>
+                  <ul style={{ marginTop: '8px', textAlign: 'left', paddingLeft: '20px' }}>
+                    <li>Other students in your domain haven't submitted queries yet</li>
+                    <li>Submitted queries haven't been resolved by expert reviewers yet</li>
+                    <li>You only see queries from students in your specific domain</li>
+                  </ul>
+                </div>
+              </>
+            ) : (
+              <>
+                <p>No queries found matching your criteria.</p>
+                {(user?.role === 'student' || user?.role === 'professional') && (
+                  <Link to="/queries/new" className="btn btn-primary">
+                    <FaPlus />
+                    Create Your First Query
+                  </Link>
+                )}
+              </>
             )}
           </div>
         ) : (

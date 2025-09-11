@@ -34,12 +34,23 @@ router.get('/pd-stages', async (req, res) => {
 router.get('/pd-issue-categories/:stageId', async (req, res) => {
   try {
     const { stageId } = req.params;
+    console.log(`DEBUG: Fetching issue categories for stage_id: ${stageId}`);
+    
     const [categories] = await db.execute(
       'SELECT * FROM issue_categories WHERE stage_id = ? ORDER BY name',
       [stageId]
     );
+    
+    console.log(`DEBUG: Found ${categories.length} categories for stage_id ${stageId}`);
+    if (categories.length > 0) {
+      console.log('DEBUG: Categories found:', categories.map(c => `${c.id}: ${c.name}`));
+    } else {
+      console.log('DEBUG: No categories found for this stage_id');
+    }
+    
     res.json({ categories });
   } catch (error) {
+    console.error('DEBUG: Error in pd-issue-categories endpoint:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -76,12 +87,35 @@ router.get('/debug-category/:id', async (req, res) => {
 router.get('/domain-issue-categories/:stageId', async (req, res) => {
   try {
     const { stageId } = req.params;
+    console.log(`DEBUG: Fetching domain issue categories for stage_id: ${stageId}`);
+    
+    // First, let's check if this stage exists and get its details
+    const [stageInfo] = await db.execute(
+      'SELECT * FROM stages WHERE id = ?',
+      [stageId]
+    );
+    console.log(`DEBUG: Stage info for stage_id ${stageId}:`, stageInfo[0] || 'No stage found');
+    
     const [categories] = await db.execute(
       'SELECT * FROM issue_categories WHERE stage_id = ? ORDER BY name',
       [stageId]
     );
+    
+    console.log(`DEBUG: Found ${categories.length} domain categories for stage_id ${stageId}`);
+    if (categories.length > 0) {
+      console.log('DEBUG: Domain categories found:', categories.map(c => `${c.id}: ${c.name}`));
+    } else {
+      console.log('DEBUG: No domain categories found for this stage_id');
+      // Let's also check what issue_categories exist in the database
+      const [allCategories] = await db.execute(
+        'SELECT stage_id, COUNT(*) as count FROM issue_categories GROUP BY stage_id ORDER BY stage_id'
+      );
+      console.log('DEBUG: All stage_id counts in issue_categories:', allCategories);
+    }
+    
     res.json({ categories });
   } catch (error) {
+    console.error('DEBUG: Error in domain-issue-categories endpoint:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -369,21 +403,27 @@ router.post('/', auth, checkRole(['student', 'professional']), uploadImages, han
 // Get resolved queries from same domain (for students)
 router.get('/resolved-domain', auth, checkRole(['student', 'professional']), async (req, res) => {
   try {
-    // Get user's domain
-    const [userDomain] = await db.execute(`
-      SELECT d.id, d.name 
+    // First, get user's complete info including domain
+    const [userInfo] = await db.execute(`
+      SELECT u.id, u.username, u.full_name, u.domain_id, d.name as domain_name
       FROM users u 
-      JOIN domains d ON u.domain_id = d.id 
+      LEFT JOIN domains d ON u.domain_id = d.id 
       WHERE u.id = ?
     `, [req.user.userId]);
 
-    if (userDomain.length === 0) {
-      return res.json({ queries: [] });
+    if (userInfo.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
     }
 
-    const domainId = userDomain[0].id;
+    const user = userInfo[0];
+    if (!user.domain_id) {
+      return res.json({ 
+        queries: [],
+        message: 'No domain assigned to user'
+      });
+    }
 
-    // Get all resolved queries from the same domain (excluding user's own queries)
+    // Get all resolved queries from the same domain (including user's own queries)
     const query = `
       SELECT q.*, u.full_name as student_name, t.full_name as teacher_name,
              tool.name as tool_name, d.name as student_domain,
@@ -397,14 +437,15 @@ router.get('/resolved-domain', auth, checkRole(['student', 'professional']), asy
       LEFT JOIN tools tool ON q.tool_id = tool.id
       LEFT JOIN stages ds ON q.stage_id = ds.id
       LEFT JOIN issue_categories ic ON q.issue_category_id = ic.id
-      WHERE d.id = ? AND q.status = 'resolved' AND q.student_id != ?
+      WHERE u.domain_id = ? AND q.status = 'resolved'
       ORDER BY q.created_at DESC
     `;
 
-    const [queries] = await db.execute(query, [domainId, req.user.userId]);
+    const [queries] = await db.execute(query, [user.domain_id]);
     res.json({ queries });
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error in resolved-domain endpoint:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
@@ -1868,6 +1909,124 @@ router.get('/:id/edit-history', auth, async (req, res) => {
   } catch (error) {
     console.error('Error fetching edit history:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Serve images with authentication
+router.get('/images/:filename', auth, async (req, res) => {
+  try {
+    const { filename } = req.params;
+    const { userId, role: userRole } = req.user;
+    
+    console.log(`DEBUG: ========== IMAGE REQUEST START ==========`);
+    console.log(`DEBUG: User ${userId} (${userRole}) requesting image: ${filename}`);
+    console.log(`DEBUG: Request URL: ${req.originalUrl}`);
+    console.log(`DEBUG: Headers:`, req.headers.authorization ? 'Authorization header present' : 'No authorization header');
+    console.log(`DEBUG: Full user object:`, req.user);
+
+    // Get the image details and associated query
+    const [images] = await db.execute(
+      `SELECT qi.*, q.student_id 
+       FROM query_images qi 
+       JOIN queries q ON qi.query_id = q.id 
+       WHERE qi.filename = ?`,
+      [filename]
+    );
+
+    if (images.length === 0) {
+      console.log(`DEBUG: Image not found: ${filename}`);
+      return res.status(404).json({ message: 'Image not found' });
+    }
+
+    const image = images[0];
+    const queryId = image.query_id;
+
+    // Check if user has permission to view this image
+    let hasPermission = false;
+    let permissionReason = '';
+
+    if (userRole === 'admin') {
+      hasPermission = true;
+      permissionReason = 'admin access';
+    } else if (userRole === 'expert_reviewer') {
+      // Expert reviewers can view images from queries they can access
+      // First check if they're assigned to this query
+      const [assignments] = await db.execute(
+        'SELECT id FROM query_assignments WHERE query_id = ? AND expert_reviewer_id = ?',
+        [queryId, userId]
+      );
+      if (assignments.length > 0) {
+        hasPermission = true;
+        permissionReason = 'assigned query';
+      } else {
+        // If not assigned, but they can view the query (which means they should see images too)
+        hasPermission = true;
+        permissionReason = 'expert reviewer access';
+      }
+    } else if (userRole === 'student' || userRole === 'professional') {
+      // Students/professionals can view their own images or resolved images from their domain
+      if (image.student_id === userId) {
+        hasPermission = true;
+        permissionReason = 'own image';
+      } else {
+        // Check if this is a resolved query from the same domain
+        const [queryInfo] = await db.execute(
+          `SELECT q.status, u.domain_id as student_domain_id 
+           FROM queries q 
+           JOIN users u ON q.student_id = u.id 
+           WHERE q.id = ?`,
+          [queryId]
+        );
+        
+        if (queryInfo.length > 0 && queryInfo[0].status === 'resolved' && 
+            queryInfo[0].student_domain_id === req.user.domain_id) {
+          hasPermission = true;
+          permissionReason = 'resolved query from same domain';
+        } else {
+          permissionReason = `query status: ${queryInfo[0]?.status || 'unknown'}, domain mismatch`;
+        }
+      }
+    }
+
+    console.log(`DEBUG: Permission check result: ${hasPermission ? 'GRANTED' : 'DENIED'} - ${permissionReason}`);
+
+    if (!hasPermission) {
+      console.log(`DEBUG: User ${userId} (${userRole}) denied access to image: ${filename}`);
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    // Serve the image file
+    const path = require('path');
+    const fs = require('fs');
+    
+    let imagePath = image.file_path;
+    if (!path.isAbsolute(imagePath)) {
+      imagePath = path.join(__dirname, '..', imagePath);
+    }
+
+    if (!fs.existsSync(imagePath)) {
+      console.log(`DEBUG: Image file not found on filesystem: ${imagePath}`);
+      return res.status(404).json({ message: 'Image file not found' });
+    }
+
+    console.log(`DEBUG: Serving image: ${filename} to user ${userId} (${userRole})`);
+    console.log(`DEBUG: Image path: ${imagePath}`);
+    console.log(`DEBUG: MIME type: ${image.mime_type}`);
+    console.log(`DEBUG: File size: ${image.file_size}`);
+    
+    // Set appropriate headers
+    res.setHeader('Content-Type', image.mime_type);
+    res.setHeader('Content-Length', image.file_size);
+    
+    // Send the file
+    res.sendFile(imagePath);
+    console.log(`DEBUG: ========== IMAGE REQUEST END ==========`);
+    
+  } catch (error) {
+    console.error('DEBUG: ========== IMAGE REQUEST ERROR ==========');
+    console.error('Error serving image:', error);
+    console.error('DEBUG: ========== IMAGE REQUEST ERROR END ==========');
+    res.status(500).json({ message: 'Server error' });
   }
 });
 

@@ -20,10 +20,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #020b22 0%, #011027 20%, #020e1f 40%, #02122a 60%, #511801 80%, #150701 100%);
-  background-size: 400% 400%;
-  background-attachment: fixed;
-  animation: gradientShift 15s ease infinite;
+  background: #020b22;
   padding: 1rem;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   position: fixed;
@@ -34,12 +31,6 @@ html, body {
   box-sizing: border-box;
 }
 
-/* Animated background gradient */
-@keyframes gradientShift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
 
 /* Full Page 3D Background Elements */
 .full-page-3d-bg {
@@ -414,6 +405,106 @@ html, body {
 
 .register-link:hover::after {
   width: 100%;
+}
+
+/* Forgot Password Link */
+.forgot-password-link {
+  color: #6b7280;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.3s ease-in-out;
+  position: relative;
+  display: inline-block;
+}
+
+.forgot-password-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: #6b7280;
+  transition: width 0.3s ease-in-out;
+}
+
+.forgot-password-link:hover {
+  color: #374151;
+  text-decoration: none;
+}
+
+.forgot-password-link:hover::after {
+  width: 100%;
+}
+
+/* Back Link */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #6b7280;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+  transition: color 0.3s ease-in-out;
+}
+
+.back-link:hover {
+  color: #374151;
+  text-decoration: none;
+}
+
+/* Auth Header */
+.auth-header {
+  margin-bottom: 1.5rem;
+}
+
+
+/* Success Section */
+.success-section {
+  text-align: center;
+}
+
+.success-icon {
+  font-size: 3rem;
+  color: #10b981;
+  margin-bottom: 1rem;
+}
+
+/* Success Message Enhancement */
+.success {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+/* Forgot Password Specific Styles */
+.forgot-password .auth-title {
+  color: #7c3aed;
+}
+
+.forgot-password .btn-primary {
+  background: linear-gradient(135deg, #7c3aed, #5b21b6);
+}
+
+.forgot-password .btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #5b21b6, #4c1d95);
+}
+
+/* Reset Password Specific Styles */
+.reset-password .auth-title {
+  color: #059669;
+}
+
+.reset-password .btn-primary {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.reset-password .btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #059669, #047857);
 }
 
 /* Error Message */

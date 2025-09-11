@@ -17,13 +17,42 @@ const PORT = process.env.PORT || 3000;
 
 // CORS configuration using environment variables
 const corsOptions = {
-  origin: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : [
-    'http://localhost:3001',
-    'http://localhost:3000',
-    'http://127.0.0.1:3001',
-    'http://127.0.0.1:3000',
-    'http://vlsiforum.sumedhait.com'
-  ],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = process.env.CORS_ORIGINS ? 
+      process.env.CORS_ORIGINS.split(',') : [
+        'http://localhost:3001',
+        'http://localhost:3000',
+        'http://127.0.0.1:3001',
+        'http://127.0.0.1:3000',
+        'http://vlsiforum.sumedhait.com'
+      ];
+    
+    // Check if origin is allowed
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      // For VNC environments and development, allow common patterns
+      const isAllowedPattern = 
+        origin.includes('localhost') || 
+        origin.includes('127.0.0.1') || 
+        origin.includes('vlsiforum.sumedhait.com') ||
+        origin.includes('192.168.') ||  // Common VNC IP range
+        origin.includes('10.') ||       // Common VNC IP range
+        origin.includes('172.') ||      // Common VNC IP range
+        origin.match(/^https?:\/\/[^\/]*:\d+$/); // Allow any origin with port
+      
+      if (isAllowedPattern) {
+        console.log('CORS allowing origin:', origin);
+        callback(null, true);
+      } else {
+        console.log('CORS blocked origin:', origin);
+        callback(new Error('Not allowed by CORS'));
+      }
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -31,6 +60,15 @@ const corsOptions = {
 
 // Middleware
 app.use(cors(corsOptions));
+
+// Debug middleware to log origins
+app.use((req, res, next) => {
+  console.log('Request Origin:', req.headers.origin);
+  console.log('Request Host:', req.headers.host);
+  console.log('Request Referer:', req.headers.referer);
+  next();
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

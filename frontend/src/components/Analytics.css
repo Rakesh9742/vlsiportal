@@ -1,8 +1,8 @@
 /* Analytics Page Styles */
 .analytics-page {
   padding: var(--space-8) var(--space-6);
-  max-width: 1400px;
-  margin: 0 auto;
+  width: 100%;
+  margin: 0;
   background: var(--white);
   min-height: calc(100vh - 72px);
 }

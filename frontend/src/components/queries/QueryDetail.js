@@ -7,6 +7,89 @@ import { getImageUrl } from '../../config/api';
 import Chat from '../chat/Chat';
 import './Queries.css';
 
+// Custom component for authenticated image loading
+const AuthenticatedImage = ({ filename, alt, onClick, className }) => {
+  const [imageSrc, setImageSrc] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    const loadImage = async () => {
+      try {
+        setLoading(true);
+        setError(false);
+        
+        const token = localStorage.getItem('token');
+        const imageUrl = getImageUrl(filename);
+        
+        console.log(`DEBUG: Loading image: ${filename}`);
+        console.log(`DEBUG: Image URL: ${imageUrl}`);
+        console.log(`DEBUG: Has token: ${!!token}`);
+        
+        const response = await axios.get(imageUrl, {
+          headers: { Authorization: `Bearer ${token}` },
+          responseType: 'blob'
+        });
+        
+        console.log(`DEBUG: Image loaded successfully: ${filename}`);
+        console.log(`DEBUG: Response type: ${response.headers['content-type']}`);
+        
+        const objectUrl = URL.createObjectURL(response.data);
+        setImageSrc(objectUrl);
+      } catch (error) {
+        console.error(`DEBUG: Error loading image ${filename}:`, error);
+        console.error(`DEBUG: Error details:`, {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data
+        });
+        
+        // Fallback to direct static route
+        console.log(`DEBUG: Trying fallback static route for ${filename}`);
+        try {
+          const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+          const fallbackUrl = baseUrl.replace('/api', '') + '/uploads/' + filename;
+          console.log(`DEBUG: Fallback URL: ${fallbackUrl}`);
+          setImageSrc(fallbackUrl);
+        } catch (fallbackError) {
+          console.error(`DEBUG: Fallback also failed:`, fallbackError);
+          setError(true);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (filename) {
+      loadImage();
+    }
+
+    // Cleanup function to revoke object URL
+    return () => {
+      if (imageSrc) {
+        URL.revokeObjectURL(imageSrc);
+      }
+    };
+  }, [filename]);
+
+  if (loading) {
+    return <div className={`image-loading ${className || ''}`}>Loading...</div>;
+  }
+
+  if (error) {
+    return <div className={`image-error ${className || ''}`}>Failed to load image</div>;
+  }
+
+  return (
+    <img 
+      src={imageSrc} 
+      alt={alt} 
+      onClick={onClick}
+      className={className}
+    />
+  );
+};
+
 const QueryDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -30,6 +113,22 @@ const QueryDetail = () => {
       setShowChat(true);
     }
   }, [id, location.search]);
+
+  // Debug: Log image URLs when query loads
+  useEffect(() => {
+    if (query?.images?.length > 0) {
+      console.log('DEBUG: Query images found:', query.images.length);
+      query.images.forEach((image, index) => {
+        console.log(`DEBUG: Image ${index + 1}:`, {
+          id: image.id,
+          filename: image.filename,
+          original_name: image.original_name,
+          authUrl: getImageUrl(image.filename),
+          staticUrl: `${process.env.REACT_APP_API_URL || 'http://localhost:3000'}/uploads/${image.filename}`.replace('/api', '')
+        });
+      });
+    }
+  }, [query]);
 
   const handleBackNavigation = () => {
     // Check if user came from admin manage queries page
@@ -86,6 +185,27 @@ const QueryDetail = () => {
       fetchQuery(); // Refresh the query
     } catch (error) {
       setError(error.response?.data?.message || 'Failed to delete image');
+    }
+  };
+
+  const handleDownloadImage = async (filename, originalName) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(getImageUrl(filename), {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob'
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = originalName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading image:', error);
     }
   };
 
@@ -269,8 +389,8 @@ const QueryDetail = () => {
             <div className="images-grid">
               {query.images.map((image) => (
                 <div key={image.id} className="query-image-item">
-                  <img 
-                    src={getImageUrl(image.filename)} 
+                  <AuthenticatedImage 
+                    filename={image.filename}
                     alt={image.original_name}
                     onClick={() => setSelectedImage(image)}
                   />
@@ -279,15 +399,14 @@ const QueryDetail = () => {
                     <div className="image-size">{formatFileSize(image.file_size)}</div>
                   </div>
                   <div className="image-actions">
-                    <a
-                      href={getImageUrl(image.filename)}
-                      download={image.original_name}
+                    <button
+                      onClick={() => handleDownloadImage(image.filename, image.original_name)}
                       className="image-action-btn"
                       title="Download"
                     >
                       <FaDownload />
-                    </a>
-                    {(user?.role === 'expert_reviewer' || (user?.role === 'student' && query.student_id === user?.userId)) && (
+                    </button>
+                    {(user?.role === 'expert_reviewer' || user?.role === 'admin' || (user?.role === 'student' && query.student_id === user?.userId)) && (
                       <button
                         onClick={() => handleDeleteImage(image.id)}
                         className="image-action-btn"
@@ -501,8 +620,8 @@ const QueryDetail = () => {
             >
               <FaTimes />
             </button>
-            <img 
-              src={getImageUrl(selectedImage.filename)} 
+            <AuthenticatedImage 
+              filename={selectedImage.filename}
               alt={selectedImage.original_name}
             />
             <div className="image-modal-info">

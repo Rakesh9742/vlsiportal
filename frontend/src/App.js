@@ -10,6 +10,8 @@ import StudentLogin from './components/auth/StudentLogin';
 import ProfessionalLogin from './components/auth/ProfessionalLogin';
 import Register from './components/auth/Register';
 import ProfessionalRegister from './components/auth/ProfessionalRegister';
+import ForgotPassword from './components/auth/ForgotPassword';
+import ResetPassword from './components/auth/ResetPassword';
 import Dashboard from './components/Dashboard';
 import Analytics from './components/Analytics';
 import QueryList from './components/queries/QueryList';
@@ -120,6 +122,14 @@ function App() {
               <Route 
                 path="/register-professional" 
                 element={isAuthenticated ? <Navigate to="/queries" /> : <ProfessionalRegister />} 
+              />
+              <Route 
+                path="/forgot-password" 
+                element={isAuthenticated ? <Navigate to="/queries" /> : <ForgotPassword />} 
+              />
+              <Route 
+                path="/reset-password" 
+                element={isAuthenticated ? <Navigate to="/queries" /> : <ResetPassword />} 
               />
               <Route 
                 path="/dashboard" 

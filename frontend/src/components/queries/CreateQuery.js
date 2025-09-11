@@ -246,40 +246,55 @@ const CreateQuery = () => {
     try {
       // Don't proceed if userDomain is not set yet
       if (!userDomain) {
+        console.log('loadIssueCategories: userDomain not set yet');
         return;
       }
+      
+      console.log(`loadIssueCategories: Loading categories for stageId=${stageId}, userDomain=${userDomain}`);
       
       // Get current user to get domain_id
       const userRes = await axios.get('/auth/me');
       const user = userRes.data.user;
+      console.log(`DEBUG: User domain_id: ${user.domain_id}, domain: ${user.domain}`);
       
       if (userDomain === 'Physical Design') {
         // For Physical Design, use pd_issue_categories table
+        console.log(`loadIssueCategories: Fetching Physical Design categories for stage ${stageId}`);
         const response = await axios.get(`/queries/pd-issue-categories/${stageId}`);
+        console.log(`loadIssueCategories: Received ${response.data.categories.length} categories:`, response.data.categories.map(c => c.name));
         setIssueCategories(response.data.categories);
       } else {
         // For other domains, use domain_issue_categories table with domain_id
         if (user.domain_id) {
           // Use the domain-specific issue categories endpoint
+          console.log(`loadIssueCategories: Fetching domain categories for stage ${stageId}, domain_id=${user.domain_id}`);
           const response = await axios.get(`/queries/domain-issue-categories/${stageId}`);
+          console.log(`loadIssueCategories: Received ${response.data.categories.length} categories:`, response.data.categories.map(c => c.name));
           setIssueCategories(response.data.categories);
         } else {
           // Fallback to domain config if domain ID is not available
+          console.log(`loadIssueCategories: Using domain config fallback for ${userDomain}`);
           const domainConfigRes = await axios.get(`/queries/domain-config/${userDomain}`);
           const stageConfig = domainConfigRes.data.issueCategories;
-          if (stageConfig && stageConfig[stages.find(s => s.id == stageId)?.name]) {
-            const categories = stageConfig[stages.find(s => s.id == stageId)?.name] || [];
+          const stageName = stages.find(s => s.id == stageId)?.name;
+          console.log(`DEBUG: Looking for stage name: ${stageName} in config`);
+          if (stageConfig && stageConfig[stageName]) {
+            const categories = stageConfig[stageName] || [];
+            console.log(`loadIssueCategories: Found ${categories.length} categories from config:`, categories);
             setIssueCategories(categories.map((cat, index) => ({
               id: index + 1,
               name: cat,
               description: cat
             })));
           } else {
+            console.log(`DEBUG: No categories found in config for stage: ${stageName}`);
+            console.log(`DEBUG: Available stages in config:`, Object.keys(stageConfig || {}));
             setIssueCategories([]);
           }
         }
       }
     } catch (error) {
+      console.error('loadIssueCategories: Error loading categories:', error);
       setIssueCategories([]);
     }
   };
@@ -300,13 +315,23 @@ const CreateQuery = () => {
         return false;
       }
       if (file.size > 5 * 1024 * 1024) { // 5MB
-        setError('File size must be less than 5MB');
+        setError('File size must be less than 5MB per image');
         return false;
       }
       return true;
     });
 
     if (validFiles.length !== files.length) {
+      return;
+    }
+
+    // Check total file size (including existing files)
+    const existingTotalSize = selectedImages.reduce((total, file) => total + file.size, 0);
+    const newTotalSize = validFiles.reduce((total, file) => total + file.size, 0);
+    const totalSize = existingTotalSize + newTotalSize;
+    
+    if (totalSize > 10 * 1024 * 1024) { // 10MB total
+      setError('Total file size must be less than 10MB. Please remove some images or reduce their sizes.');
       return;
     }
 
@@ -375,7 +400,18 @@ const CreateQuery = () => {
       });
       navigate('/queries');
     } catch (error) {
-      setError(error.response?.data?.message || 'Failed to create query');
+      console.error('Error creating query:', error);
+      
+      // Handle specific error types
+      if (error.response?.status === 413) {
+        setError('File size too large. Please reduce image sizes and try again. Maximum total size allowed is 10MB.');
+      } else if (error.response?.data?.message) {
+        setError(error.response.data.message);
+      } else if (error.code === 'NETWORK_ERROR') {
+        setError('Network error. Please check your connection and try again.');
+      } else {
+        setError('Failed to create query. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -598,10 +634,17 @@ const CreateQuery = () => {
             {imagePreview.length > 0 && (
               <div className="image-preview-container">
                 <h4>Selected Images ({imagePreview.length}/5):</h4>
+                <div className="total-size-info">
+                  Total size: {(selectedImages.reduce((total, file) => total + file.size, 0) / (1024 * 1024)).toFixed(2)} MB / 10 MB
+                </div>
                 <div className="image-preview-grid">
                   {imagePreview.map((preview, index) => (
                     <div key={index} className="image-preview-item">
                       <img src={preview.url} alt={`Preview ${index + 1}`} />
+                      <div className="image-preview-info">
+                        <div className="image-name">{preview.file.name}</div>
+                        <div className="image-size">{(preview.file.size / (1024 * 1024)).toFixed(2)} MB</div>
+                      </div>
                       <button
                         type="button"
                         className="remove-image-btn"

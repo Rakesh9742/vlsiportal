@@ -84,25 +84,12 @@ const Register = () => {
 
   return (
     <div className="auth-container">
-      {/* Video Background */}
-      <div className="full-page-3d-bg">
-        <video 
-          autoPlay 
-          loop 
-          muted 
-          playsInline 
-          className="background-video"
-        >
-          <source src="/Video_Colorization_and_Slow_Motion.mp4" type="video/mp4" />
-        </video>
-      </div>
-      
       <div className="auth-layout student-login">
         {/* Left Side - Website Name */}
         <div className="website-section">
           <div className="website-name">
-            <img src="/logo.png" alt="VLSI Portal Logo" className="website-logo" />
-            <h1 className="website-title">VLSI Portal</h1>
+            <img src="/logo.png" alt="VLSI FORUM Logo" className="website-logo" />
+            <h1 className="website-title">VLSI FORUM</h1>
             <p className="website-subtitle">Advanced Learning Platform</p>
             <p className="website-description">
               Empowering students and professionals with cutting-edge VLSI design tools, 
@@ -114,7 +101,7 @@ const Register = () => {
         {/* Right Side - Register Form */}
         <div className="form-section">
           <div className="auth-card">
-            <h2 className="auth-title">Join VLSI Portal</h2>
+            <h2 className="auth-title">Join VLSI FORUM</h2>
             <p className="auth-subtitle">Create your student account</p>
 
             {error && <div className="error">{error}</div>}
@@ -161,7 +148,7 @@ const Register = () => {
               </div>
 
               <div className="form-group">
-                <label htmlFor="username">Linux Username</label>
+                <label htmlFor="username">Username</label>
                 <div className="input-group">
                   <FaUser className="input-icon" />
                   <input

@@ -38,25 +38,12 @@ const ProfessionalLogin = ({ onLogin }) => {
 
   return (
     <div className="auth-container">
-      {/* Video Background */}
-      <div className="full-page-3d-bg">
-        <video 
-          autoPlay 
-          loop 
-          muted 
-          playsInline 
-          className="background-video"
-        >
-          <source src="/Video_Colorization_and_Slow_Motion.mp4" type="video/mp4" />
-        </video>
-      </div>
-      
       <div className="auth-layout professional-login">
         {/* Left Side - Website Name */}
         <div className="website-section">
           <div className="website-name">
-            <img src="/logo.png" alt="vlsiforum Logo" className="website-logo" />
-            <h1 className="website-title">vlsiforum</h1>
+            <img src="/logo.png" alt="VLSI FORUM Logo" className="website-logo" />
+            <h1 className="website-title">VLSI FORUM</h1>
             <p className="website-subtitle">Advanced Learning Platform</p>
             <p className="website-description">
               Empowering students and professionals with cutting-edge VLSI design tools, 
@@ -130,6 +117,10 @@ const ProfessionalLogin = ({ onLogin }) => {
                 )}
               </button>
             </form>
+
+            <div className="form-actions">
+              <Link to="/forgot-password" className="forgot-password-link">Forgot Password?</Link>
+            </div>
 
             <div className="form-actions">
               <span>Don't have an account?</span>
