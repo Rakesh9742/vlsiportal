@@ -1535,7 +1535,8 @@ router.put('/:id', auth, [
   body('custom_issue_category').optional(),
   body('debug_steps').optional(),
   body('resolution').optional(),
-  body('resolution_attempts').optional().isInt()
+  body('resolution_attempts').optional().isInt(),
+  body('status').optional().isIn(['pending', 'in_progress', 'resolved', 'closed'])
 ], async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -1568,6 +1569,19 @@ router.put('/:id', auth, [
       // Professionals can only edit their own queries (like students)
       sqlQuery = 'SELECT * FROM queries WHERE id = ? AND student_id = ?';
       params = [queryId, userId];
+    } else if (userRole === 'domain_admin') {
+      // Domain admins can edit queries in their domain
+      console.log('DEBUG: Domain admin access - domainId:', req.user.domainId);
+      if (!req.user.domainId) {
+        console.error('ERROR: domainId is missing for domain_admin user');
+        return res.status(400).json({ message: 'Domain ID is required for domain admin access' });
+      }
+      sqlQuery = `
+        SELECT q.* FROM queries q
+        JOIN users u ON q.student_id = u.id
+        WHERE q.id = ? AND u.domain_id = ?
+      `;
+      params = [queryId, req.user.domainId];
     } else {
       // Admin can edit any query
       sqlQuery = 'SELECT * FROM queries WHERE id = ?';
@@ -1741,7 +1755,16 @@ router.put('/:id', auth, [
 
     res.json({ message: 'Query updated successfully' });
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error updating query:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      queryId: req.params.id,
+      userRole: req.user?.role,
+      userId: req.user?.userId,
+      domainId: req.user?.domainId
+    });
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
@@ -2153,6 +2176,22 @@ router.get('/images/:filename', auth, async (req, res) => {
     if (userRole === 'admin') {
       hasPermission = true;
       permissionReason = 'admin access';
+    } else if (userRole === 'domain_admin') {
+      // Domain admins can view images from queries in their domain
+      const [queryInfo] = await db.execute(
+        `SELECT u.domain_id as student_domain_id 
+         FROM queries q 
+         JOIN users u ON q.student_id = u.id 
+         WHERE q.id = ?`,
+        [queryId]
+      );
+      
+      if (queryInfo.length > 0 && queryInfo[0].student_domain_id === req.user.domainId) {
+        hasPermission = true;
+        permissionReason = 'domain admin access to same domain';
+      } else {
+        permissionReason = 'domain admin access denied - different domain';
+      }
     } else if (userRole === 'expert_reviewer') {
       // Expert reviewers can view images from queries they can access
       // First check if they're assigned to this query
@@ -2184,7 +2223,7 @@ router.get('/images/:filename', auth, async (req, res) => {
         );
         
         if (queryInfo.length > 0 && queryInfo[0].status === 'resolved' && 
-            queryInfo[0].student_domain_id === req.user.domain_id) {
+            queryInfo[0].student_domain_id === req.user.domainId) {
           hasPermission = true;
           permissionReason = 'resolved query from same domain';
         } else {

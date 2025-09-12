@@ -138,11 +138,23 @@ export const SelectValue = ({ placeholder }) => {
 // Select Content component
 export const SelectContent = ({ children, className = '' }) => {
   const { isOpen } = useContext(SelectContext);
+  const [position, setPosition] = useState('up'); // Default to upward position
+  const contentRef = useRef(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      // Always open upwards to avoid overlap with elements below
+      setPosition('up');
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
   return (
-    <div className={`select-content ${className}`}>
+    <div 
+      ref={contentRef}
+      className={`select-content ${className} ${position === 'up' ? 'select-content--up' : 'select-content--down'}`}
+    >
       <div className="select-content__inner">
         {children}
       </div>

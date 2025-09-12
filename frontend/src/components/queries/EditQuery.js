@@ -2,10 +2,103 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
-import { FaArrowLeft, FaSave, FaTimes, FaUser, FaTag, FaLayerGroup, FaCog, FaTools, FaGraduationCap, FaComments, FaEdit, FaCheck } from 'react-icons/fa';
+import { FaArrowLeft, FaSave, FaTimes, FaUser, FaTag, FaLayerGroup, FaCog, FaTools, FaGraduationCap, FaComments, FaEdit, FaCheck, FaDownload, FaTrash } from 'react-icons/fa';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '../ui/Select';
 import Chat from '../chat/Chat';
+import { getImageUrl } from '../../config/api';
 import './Queries.css';
+
+// AuthenticatedImage component for secure image loading
+const AuthenticatedImage = ({ filename, alt, onClick, className }) => {
+  const [imageSrc, setImageSrc] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    const loadImage = async () => {
+      try {
+        setLoading(true);
+        setError(false);
+        
+        const token = localStorage.getItem('token');
+        const imageUrl = getImageUrl(filename);
+        
+        console.log(`DEBUG: Loading image: ${filename}`);
+        console.log(`DEBUG: Image URL: ${imageUrl}`);
+        console.log(`DEBUG: Has token: ${!!token}`);
+        
+        const response = await axios.get(imageUrl, {
+          headers: { Authorization: `Bearer ${token}` },
+          responseType: 'blob'
+        });
+        
+        console.log(`DEBUG: Image loaded successfully: ${filename}`);
+        console.log(`DEBUG: Response type: ${response.headers['content-type']}`);
+        
+        const objectUrl = URL.createObjectURL(response.data);
+        setImageSrc(objectUrl);
+      } catch (error) {
+        console.error(`DEBUG: Error loading image ${filename}:`, error);
+        console.error(`DEBUG: Error details:`, {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data
+        });
+        
+        // Fallback to direct static route
+        console.log(`DEBUG: Trying fallback static route for ${filename}`);
+        try {
+          const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+          const fallbackUrl = baseUrl.replace('/api', '') + '/uploads/' + filename;
+          console.log(`DEBUG: Fallback URL: ${fallbackUrl}`);
+          setImageSrc(fallbackUrl);
+        } catch (fallbackError) {
+          console.error(`DEBUG: Fallback also failed:`, fallbackError);
+          setError(true);
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (filename) {
+      loadImage();
+    }
+
+    // Cleanup function to revoke object URL
+    return () => {
+      if (imageSrc) {
+        URL.revokeObjectURL(imageSrc);
+      }
+    };
+  }, [filename]);
+
+  if (loading) {
+    return (
+      <div className={`image-placeholder ${className || ''}`}>
+        <div className="loading-spinner">Loading...</div>
+      </div>
+    );
+  }
+
+  if (error || !imageSrc) {
+    return (
+      <div className={`image-error ${className || ''}`}>
+        <div className="error-message">Failed to load image</div>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={imageSrc}
+      alt={alt}
+      onClick={onClick}
+      className={`query-image ${className || ''}`}
+      style={{ cursor: onClick ? 'pointer' : 'default' }}
+    />
+  );
+};
 
 const EditQuery = () => {
   const { id } = useParams();
@@ -28,7 +121,8 @@ const EditQuery = () => {
     issue_category_id: '',
     custom_issue_category: '',
     debug_steps: '',
-    resolution: ''
+    resolution: '',
+    status: ''
   });
 
   // Options for dropdowns
@@ -36,6 +130,12 @@ const EditQuery = () => {
   const [technologies, setTechnologies] = useState([]);
   const [stages, setStages] = useState([]);
   const [issueCategories, setIssueCategories] = useState([]);
+  const [statusOptions] = useState([
+    { value: 'pending', label: 'Pending' },
+    { value: 'in_progress', label: 'In Progress' },
+    { value: 'resolved', label: 'Resolved' },
+    { value: 'closed', label: 'Closed' }
+  ]);
   const [studentDomain, setStudentDomain] = useState(null);
   const [studentDomainId, setStudentDomainId] = useState(null);
   const [domains, setDomains] = useState([]);
@@ -54,6 +154,9 @@ const EditQuery = () => {
   
   // Chat state
   const [showChat, setShowChat] = useState(false);
+  
+  // Image state
+  const [selectedImage, setSelectedImage] = useState(null);
 
   useEffect(() => {
     if (!['expert_reviewer', 'admin', 'domain_admin'].includes(user?.role)) {
@@ -154,7 +257,8 @@ const EditQuery = () => {
         issue_category_id: issueCategoryId,
         custom_issue_category: queryData.custom_issue_category || '',
         debug_steps: queryData.debug_steps || '',
-        resolution: queryData.resolution || ''
+        resolution: queryData.resolution || '',
+        status: queryData.status || 'pending'
       };
       setFormData(formDataToSet);
       
@@ -365,6 +469,14 @@ const EditQuery = () => {
         }
       });
 
+      // Always include status if it's been set (for admin/domain admin)
+      if (['admin', 'domain_admin'].includes(user?.role) && formData.status) {
+        updateData.status = formData.status;
+      }
+
+      // Debug: Log what's being sent to the backend
+      console.log('DEBUG: Form data being sent:', updateData);
+      console.log('DEBUG: Current formData.status:', formData.status);
       
       // Log specific issue category data being saved
       if (updateData.issue_category_id) {
@@ -484,6 +596,50 @@ const EditQuery = () => {
     }
   };
 
+  // Image handling functions
+  const handleDownloadImage = async (filename, originalName) => {
+    try {
+      const response = await axios.get(getImageUrl(filename), {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        responseType: 'blob'
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', originalName);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading image:', error);
+      setError('Failed to download image');
+    }
+  };
+
+  const handleDeleteImage = async (imageId) => {
+    if (!window.confirm('Are you sure you want to delete this image?')) {
+      return;
+    }
+
+    try {
+      await axios.delete(`/queries/${id}/images/${imageId}`);
+      setSuccess('Image deleted successfully');
+      await fetchQuery(); // Refresh the query
+    } catch (error) {
+      setError(error.response?.data?.message || 'Failed to delete image');
+    }
+  };
+
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
   if (loading) {
     return (
       <div className="create-query-page">
@@ -535,6 +691,46 @@ const EditQuery = () => {
             <span><strong>Created:</strong> {new Date(query.created_at).toLocaleDateString()}</span>
           </div>
         </div>
+
+        {/* Query Images */}
+        {query.images && query.images.length > 0 && (
+          <div className="query-images">
+            <h3>Uploaded Images</h3>
+            <div className="images-grid">
+              {query.images.map((image) => (
+                <div key={image.id} className="query-image-item">
+                  <AuthenticatedImage 
+                    filename={image.filename}
+                    alt={image.original_name}
+                    onClick={() => setSelectedImage(image)}
+                  />
+                  <div className="image-info">
+                    <div className="image-name">{image.original_name}</div>
+                    <div className="image-size">{formatFileSize(image.file_size)}</div>
+                  </div>
+                  <div className="image-actions">
+                    <button
+                      onClick={() => handleDownloadImage(image.filename, image.original_name)}
+                      className="image-action-btn"
+                      title="Download"
+                    >
+                      <FaDownload />
+                    </button>
+                    {(user?.role === 'expert_reviewer' || user?.role === 'admin' || user?.role === 'domain_admin' || (user?.role === 'student' && query.student_id === user?.userId)) && (
+                      <button
+                        onClick={() => handleDeleteImage(image.id)}
+                        className="image-action-btn"
+                        title="Delete"
+                      >
+                        <FaTrash />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           <div className="form-row">
@@ -704,20 +900,43 @@ const EditQuery = () => {
             />
           </div>
 
-          <div className="form-group">
-            <label htmlFor="resolution">Resolution</label>
-            <textarea
-              id="resolution"
-              name="resolution"
-              value={formData.resolution}
-              onChange={handleInputChange}
-              className="form-control"
-              rows="4"
-              placeholder="Describe how this issue was resolved..."
-            />
-          </div>
+           <div className="form-group">
+             <label htmlFor="resolution">Resolution</label>
+             <textarea
+               id="resolution"
+               name="resolution"
+               value={formData.resolution}
+               onChange={handleInputChange}
+               className="form-control"
+               rows="4"
+               placeholder="Describe how this issue was resolved..."
+             />
+           </div>
 
-          <div className="form-actions">
+           {/* Status Update - Only for Admin and Domain Admin */}
+           {['admin', 'domain_admin'].includes(user?.role) && (
+             <div className="form-group">
+               <label>Query Status</label>
+               <div className="status-buttons">
+                 <button
+                   type="button"
+                   className={`status-btn ${formData.status === 'in_progress' ? 'status-btn--active' : ''}`}
+                   onClick={() => setFormData(prev => ({ ...prev, status: 'in_progress' }))}
+                 >
+                   In Progress
+                 </button>
+                 <button
+                   type="button"
+                   className={`status-btn ${formData.status === 'resolved' ? 'status-btn--active' : ''}`}
+                   onClick={() => setFormData(prev => ({ ...prev, status: 'resolved' }))}
+                 >
+                   Resolved
+                 </button>
+               </div>
+             </div>
+           )}
+
+           <div className="form-actions">
             <button
               type="button"
               onClick={() => navigate(`/queries/${id}`)}
@@ -928,6 +1147,29 @@ const EditQuery = () => {
           <li>Changes will be visible to the student and help provide better context for responses</li>
         </ul>
       </div>
+
+      {/* Image Modal */}
+      {selectedImage && (
+        <div className="image-modal-overlay" onClick={() => setSelectedImage(null)}>
+          <div className="image-modal-content" onClick={(e) => e.stopPropagation()}>
+            <button 
+              className="image-modal-close" 
+              onClick={() => setSelectedImage(null)}
+            >
+              <FaTimes />
+            </button>
+            <AuthenticatedImage 
+              filename={selectedImage.filename}
+              alt={selectedImage.original_name}
+              className="modal-image"
+            />
+            <div className="image-modal-info">
+              <h3>{selectedImage.original_name}</h3>
+              <p>Size: {formatFileSize(selectedImage.file_size)}</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

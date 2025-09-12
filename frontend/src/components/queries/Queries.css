@@ -2405,8 +2405,9 @@ textarea.form-control {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 9999;
   padding: var(--space-4);
+  backdrop-filter: blur(2px);
 }
 
 .image-modal-content {
@@ -2419,11 +2420,13 @@ textarea.form-control {
   box-shadow: var(--shadow-xl);
 }
 
-.image-modal-content img {
+.image-modal-content img,
+.image-modal-content .modal-image {
   max-width: 100%;
   max-height: 70vh;
   object-fit: contain;
   display: block;
+  margin: 0 auto;
 }
 
 .image-modal-close {
@@ -2703,4 +2706,45 @@ textarea.form-control {
     text-align: center;
     font-size: 18px;
   }
+}
+
+/* Status Buttons */
+.status-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.status-btn {
+  padding: 12px 24px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  outline: none;
+  min-width: 120px;
+}
+
+.status-btn:hover {
+  border-color: #3182ce;
+  background: #f7fafc;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.status-btn--active {
+  background: #3182ce;
+  color: white;
+  border-color: #3182ce;
+  box-shadow: 0 2px 8px rgba(49, 130, 206, 0.3);
+}
+
+.status-btn--active:hover {
+  background: #2c5aa0;
+  border-color: #2c5aa0;
+  transform: translateY(-1px);
 }
