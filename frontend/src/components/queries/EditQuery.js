@@ -80,10 +80,46 @@ const EditQuery = () => {
 
   // Load issue categories when both query and studentDomain are available
   useEffect(() => {
-    if (query && studentDomain && query.stage_id) {
-      loadIssueCategories(query.stage_id);
+    if (query && studentDomain) {
+      if (studentDomain === 'Design Verification') {
+        // For DV domain, load issue categories directly
+        loadStagesForDomain(studentDomain);
+      } else if (query.stage_id) {
+        // For other domains, load issue categories based on stage
+        loadIssueCategories(query.stage_id);
+      }
     }
   }, [query, studentDomain]);
+
+  // Load tools when issue category is set for DV domain
+  useEffect(() => {
+    if (studentDomain === 'Design Verification' && formData.issue_category_id && issueCategories.length > 0) {
+      const loadDVTools = async () => {
+        try {
+          const toolsRes = await axios.get(`/queries/dv-tools/${formData.issue_category_id}`);
+          setTools(toolsRes.data.tools);
+        } catch (error) {
+          console.error('Error loading DV tools:', error);
+          setTools([]);
+        }
+      };
+      loadDVTools();
+    }
+  }, [formData.issue_category_id, studentDomain, issueCategories]);
+
+  // Set the correct issue category ID for DV domain after categories are loaded
+  useEffect(() => {
+    if (studentDomain === 'Design Verification' && query && issueCategories.length > 0 && !formData.issue_category_id) {
+      // Find the issue category ID based on the custom_issue_category name
+      const matchingCategory = issueCategories.find(cat => cat.name === query.custom_issue_category);
+      if (matchingCategory) {
+        setFormData(prev => ({
+          ...prev,
+          issue_category_id: matchingCategory.id
+        }));
+      }
+    }
+  }, [studentDomain, query, issueCategories, formData.issue_category_id]);
 
   const fetchQuery = async () => {
     try {
@@ -92,13 +128,21 @@ const EditQuery = () => {
       setQuery(queryData);
       
       // Populate form data
+      let issueCategoryId = queryData.issue_category_id || '';
+      
+      // For DV domain, if we have custom_issue_category, we need to find the corresponding issue_category_id
+      if (queryData.student_domain === 'Design Verification' && queryData.custom_issue_category && !queryData.issue_category_id) {
+        // We'll set this after loading the issue categories
+        issueCategoryId = '';
+      }
+      
       const formDataToSet = {
         title: queryData.title || '',
         description: queryData.description || '',
         tool_id: queryData.tool_id || '',
         technology: queryData.technology || '',
         stage_id: queryData.stage_id || '',
-        issue_category_id: queryData.issue_category_id || '',
+        issue_category_id: issueCategoryId,
         custom_issue_category: queryData.custom_issue_category || '',
         debug_steps: queryData.debug_steps || '',
         resolution: queryData.resolution || ''
@@ -109,8 +153,8 @@ const EditQuery = () => {
       setStudentDomain(queryData.student_domain);
       setOriginalIssueCategoryName(queryData.issue_category_name);
       
-      // Check if custom category should be shown
-      if (queryData.custom_issue_category) {
+      // Check if custom category should be shown (but not for DV domain)
+      if (queryData.custom_issue_category && queryData.student_domain !== 'Design Verification') {
         setShowCustomCategory(true);
         // Don't set issue_category_id to 'others' here - wait until issue categories are loaded
       }
@@ -152,12 +196,20 @@ const EditQuery = () => {
   // Load stages based on student's domain
   const loadStagesForDomain = async (domain) => {
     try {
-      // Find the domain_id for the student's domain
-      const domainObj = domains.find(d => d.name === domain);
-      if (domainObj) {
-        const stagesRes = await axios.get(`/queries/pd-stages?domainId=${domainObj.id}`);
-        setStages(stagesRes.data.stages);
+      // Handle DV domain specially - no stages, load issue categories directly
+      if (domain === 'Design Verification') {
+        setStages([]); // No stages for DV
+        // Load DV issue categories from database
+        const categoriesRes = await axios.get('/queries/dv-issue-categories');
+        setIssueCategories(categoriesRes.data.categories);
+        setTools([]); // Tools will be loaded based on selected issue category
       } else {
+        // Find the domain_id for the student's domain
+        const domainObj = domains.find(d => d.name === domain);
+        if (domainObj) {
+          const stagesRes = await axios.get(`/queries/pd-stages?domainId=${domainObj.id}`);
+          setStages(stagesRes.data.stages);
+        }
       }
     } catch (error) {
     }
@@ -166,42 +218,56 @@ const EditQuery = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     
-    if (name === 'issue_category_id') {
-    } else if (name === 'tool_id') {
-    } else {
-    }
-    
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
     
-    // If stage is selected, load corresponding issue categories
-    if (name === 'stage_id' && value) {
-      loadIssueCategories(value);
-      // Reset issue category when stage changes
-      setFormData(prev => ({
-        ...prev,
-        issue_category_id: '',
-        custom_issue_category: ''
-      }));
-      setShowCustomCategory(false);
-    }
-    
-    // If issue category is "Others", show custom input (but not for Analog Layout)
-    if (name === 'issue_category_id') {
-      if (value === 'others') {
-        setShowCustomCategory(true);
-        setFormData(prev => ({
-          ...prev,
-          custom_issue_category: ''
-        }));
-      } else {
+    // Special handling for DV domain
+    if (studentDomain === 'Design Verification') {
+      // For DV domain, when issue category is selected, load corresponding tools from database
+      if (name === 'issue_category_id' && value) {
+        const loadDVTools = async () => {
+          try {
+            const toolsRes = await axios.get(`/queries/dv-tools/${value}`);
+            setTools(toolsRes.data.tools);
+          } catch (error) {
+            console.error('Error loading DV tools:', error);
+            setTools([]);
+          }
+        };
+        loadDVTools();
         setShowCustomCategory(false);
+      }
+    } else {
+      // Original logic for other domains
+      // If stage is selected, load corresponding issue categories
+      if (name === 'stage_id' && value) {
+        loadIssueCategories(value);
+        // Reset issue category when stage changes
         setFormData(prev => ({
           ...prev,
+          issue_category_id: '',
           custom_issue_category: ''
         }));
+        setShowCustomCategory(false);
+      }
+      
+      // If issue category is "Others", show custom input (but not for Analog Layout or DV domain)
+      if (name === 'issue_category_id' && studentDomain !== 'Design Verification') {
+        if (value === 'others') {
+          setShowCustomCategory(true);
+          setFormData(prev => ({
+            ...prev,
+            custom_issue_category: ''
+          }));
+        } else {
+          setShowCustomCategory(false);
+          setFormData(prev => ({
+            ...prev,
+            custom_issue_category: ''
+          }));
+        }
       }
     }
   };
@@ -300,6 +366,14 @@ const EditQuery = () => {
       // Log specific tool data being saved
       if (updateData.tool_id) {
         const toolName = tools.find(tool => tool.id == updateData.tool_id)?.name;
+      }
+
+      // For DV domain, also send the issue category name
+      if (studentDomain === 'Design Verification' && updateData.issue_category_id) {
+        const selectedCategory = issueCategories.find(cat => cat.id == updateData.issue_category_id);
+        if (selectedCategory) {
+          updateData.issue_category_name = selectedCategory.name;
+        }
       }
 
       await axios.put(`/queries/${id}`, updateData);
@@ -465,9 +539,16 @@ const EditQuery = () => {
               <Select
                 value={formData.tool_id ? String(formData.tool_id) : ''}
                 onValueChange={(value) => handleInputChange({ target: { name: 'tool_id', value } })}
+                disabled={studentDomain === 'Design Verification' && !formData.issue_category_id}
               >
                 <SelectTrigger className="form-control">
-                  <SelectValue placeholder="Select Tool" />
+                  <SelectValue 
+                    placeholder={
+                      studentDomain === 'Design Verification' 
+                        ? (formData.issue_category_id ? 'Select Tool' : 'Select an issue category first')
+                        : 'Select Tool'
+                    } 
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
@@ -481,44 +562,50 @@ const EditQuery = () => {
               </Select>
             </div>
 
-            <div className="form-group">
-              <label htmlFor="technology">Technology</label>
-              <input
-                type="text"
-                id="technology"
-                name="technology"
-                value={formData.technology}
-                onChange={handleInputChange}
-                className="form-control"
-                                 placeholder="Enter technology (e.g., TSMC 28nm, GF 22nm, etc.)"
-              />
-            </div>
+            {/* Hide Technology field for DV domain */}
+            {studentDomain !== 'Design Verification' && (
+              <div className="form-group">
+                <label htmlFor="technology">Technology</label>
+                <input
+                  type="text"
+                  id="technology"
+                  name="technology"
+                  value={formData.technology}
+                  onChange={handleInputChange}
+                  className="form-control"
+                  placeholder="Enter technology (e.g., TSMC 28nm, GF 22nm, etc.)"
+                />
+              </div>
+            )}
           </div>
 
           <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="stage_id">
-                <FaLayerGroup /> Design Stage
-              </label>
-              <Select
-                value={formData.stage_id ? String(formData.stage_id) : ''}
-                onValueChange={(value) => handleInputChange({ target: { name: 'stage_id', value } })}
-              >
-                <SelectTrigger className="form-control">
-                  <SelectValue placeholder="Select Design Stage" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {stages.map(stage => (
-                      <SelectItem key={stage.id} value={String(stage.id)}>
-                        {stage.name}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="others">Others</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Show Design Stage only for non-DV domains */}
+            {studentDomain !== 'Design Verification' && (
+              <div className="form-group">
+                <label htmlFor="stage_id">
+                  <FaLayerGroup /> Design Stage
+                </label>
+                <Select
+                  value={formData.stage_id ? String(formData.stage_id) : ''}
+                  onValueChange={(value) => handleInputChange({ target: { name: 'stage_id', value } })}
+                >
+                  <SelectTrigger className="form-control">
+                    <SelectValue placeholder="Select Design Stage" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {stages.map(stage => (
+                        <SelectItem key={stage.id} value={String(stage.id)}>
+                          {stage.name}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="others">Others</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="form-group">
               <label htmlFor="issue_category_id">
@@ -527,10 +614,16 @@ const EditQuery = () => {
               <Select
                 value={formData.issue_category_id ? String(formData.issue_category_id) : ''}
                 onValueChange={(value) => handleInputChange({ target: { name: 'issue_category_id', value } })}
-                disabled={!formData.stage_id}
+                disabled={studentDomain !== 'Design Verification' && !formData.stage_id}
               >
                 <SelectTrigger className="form-control">
-                  <SelectValue placeholder={formData.stage_id ? 'Select Issue Category' : 'Select a stage first'} />
+                  <SelectValue 
+                    placeholder={
+                      studentDomain === 'Design Verification' 
+                        ? 'Select Issue Category' 
+                        : (formData.stage_id ? 'Select Issue Category' : 'Select a stage first')
+                    } 
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
@@ -545,7 +638,7 @@ const EditQuery = () => {
               </Select>
             </div>
             
-            {showCustomCategory && (
+            {showCustomCategory && studentDomain !== 'Design Verification' && (
               <div className="form-group">
                 <label htmlFor="custom_issue_category">Custom Issue Category</label>
                 <input

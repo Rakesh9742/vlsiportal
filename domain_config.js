@@ -102,23 +102,21 @@ const domainConfig = {
     }
   },
   
-  // Design Verification Domain
+  // Design Verification Domain (DV) - Simplified structure without stages
   'Design Verification': {
-    stages: [
-      'Test Plan',
-      'Testbench Development',
-      'Functional Verification',
-      'Coverage Analysis',
-      'Formal Verification',
-      'Emulation'
-    ],
+    stages: [], // No stages for DV domain
     issueCategories: {
-      'Test Plan': ['Test Strategy', 'Coverage Plan', 'Test Environment', 'Tool', 'Others'],
-      'Testbench Development': ['Testbench Architecture', 'Testbench Components', 'Testbench Integration', 'Tool', 'Others'],
-      'Functional Verification': ['Functional Coverage', 'Bug Detection', 'Test Execution', 'Tool', 'Others'],
-      'Coverage Analysis': ['Code Coverage', 'Functional Coverage', 'Coverage Closure', 'Tool', 'Others'],
-      'Formal Verification': ['Property Verification', 'Equivalence Checking', 'Tool', 'Others'],
-      'Emulation': ['Emulation Setup', 'Emulation Execution', 'Emulation Debug', 'Tool', 'Others']
+      'Specification': ['Document'],
+      'Compilation': ['Synopsys VCS', 'Cadence Xcelium', 'Cadence Incisive', 'Questasim'],
+      'Elaboration': ['Synopsys VCS', 'Cadence Xcelium', 'Cadence Incisive', 'Questasim'],
+      'Simulation': ['Synopsys VCS', 'Cadence Xcelium', 'Cadence Incisive', 'Questasim'],
+      'Waveform Loading': ['Synopsys Verdi', 'Cadence Simvision', 'Questasim'],
+      'Debug / Logical Failures': ['Synopsys VCS', 'Cadence Xcelium', 'Cadence Incisive', 'Questasim'],
+      'GLS / SDF Debug': ['Synopsys VCS', 'Cadence Xcelium', 'Cadence Incisive', 'Questasim'],
+      'Coverage Analysis': ['Synopsys URG', 'Cadence IMC'],
+      'Regression Analysis': ['Vmanager'],
+      'Repository': ['Git', 'SVN', 'Perforce'],
+      'Scripts / Tool Launch': ['Shell script', 'SLURM', 'Python']
     }
   },
   

@@ -263,6 +263,47 @@ router.get('/technologies', async (req, res) => {
   }
 });
 
+// DV Domain Routes
+// Get DV issue categories
+router.get('/dv-issue-categories', async (req, res) => {
+  try {
+    const [categories] = await db.execute(
+      'SELECT * FROM dv_issue_categories WHERE is_active = 1 ORDER BY name'
+    );
+    res.json({ categories });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get DV tools for a specific issue category
+router.get('/dv-tools/:categoryId', async (req, res) => {
+  try {
+    const { categoryId } = req.params;
+    const [tools] = await db.execute(`
+      SELECT t.* FROM tools t
+      JOIN dv_category_tools dct ON t.id = dct.tool_id
+      WHERE dct.category_id = ? AND t.is_active = 1 AND dct.is_active = 1
+      ORDER BY t.name
+    `, [categoryId]);
+    res.json({ tools });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get all DV tools
+router.get('/dv-tools', async (req, res) => {
+  try {
+    const [tools] = await db.execute(
+      'SELECT * FROM tools WHERE domain_id = 3 AND is_active = 1 ORDER BY name'
+    );
+    res.json({ tools });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Create new query with image uploads (students and professionals)
 router.post('/', auth, checkRole(['student', 'professional']), uploadImages, handleUploadError, [
   body('title').notEmpty().withMessage('Title is required'),
@@ -273,7 +314,7 @@ router.post('/', auth, checkRole(['student', 'professional']), uploadImages, han
     if (value === null || value === undefined || value === '') return true;
     if (value === 'others') return true; // Allow custom stage
     return Number.isInteger(Number(value));
-  }).withMessage('Stage ID must be a number or "others" for custom stage'),
+  }).withMessage('Stage ID must be a number, "others" for custom stage, or empty for domains without stages'),
   body('custom_issue_category').optional(),
   body('custom_stage').optional(),
   body('debug_steps').optional(),
@@ -323,20 +364,54 @@ router.post('/', auth, checkRole(['student', 'professional']), uploadImages, han
       // Build query fields and values (including custom_query_id)
       const queryFields = ['student_id', 'custom_query_id', 'title', 'description', 'tool_id', 'technology', 'stage_id', 'custom_stage', 'debug_steps', 'resolution'];
       // Handle custom stage - set stage_id to null when "others" is selected
-      const processedStageId = stage_id === 'others' ? null : stage_id;
-      const processedCustomStage = stage_id === 'others' ? custom_stage : null;
-      const queryValues = [studentId, customQueryId, title, description, tool_id, technology, processedStageId, processedCustomStage, debug_steps, resolution];
+      const processedStageId = stage_id === 'others' ? null : (stage_id || null);
+      const processedCustomStage = stage_id === 'others' ? (custom_stage || null) : null;
+      
+      // For DV domain, tool_id should be a valid database ID from dv_tools table
+      let processedToolId = tool_id || null;
+      
+      // Ensure all values are null instead of undefined
+      const queryValues = [
+        studentId, 
+        customQueryId, 
+        title, 
+        description, 
+        processedToolId, 
+        technology || null, 
+        processedStageId, 
+        processedCustomStage, 
+        debug_steps || null, 
+        resolution || null
+      ];
       
       // Handle custom issue category
       let issue_category_id = null;
       if (custom_issue_category) {
         // If custom category is provided, set issue_category_id to null and use custom_issue_category
         queryFields.push('custom_issue_category');
-        queryValues.push(custom_issue_category);
+        queryValues.push(custom_issue_category || null);
       } else {
-        // If no custom category, use the regular issue_category_id from the form
-        queryFields.push('issue_category_id');
-        queryValues.push(req.body.issue_category_id || null);
+        // For DV domain, we need to check if this is a DV tool to determine the domain
+        let isDVQuery = false;
+        if (processedToolId) {
+          // Check if the tool_id belongs to DV domain (domain_id = 3)
+          const [dvToolCheck] = await connection.execute(
+            'SELECT id FROM tools WHERE id = ? AND domain_id = 3',
+            [processedToolId]
+          );
+          isDVQuery = dvToolCheck.length > 0;
+        }
+        
+        if (isDVQuery) {
+          // This is a DV domain query, store the issue category name in custom_issue_category
+          const categoryName = req.body.issue_category_name || 'Unknown Category';
+          queryFields.push('custom_issue_category');
+          queryValues.push(categoryName);
+        } else {
+          // If no custom category, use the regular issue_category_id from the form
+          queryFields.push('issue_category_id');
+          queryValues.push(req.body.issue_category_id || null);
+        }
       }
       
       const [result] = await connection.execute(
@@ -1417,14 +1492,36 @@ router.put('/:id', auth, [
       return res.status(404).json({ message: 'Query not found' });
     }
 
+    // Handle DV domain logic for updates
+    let processedBody = { ...req.body };
+    
+    // Check if this is a DV domain query by checking the tool_id
+    if (req.body.tool_id) {
+      const [dvToolCheck] = await db.execute(
+        'SELECT id FROM tools WHERE id = ? AND domain_id = 3',
+        [req.body.tool_id]
+      );
+      
+      if (dvToolCheck.length > 0) {
+        // This is a DV domain query
+        if (req.body.issue_category_name) {
+          // Store the issue category name in custom_issue_category
+          processedBody.custom_issue_category = req.body.issue_category_name;
+          processedBody.issue_category_id = null;
+        }
+        // Remove issue_category_name from the update data as it's not a database field
+        delete processedBody.issue_category_name;
+      }
+    }
+
     // Build update query dynamically
     const updateFields = [];
     const updateValues = [];
 
-    Object.keys(req.body).forEach(key => {
-      if (req.body[key] !== undefined) {
+    Object.keys(processedBody).forEach(key => {
+      if (processedBody[key] !== undefined) {
         updateFields.push(`${key} = ?`);
-        updateValues.push(req.body[key]);
+        updateValues.push(processedBody[key]);
       }
     });
 
@@ -1440,10 +1537,10 @@ router.put('/:id', auth, [
     // Track edit history for each changed field with readable values
     const editHistoryPromises = [];
     
-    for (const fieldName of Object.keys(req.body)) {
-      if (req.body[fieldName] !== undefined && originalQuery[fieldName] !== req.body[fieldName]) {
+    for (const fieldName of Object.keys(processedBody)) {
+      if (processedBody[fieldName] !== undefined && originalQuery[fieldName] !== processedBody[fieldName]) {
         let oldValue = originalQuery[fieldName];
-        let newValue = req.body[fieldName];
+        let newValue = processedBody[fieldName];
         
         // Convert IDs to readable names for better history display
         if (fieldName === 'stage_id') {

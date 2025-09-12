@@ -105,6 +105,24 @@ const CreateQuery = () => {
           debugSteps: "1. Analyzed state transition patterns 2. Implemented clock gating 3. Optimized state encoding 4. Added power analysis"
         }
       ],
+      'Design Verification': [
+        {
+          title: "vlogan: package 'uvm_pkg' not found",
+          description: "Compile fails for a UVM testbench; errors show missing package and undefined uvm_* symbols.",
+          category: "Compilation",
+          tool: "Synopsys VCS",
+          debugSteps: "Check filelist order (compile packages before users of those packages).\nEnsure SystemVerilog mode is enabled: add -sverilog.\nAdd UVM include path: +incdir+$UVM_HOME/src.\nVerify UVM_HOME points to a valid UVM installation.\nRe-run with verbose include diagnostics: vlogan -v -sverilog +incdir+$UVM_HOME/src -f filelist.f.",
+          resolution: "Use a correct compile/link set, for example:\nvlogan -full64 -sverilog +incdir+$UVM_HOME/src -f filelist.f\nvcs -full64 -debug_access+all work.top_tb -o simv\nFix any missing package sources or wrong include paths, then recompile."
+        },
+        {
+          title: "URG report shows 0% functional coverage",
+          description: "Regression finishes, but functional coverage in the HTML report is zero despite covergroup sampling messages in logs.",
+          category: "Coverage Analysis",
+          tool: "Synopsys URG",
+          debugSteps: "Confirm compile/run enabled functional coverage: -cm line+cond+tgl+fsm+branch+assert+fcover.\nEnsure a persistent coverage DB is created (unique -cm_dir per run) and not overwritten.\nGrep logs to confirm covergroup::sample() actually executes and isn't ifdef-disabled.\nMerge and report correctly: urg -dir results/*.vdb -format both -report results/cov_html.\nOpen the report and verify that covergroups are under the expected DUT/TB scope.",
+          resolution: "Rebuild and run with functional coverage enabled and a valid VDB directory, for example:\nvcs -cm line+cond+tgl+fsm+branch+assert+fcover -cm_dir results/run1.vdb ...\n./simv +UVM_TESTNAME=smoke\nurg -dir results/run1.vdb -format both -report results/cov_html\nIf still zero, remove accidental UVM_NO_COVERAGE defines and ensure covergroups are compiled and instantiated."
+        }
+      ],
       'Verification': [
         {
           title: "UVM testbench failing to detect protocol violations",
@@ -148,42 +166,51 @@ const CreateQuery = () => {
         const user = userRes.data.user;
         setUserDomain(user.domain);
         
-        // Fetch tools based on user's domain
-        if (user.domain_id) {
-          const toolsRes = await axios.get(`/queries/tools/${user.domain_id}`);
-          setTools(toolsRes.data.tools);
-        } else {
-          // Fallback to all tools if domain_id is not available
-          const toolsRes = await axios.get('/queries/tools');
-          setTools(toolsRes.data.tools);
-        }
-        
         // Fetch technologies
         const technologiesRes = await axios.get('/queries/technologies');
         setTechnologies(technologiesRes.data.technologies);
         
-        // Fetch domain-specific stages based on user's domain
-        if (user.domain === 'Physical Design') {
-          // For Physical Design, use the pd_stages table with domainId
-          if (user.domain_id) {
-            const stagesRes = await axios.get(`/queries/pd-stages?domainId=${user.domain_id}`);
-            setStages(stagesRes.data.stages);
-          }
+        // Handle DV domain specially - no stages, tools based on issue categories
+        if (user.domain === 'Design Verification') {
+          // For DV domain, load issue categories from database
+          const categoriesRes = await axios.get('/queries/dv-issue-categories');
+          setIssueCategories(categoriesRes.data.categories);
+          setStages([]); // No stages for DV
+          setTools([]); // Tools will be loaded based on selected issue category
         } else {
-          // For other domains, use the domain_id from user response
+          // For other domains, fetch tools based on user's domain
           if (user.domain_id) {
-            // Fetch stages from domain_stages table
-            const stagesRes = await axios.get(`/queries/domain-stages/${user.domain_id}`);
-            setStages(stagesRes.data.stages);
+            const toolsRes = await axios.get(`/queries/tools/${user.domain_id}`);
+            setTools(toolsRes.data.tools);
           } else {
-            // Fallback to domain config if domain ID is not available
-            const domainConfigRes = await axios.get(`/queries/domain-config/${user.domain}`);
-            const domainStages = domainConfigRes.data.stages.map((stage, index) => ({
-              id: index + 1,
-              name: stage,
-              description: stage
-            }));
-            setStages(domainStages);
+            // Fallback to all tools if domain_id is not available
+            const toolsRes = await axios.get('/queries/tools');
+            setTools(toolsRes.data.tools);
+          }
+          
+          // Fetch domain-specific stages based on user's domain
+          if (user.domain === 'Physical Design') {
+            // For Physical Design, use the pd_stages table with domainId
+            if (user.domain_id) {
+              const stagesRes = await axios.get(`/queries/pd-stages?domainId=${user.domain_id}`);
+              setStages(stagesRes.data.stages);
+            }
+          } else {
+            // For other domains, use the domain_id from user response
+            if (user.domain_id) {
+              // Fetch stages from domain_stages table
+              const stagesRes = await axios.get(`/queries/domain-stages/${user.domain_id}`);
+              setStages(stagesRes.data.stages);
+            } else {
+              // Fallback to domain config if domain ID is not available
+              const domainConfigRes = await axios.get(`/queries/domain-config/${user.domain}`);
+              const domainStages = domainConfigRes.data.stages.map((stage, index) => ({
+                id: index + 1,
+                name: stage,
+                description: stage
+              }));
+              setStages(domainStages);
+            }
           }
         }
       } catch (error) {
@@ -199,45 +226,64 @@ const CreateQuery = () => {
       [name]: value
     });
     
-    // If stage is selected, load corresponding issue categories
-    if (name === 'stage_id' && value) {
-      if (value === 'others') {
-        setShowCustomStage(true);
-        setFormData(prev => ({
-          ...prev,
-          issue_category_id: '',
-          custom_issue_category: '',
-          custom_stage: ''
-        }));
-        setShowCustomCategory(false);
-      } else {
-        setShowCustomStage(false);
-        loadIssueCategories(value);
-        // Reset issue category when stage changes
-        setFormData(prev => ({
-          ...prev,
-          issue_category_id: '',
-          custom_issue_category: '',
-          custom_stage: ''
-        }));
+    // Special handling for DV domain
+    if (userDomain === 'Design Verification') {
+      // For DV domain, when issue category is selected, load corresponding tools from database
+      if (name === 'issue_category_id' && value) {
+        const loadDVTools = async () => {
+          try {
+            const toolsRes = await axios.get(`/queries/dv-tools/${value}`);
+            setTools(toolsRes.data.tools);
+          } catch (error) {
+            console.error('Error loading DV tools:', error);
+            setTools([]);
+          }
+        };
+        loadDVTools();
         setShowCustomCategory(false);
       }
-    }
-    
-    // If issue category is "Others", show custom input (but not for Analog Layout)
-    if (name === 'issue_category_id') {
-      if (value === 'others') {
-        setShowCustomCategory(true);
-        setFormData(prev => ({
-          ...prev,
-          custom_issue_category: ''
-        }));
-      } else {
-        setShowCustomCategory(false);
-        setFormData(prev => ({
-          ...prev,
-          custom_issue_category: ''
-        }));
+    } else {
+      // Original logic for other domains
+      // If stage is selected, load corresponding issue categories
+      if (name === 'stage_id' && value) {
+        if (value === 'others') {
+          setShowCustomStage(true);
+          setFormData(prev => ({
+            ...prev,
+            issue_category_id: '',
+            custom_issue_category: '',
+            custom_stage: ''
+          }));
+          setShowCustomCategory(false);
+        } else {
+          setShowCustomStage(false);
+          loadIssueCategories(value);
+          // Reset issue category when stage changes
+          setFormData(prev => ({
+            ...prev,
+            issue_category_id: '',
+            custom_issue_category: '',
+            custom_stage: ''
+          }));
+          setShowCustomCategory(false);
+        }
+      }
+      
+      // If issue category is "Others", show custom input (but not for Analog Layout)
+      if (name === 'issue_category_id') {
+        if (value === 'others') {
+          setShowCustomCategory(true);
+          setFormData(prev => ({
+            ...prev,
+            custom_issue_category: ''
+          }));
+        } else {
+          setShowCustomCategory(false);
+          setFormData(prev => ({
+            ...prev,
+            custom_issue_category: ''
+          }));
+        }
       }
     }
   };
@@ -378,6 +424,14 @@ const CreateQuery = () => {
         }
       });
 
+      // For DV domain, also send the issue category name
+      if (userDomain === 'Design Verification' && formData.issue_category_id) {
+        const selectedCategory = issueCategories.find(cat => cat.id == formData.issue_category_id);
+        if (selectedCategory) {
+          submitData.append('issue_category_name', selectedCategory.name);
+        }
+      }
+
       // Handle custom issue category separately
       if (formData.issue_category_id === 'others' && formData.custom_issue_category) {
         submitData.append('custom_issue_category', formData.custom_issue_category);
@@ -473,53 +527,62 @@ const CreateQuery = () => {
           </div>
 
           <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="stage_id">Design Stage</label>
-              <Select
-                value={formData.stage_id}
-                onValueChange={(value) => handleChange({ target: { name: 'stage_id', value } })}
-              >
-                <SelectTrigger className="form-control">
-                  <SelectValue placeholder="Select Design Stage" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {stages.map(stage => (
-                      <SelectItem key={stage.id} value={stage.id}>
-                        {stage.name}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="others">Others</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-              
-              {showCustomStage && (
-                <div className="form-group" style={{ marginTop: '10px' }}>
-                  <label htmlFor="custom_stage">Custom Design Stage</label>
-                  <input
-                    type="text"
-                    id="custom_stage"
-                    name="custom_stage"
-                    className="form-control"
-                    value={formData.custom_stage}
-                    onChange={handleChange}
-                    placeholder="Enter your custom design stage"
-                    required
-                  />
-                </div>
-              )}
-            </div>
+            {/* Show Design Stage only for non-DV domains */}
+            {userDomain !== 'Design Verification' && (
+              <div className="form-group">
+                <label htmlFor="stage_id">Design Stage</label>
+                <Select
+                  value={formData.stage_id}
+                  onValueChange={(value) => handleChange({ target: { name: 'stage_id', value } })}
+                >
+                  <SelectTrigger className="form-control">
+                    <SelectValue placeholder="Select Design Stage" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {stages.map(stage => (
+                        <SelectItem key={stage.id} value={stage.id}>
+                          {stage.name}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="others">Others</SelectItem>
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                
+                {showCustomStage && (
+                  <div className="form-group" style={{ marginTop: '10px' }}>
+                    <label htmlFor="custom_stage">Custom Design Stage</label>
+                    <input
+                      type="text"
+                      id="custom_stage"
+                      name="custom_stage"
+                      className="form-control"
+                      value={formData.custom_stage}
+                      onChange={handleChange}
+                      placeholder="Enter your custom design stage"
+                      required
+                    />
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="form-group">
               <label htmlFor="issue_category_id">Issue Category</label>
               <Select
                 value={formData.issue_category_id}
                 onValueChange={(value) => handleChange({ target: { name: 'issue_category_id', value } })}
-                disabled={!formData.stage_id}
+                disabled={userDomain !== 'Design Verification' && !formData.stage_id}
               >
                 <SelectTrigger className="form-control">
-                  <SelectValue placeholder={formData.stage_id ? 'Select Issue Category' : 'Select a stage first'} />
+                  <SelectValue 
+                    placeholder={
+                      userDomain === 'Design Verification' 
+                        ? 'Select Issue Category' 
+                        : (formData.stage_id ? 'Select Issue Category' : 'Select a stage first')
+                    } 
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
@@ -556,9 +619,16 @@ const CreateQuery = () => {
             <Select
               value={formData.tool_id}
               onValueChange={(value) => handleChange({ target: { name: 'tool_id', value } })}
+              disabled={userDomain === 'Design Verification' && !formData.issue_category_id}
             >
               <SelectTrigger className="form-control">
-                <SelectValue placeholder="Select Tool" />
+                <SelectValue 
+                  placeholder={
+                    userDomain === 'Design Verification' 
+                      ? (formData.issue_category_id ? 'Select Tool' : 'Select an issue category first')
+                      : 'Select Tool'
+                  } 
+                />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
@@ -572,18 +642,21 @@ const CreateQuery = () => {
             </Select>
           </div>
 
-          <div className="form-group">
-            <label htmlFor="technology">Technology</label>
-            <input
-              type="text"
-              id="technology"
-              name="technology"
-              className="form-control"
-              value={formData.technology}
-              onChange={handleChange}
-              placeholder="Enter technology (e.g., TSMC 28nm, GF 22nm, etc.)"
-            />
-          </div>
+          {/* Hide Technology field for DV domain */}
+          {userDomain !== 'Design Verification' && (
+            <div className="form-group">
+              <label htmlFor="technology">Technology</label>
+              <input
+                type="text"
+                id="technology"
+                name="technology"
+                className="form-control"
+                value={formData.technology}
+                onChange={handleChange}
+                placeholder="Enter technology (e.g., TSMC 28nm, GF 22nm, etc.)"
+              />
+            </div>
+          )}
 
           <div className="form-group">
             <label htmlFor="debug_steps">Debug Steps </label>
@@ -716,18 +789,22 @@ const CreateQuery = () => {
                 <div className="example-field">
                   <strong>Description:</strong> {example.description}
                 </div>
-                <div className="example-field">
-                  <strong>Design Stage:</strong> {example.stage}
-                </div>
+                {userDomain !== 'Design Verification' && example.stage && (
+                  <div className="example-field">
+                    <strong>Design Stage:</strong> {example.stage}
+                  </div>
+                )}
                 <div className="example-field">
                   <strong>Issue Category:</strong> {example.category}
                 </div>
                 <div className="example-field">
                   <strong>Tool:</strong> {example.tool}
                 </div>
-                <div className="example-field">
-                  <strong>Technology:</strong> {example.technology}
-                </div>
+                {userDomain !== 'Design Verification' && example.technology && (
+                  <div className="example-field">
+                    <strong>Technology:</strong> {example.technology}
+                  </div>
+                )}
                 <div className="example-field">
                   <strong>Debug Steps:</strong>
                   <div className="debug-steps">
