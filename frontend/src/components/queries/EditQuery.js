@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import { FaArrowLeft, FaSave, FaTimes, FaUser, FaTag, FaLayerGroup, FaCog, FaTools, FaGraduationCap, FaComments, FaEdit, FaCheck } from 'react-icons/fa';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '../ui/Select';
+import Chat from '../chat/Chat';
 import './Queries.css';
 
 const EditQuery = () => {
@@ -45,9 +46,17 @@ const EditQuery = () => {
   const [editingResponseId, setEditingResponseId] = useState(null);
   const [editingContent, setEditingContent] = useState('');
   const [savingResponse, setSavingResponse] = useState(false);
+  
+  // Add response state
+  const [showResponseForm, setShowResponseForm] = useState(false);
+  const [newResponse, setNewResponse] = useState('');
+  const [submittingResponse, setSubmittingResponse] = useState(false);
+  
+  // Chat state
+  const [showChat, setShowChat] = useState(false);
 
   useEffect(() => {
-    if (user?.role !== 'expert_reviewer' && user?.role !== 'admin') {
+    if (!['expert_reviewer', 'admin', 'domain_admin'].includes(user?.role)) {
       navigate('/queries');
       return;
     }
@@ -443,9 +452,36 @@ const EditQuery = () => {
 
   // Check if user can edit a response
   const canEditResponse = (response) => {
-    if (user?.role === 'admin') return true;
+    if (['admin', 'domain_admin'].includes(user?.role)) return true;
     if (user?.role === 'expert_reviewer' && response.responder_id === user.userId) return true;
     return false;
+  };
+
+  // Submit new response
+  const handleSubmitResponse = async (e) => {
+    e.preventDefault();
+    if (!newResponse.trim()) return;
+
+    setSubmittingResponse(true);
+    setError('');
+    setSuccess('');
+
+    try {
+      await axios.post(`/queries/${id}/responses`, { answer: newResponse });
+      setNewResponse('');
+      setShowResponseForm(false);
+      setSuccess('Response added successfully! Open discussion has been started with your response as the first message.');
+      
+      // Auto-open chat to show the discussion
+      setShowChat(true);
+      
+      // Refresh the query to show new response
+      await fetchQuery();
+    } catch (error) {
+      setError(error.response?.data?.message || 'Failed to submit response');
+    } finally {
+      setSubmittingResponse(false);
+    }
   };
 
   if (loading) {
@@ -800,8 +836,91 @@ const EditQuery = () => {
         </div>
       )}
 
+      {/* Add Response Section for Admin/Domain Admin */}
+      {['admin', 'domain_admin'].includes(user?.role) && query.status !== 'resolved' && (
+        <div className="add-response-section">
+          <div className="section-header">
+            <h3>Add Response</h3>
+            {!showResponseForm && (
+              <button
+                onClick={() => setShowResponseForm(!showResponseForm)}
+                className="btn btn-primary"
+              >
+                <FaComments />
+                Add Response
+              </button>
+            )}
+          </div>
+          
+          {showResponseForm && (
+            <form onSubmit={handleSubmitResponse} className="response-form">
+              <div className="form-group">
+                <textarea
+                  value={newResponse}
+                  onChange={(e) => setNewResponse(e.target.value)}
+                  className="form-control"
+                  rows="6"
+                  placeholder="Provide your response to help the student..."
+                  required
+                />
+              </div>
+              <div className="form-actions">
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={submittingResponse || !newResponse.trim()}
+                >
+                  {submittingResponse ? (
+                    <>
+                      <div className="spinner"></div>
+                      Submitting...
+                    </>
+                  ) : (
+                    <>
+                      <FaCheck />
+                      Submit Response
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowResponseForm(false);
+                    setNewResponse('');
+                  }}
+                  className="btn btn-outline"
+                  disabled={submittingResponse}
+                >
+                  <FaTimes />
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      )}
+
+      {/* Chat Section */}
+      <div className="query-chat-section">
+        <div className="chat-header">
+          <h3>Discussion</h3>
+          <button
+            onClick={() => setShowChat(!showChat)}
+            className={`btn ${showChat ? 'btn-secondary' : 'btn-primary'}`}
+          >
+            <FaComments />
+            {showChat ? 'Hide Discussion' : 'Open Discussion'}
+          </button>
+        </div>
+        {showChat && (
+          <div className="chat-container">
+            <Chat queryId={id} />
+          </div>
+        )}
+      </div>
+
       <div className="query-tips">
-        <h3>{user?.role === 'admin' ? 'Admin Guidelines' : 'Expert Reviewer Guidelines'}</h3>
+        <h3>{['admin', 'domain_admin'].includes(user?.role) ? 'Admin Guidelines' : 'Expert Reviewer Guidelines'}</h3>
         <ul>
           <li>You can modify the query title, description, and technical details to help clarify the student's issue</li>
           <li>Add or modify debug steps to show what troubleshooting has been attempted</li>

@@ -274,7 +274,7 @@ const QueryManagement = () => {
                 <tr 
                   key={query.id} 
                   className="query-table-row"
-                  onClick={() => navigate(`/queries/${query.id}`, { state: { from: '/admin/queries' } })}
+                  onClick={() => navigate(`/queries/${query.id}/edit`, { state: { from: '/admin/queries' } })}
                   style={{ cursor: 'pointer' }}
                 >
                   <td className="query-id">{query.custom_query_id || query.id}</td>

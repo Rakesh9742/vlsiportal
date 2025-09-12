@@ -98,6 +98,7 @@ const QueryDetail = () => {
   const [query, setQuery] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [answer, setAnswer] = useState('');
   const [showResponseForm, setShowResponseForm] = useState(false);
@@ -133,10 +134,19 @@ const QueryDetail = () => {
   const handleBackNavigation = () => {
     // Check if user came from admin manage queries page
     const referrer = location.state?.from;
+    const urlParams = new URLSearchParams(location.search);
+    const fromAdmin = urlParams.get('from') === 'admin';
+    
     if (referrer && referrer.includes('/admin/queries')) {
       navigate('/admin/queries');
-    } else if (user?.role === 'admin' && document.referrer.includes('/admin/queries')) {
+    } else if (['admin', 'domain_admin'].includes(user?.role) && document.referrer.includes('/admin/queries')) {
       navigate('/admin/queries');
+    } else if (['admin', 'domain_admin'].includes(user?.role) && fromAdmin) {
+      // For admin/domain_admin users coming from admin area via URL parameter
+      navigate('/admin');
+    } else if (['admin', 'domain_admin'].includes(user?.role)) {
+      // For admin/domain_admin users, always go back to admin dashboard if no specific referrer
+      navigate('/admin');
     } else {
       navigate('/queries');
     }
@@ -162,6 +172,12 @@ const QueryDetail = () => {
       await axios.post(`/queries/${id}/responses`, { answer });
       setAnswer('');
       setShowResponseForm(false);
+      setError(''); // Clear any previous errors
+      setSuccess('Response added successfully! Open discussion has been started with your response as the first message.');
+      
+      // Auto-open chat to show the discussion
+      setShowChat(true);
+      
       fetchQuery(); // Refresh the query to show new response
     } catch (error) {
       setError(error.response?.data?.message || 'Failed to submit answer');
@@ -292,6 +308,18 @@ const QueryDetail = () => {
       </div>
 
       <div className="query-detail-content">
+        {/* Success and Error Messages */}
+        {success && (
+          <div className="success-message">
+            {success}
+          </div>
+        )}
+        {error && (
+          <div className="error-message">
+            {error}
+          </div>
+        )}
+
         {/* Query Header Section */}
         <div className="query-header">
           <div className="query-title-section">
@@ -406,7 +434,7 @@ const QueryDetail = () => {
                     >
                       <FaDownload />
                     </button>
-                    {(user?.role === 'expert_reviewer' || user?.role === 'admin' || (user?.role === 'student' && query.student_id === user?.userId)) && (
+                    {(user?.role === 'expert_reviewer' || user?.role === 'admin' || user?.role === 'domain_admin' || (user?.role === 'student' && query.student_id === user?.userId)) && (
                       <button
                         onClick={() => handleDeleteImage(image.id)}
                         className="image-action-btn"
@@ -446,7 +474,7 @@ const QueryDetail = () => {
         <div className="query-responses">
           <div className="responses-header">
                     <h3>Expert Reviewer Responses</h3>
-        {(user?.role === 'expert_reviewer' || user?.role === 'admin') && query.status !== 'resolved' && (
+        {(user?.role === 'expert_reviewer' || user?.role === 'admin' || user?.role === 'domain_admin') && query.status !== 'resolved' && (
               <button
                 onClick={() => setShowResponseForm(!showResponseForm)}
                 className="btn btn-primary"
@@ -521,7 +549,7 @@ const QueryDetail = () => {
               </div>
               <h4>No Responses Yet</h4>
               <p>
-                {(user?.role === 'expert_reviewer' || user?.role === 'admin')
+                {(user?.role === 'expert_reviewer' || user?.role === 'admin' || user?.role === 'domain_admin')
                   ? 'Be the first to provide guidance to this student.'
                   : 'No expert reviewer responses yet. Check back later for guidance.'
                 }
@@ -550,10 +578,10 @@ const QueryDetail = () => {
         </div>
 
         {/* Expert Reviewer and Admin Actions */}
-        {(user?.role === 'expert_reviewer' || user?.role === 'admin') && query.status !== 'resolved' && (
+        {(user?.role === 'expert_reviewer' || user?.role === 'admin' || user?.role === 'domain_admin') && query.status !== 'resolved' && (
           <div className="teacher-actions">
                           <div className="teacher-actions-header">
-                <h3>{user?.role === 'admin' ? 'Admin Actions' : 'Expert Reviewer Actions'}</h3>
+                <h3>{['admin', 'domain_admin'].includes(user?.role) ? 'Admin Actions' : 'Expert Reviewer Actions'}</h3>
                 <p>Provide guidance and update query status</p>
               </div>
 

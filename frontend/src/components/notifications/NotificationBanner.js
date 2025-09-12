@@ -74,7 +74,13 @@ const NotificationBanner = () => {
     if (queryId) {
       // Mark notification as read before navigating
       dismissNotification(notificationId);
-      window.location.href = `/queries/${queryId}`;
+      
+      // For admin/domain_admin users, redirect to edit mode
+      if (['admin', 'domain_admin'].includes(user?.role)) {
+        window.location.href = `/queries/${queryId}/edit`;
+      } else {
+        window.location.href = `/queries/${queryId}`;
+      }
     } else {
       console.error('No query ID available for navigation');
     }

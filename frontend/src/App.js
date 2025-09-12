@@ -74,7 +74,7 @@ function App() {
     setUser(userData);
     setIsAuthenticated(true);
     // Role-based redirect
-    if (userData.role === 'admin') {
+    if (['admin', 'domain_admin'].includes(userData.role)) {
       window.location.href = '/admin';
     } else {
       window.location.href = '/queries';
@@ -106,31 +106,31 @@ function App() {
             <Routes>
               <Route 
                 path="/login" 
-                element={isAuthenticated ? (user?.role === 'admin' ? <Navigate to="/admin" /> : <Navigate to="/queries" />) : <Login onLogin={login} />} 
+                element={isAuthenticated ? (['admin', 'domain_admin'].includes(user?.role) ? <Navigate to="/admin" /> : <Navigate to="/queries" />) : <Login onLogin={login} />} 
               />
               <Route 
                 path="/login-student" 
-                element={isAuthenticated ? <Navigate to="/queries" /> : <StudentLogin onLogin={login} />} 
+                element={isAuthenticated ? (['admin', 'domain_admin'].includes(user?.role) ? <Navigate to="/admin" /> : <Navigate to="/queries" />) : <StudentLogin onLogin={login} />} 
               />
               <Route 
                 path="/login-professional" 
-                element={isAuthenticated ? <Navigate to="/queries" /> : <ProfessionalLogin onLogin={login} />} 
+                element={isAuthenticated ? (['admin', 'domain_admin'].includes(user?.role) ? <Navigate to="/admin" /> : <Navigate to="/queries" />) : <ProfessionalLogin onLogin={login} />} 
               />
               <Route 
                 path="/register" 
-                element={isAuthenticated ? <Navigate to="/queries" /> : <Register />} 
+                element={isAuthenticated ? (['admin', 'domain_admin'].includes(user?.role) ? <Navigate to="/admin" /> : <Navigate to="/queries" />) : <Register />} 
               />
               <Route 
                 path="/register-professional" 
-                element={isAuthenticated ? <Navigate to="/queries" /> : <ProfessionalRegister />} 
+                element={isAuthenticated ? (['admin', 'domain_admin'].includes(user?.role) ? <Navigate to="/admin" /> : <Navigate to="/queries" />) : <ProfessionalRegister />} 
               />
               <Route 
                 path="/forgot-password" 
-                element={isAuthenticated ? <Navigate to="/queries" /> : <ForgotPassword />} 
+                element={isAuthenticated ? (['admin', 'domain_admin'].includes(user?.role) ? <Navigate to="/admin" /> : <Navigate to="/queries" />) : <ForgotPassword />} 
               />
               <Route 
                 path="/reset-password" 
-                element={isAuthenticated ? <Navigate to="/queries" /> : <ResetPassword />} 
+                element={isAuthenticated ? (['admin', 'domain_admin'].includes(user?.role) ? <Navigate to="/admin" /> : <Navigate to="/queries" />) : <ResetPassword />} 
               />
               <Route 
                 path="/dashboard" 
@@ -194,7 +194,7 @@ function App() {
               />
               <Route 
                 path="/" 
-                element={isAuthenticated ? (user?.role === 'admin' ? <Navigate to="/admin" /> : <Navigate to="/queries" />) : <Navigate to="/login" />} 
+                element={isAuthenticated ? (['admin', 'domain_admin'].includes(user?.role) ? <Navigate to="/admin" /> : <Navigate to="/queries" />) : <Navigate to="/login" />} 
               />
             </Routes>
           </div>

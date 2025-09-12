@@ -439,17 +439,37 @@ router.post('/', auth, checkRole(['student', 'professional']), uploadImages, han
 
       // Send notification to all admins when a new query is created
       try {
-        const [admins] = await db.execute(
+        // Get super admins
+        const [superAdmins] = await db.execute(
           'SELECT id FROM users WHERE role = "admin"'
         );
         
-        for (const admin of admins) {
+        // Get domain admins for this student's domain
+        const [domainAdmins] = await db.execute(
+          'SELECT id FROM users WHERE role = "domain_admin" AND domain_id = ?',
+          [studentInfo[0].domain_id]
+        );
+        
+        // Send notifications to super admins
+        for (const admin of superAdmins) {
           await createNotification(
             admin.id,
             queryId,
             'query_created',
             'New Query Created',
             `A new query "${title}" has been created by ${studentInfo[0].full_name}`,
+            { student_id: studentId, student_name: studentInfo[0].full_name }
+          );
+        }
+        
+        // Send notifications to domain admins
+        for (const admin of domainAdmins) {
+          await createNotification(
+            admin.id,
+            queryId,
+            'query_created',
+            'New Query Created',
+            `A new query "${title}" has been created by ${studentInfo[0].full_name} in your domain`,
             { student_id: studentId, student_name: studentInfo[0].full_name }
           );
         }
@@ -1227,7 +1247,7 @@ router.get('/:id', auth, async (req, res) => {
 });
 
 // Add response to query (expert reviewers and admins)
-router.post('/:id/responses', auth, checkRole(['expert_reviewer', 'admin']), [
+router.post('/:id/responses', auth, checkRole(['expert_reviewer', 'admin', 'domain_admin']), [
   body('answer').notEmpty().withMessage('Answer is required')
 ], async (req, res) => {
   try {
@@ -1251,7 +1271,16 @@ router.post('/:id/responses', auth, checkRole(['expert_reviewer', 'admin']), [
         WHERE q.id = ? AND qa.expert_reviewer_id = ?
       `;
       queryCheckParams = [queryId, req.user.userId];
+    } else if (req.user.role === 'domain_admin') {
+      // Domain admin can respond to queries from their domain
+      queryCheckSql = `
+        SELECT q.* FROM queries q
+        JOIN users u ON q.student_id = u.id
+        WHERE q.id = ? AND u.domain_id = ?
+      `;
+      queryCheckParams = [queryId, req.user.domainId];
     } else {
+      // Super admin can respond to any query
       queryCheckSql = 'SELECT * FROM queries WHERE id = ?';
       queryCheckParams = [queryId];
     }
@@ -1280,8 +1309,43 @@ router.post('/:id/responses', auth, checkRole(['expert_reviewer', 'admin']), [
       [teacherId]
     );
 
-    // Create notification for query owner
+    // Create or get chat for this query and add response as first message
     const query = queries[0];
+    let [chat] = await db.execute(
+      'SELECT * FROM query_chats WHERE query_id = ?',
+      [queryId]
+    );
+
+    let chatId;
+    if (chat.length === 0) {
+      // Create new chat
+      const [chatResult] = await db.execute(
+        'INSERT INTO query_chats (query_id, chat_status) VALUES (?, ?)',
+        [queryId, 'active']
+      );
+      chatId = chatResult.insertId;
+      
+      // Add participants
+      await db.execute(
+        'INSERT INTO chat_participants (chat_id, user_id, role) VALUES (?, ?, ?)',
+        [chatId, query.student_id, 'student']
+      );
+      
+      await db.execute(
+        'INSERT INTO chat_participants (chat_id, user_id, role) VALUES (?, ?, ?)',
+        [chatId, teacherId, 'expert']
+      );
+    } else {
+      chatId = chat[0].id;
+    }
+
+    // Add the response as the first message in the chat
+    await db.execute(
+      'INSERT INTO chat_messages (chat_id, sender_id, message_type, content) VALUES (?, ?, ?, ?)',
+      [chatId, teacherId, 'text', answer]
+    );
+
+    // Create notification for query owner
     await createNotification(
       query.student_id,
       queryId,
@@ -1351,6 +1415,20 @@ router.put('/:id/responses/:responseId', auth, checkRole(['expert_reviewer', 'ad
     );
 
     if (queryInfo.length > 0) {
+      // Add updated response to chat if chat exists
+      const [chat] = await db.execute(
+        'SELECT id FROM query_chats WHERE query_id = ?',
+        [queryId]
+      );
+
+      if (chat.length > 0) {
+        // Add the updated response as a new message in the chat
+        await db.execute(
+          'INSERT INTO chat_messages (chat_id, sender_id, message_type, content) VALUES (?, ?, ?, ?)',
+          [chat[0].id, userId, 'text', content]
+        );
+      }
+
       // Create notification for query owner
       await createNotification(
         queryInfo[0].student_id,
@@ -1369,7 +1447,7 @@ router.put('/:id/responses/:responseId', auth, checkRole(['expert_reviewer', 'ad
 });
 
 // Update query status (expert reviewers and admins)
-router.put('/:id/status', auth, checkRole(['expert_reviewer', 'admin']), [
+router.put('/:id/status', auth, checkRole(['expert_reviewer', 'admin', 'domain_admin']), [
   body('status').isIn(['open', 'in_progress', 'resolved']).withMessage('Invalid status')
 ], async (req, res) => {
   try {
@@ -1392,7 +1470,16 @@ router.put('/:id/status', auth, checkRole(['expert_reviewer', 'admin']), [
         WHERE q.id = ? AND qa.expert_reviewer_id = ?
       `;
       queryCheckParams = [queryId, req.user.userId];
+    } else if (req.user.role === 'domain_admin') {
+      // Domain admin can update status of queries from their domain
+      queryCheckSql = `
+        SELECT q.* FROM queries q
+        JOIN users u ON q.student_id = u.id
+        WHERE q.id = ? AND u.domain_id = ?
+      `;
+      queryCheckParams = [queryId, req.user.domainId];
     } else {
+      // Super admin can update status of any query
       queryCheckSql = 'SELECT * FROM queries WHERE id = ?';
       queryCheckParams = [queryId];
     }
@@ -1622,6 +1709,27 @@ router.put('/:id', auth, [
           'query_edited',
           'Query Updated by Student',
           `${userInfo[0].full_name} has edited their query: "${originalQuery.title}"`,
+          { 
+            editor_id: userId, 
+            editor_name: userInfo[0].full_name,
+            edited_fields: Object.keys(req.body)
+          }
+        );
+      }
+      
+      // Also notify domain admins when students edit queries
+      const [domainAdmins] = await db.execute(
+        'SELECT id FROM users WHERE role = "domain_admin" AND domain_id = ?',
+        [originalQuery.domain_id]
+      );
+      
+      for (const admin of domainAdmins) {
+        await createNotification(
+          admin.id,
+          queryId,
+          'query_edited',
+          'Query Updated by Student',
+          `${userInfo[0].full_name} has edited their query: "${originalQuery.title}" in your domain`,
           { 
             editor_id: userId, 
             editor_name: userInfo[0].full_name,

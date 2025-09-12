@@ -82,7 +82,14 @@ const NotificationsPage = () => {
 
   const navigateToQuery = (queryId) => {
     if (queryId) {
-      navigate(`/queries/${queryId}`);
+      // For admin/domain_admin users, redirect to edit mode
+      if (['admin', 'domain_admin'].includes(user?.role)) {
+        navigate(`/queries/${queryId}/edit`, { 
+          state: { from: '/admin/queries' } 
+        });
+      } else {
+        navigate(`/queries/${queryId}`);
+      }
     } else {
       console.error('No query ID available for navigation');
     }

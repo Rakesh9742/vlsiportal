@@ -144,6 +144,71 @@ router.post('/queries/:id/assign', auth, checkAdminRole, [
       ['in_progress', expert_reviewer_id, queryId]
     );
 
+    // Send notifications for assignment
+    try {
+      const { createNotification } = require('./notifications');
+      
+      // Get query and student info
+      const [queryInfo] = await db.execute(
+        'SELECT q.title, u.full_name as student_name, u.domain_id FROM queries q JOIN users u ON q.student_id = u.id WHERE q.id = ?',
+        [queryId]
+      );
+      
+      // Get assigner info
+      const [assignerInfo] = await db.execute(
+        'SELECT full_name FROM users WHERE id = ?',
+        [adminId]
+      );
+      
+      // Get assignee info
+      const [assigneeInfo] = await db.execute(
+        'SELECT full_name FROM users WHERE id = ?',
+        [expert_reviewer_id]
+      );
+      
+      if (queryInfo.length > 0 && assignerInfo.length > 0 && assigneeInfo.length > 0) {
+        // Notify the assigned expert reviewer
+        await createNotification(
+          expert_reviewer_id,
+          queryId,
+          'query_assigned',
+          'Query Assigned to You',
+          `${assignerInfo[0].full_name} has assigned you the query: "${queryInfo[0].title}"`,
+          { 
+            assigner_id: adminId, 
+            assigner_name: assignerInfo[0].full_name,
+            query_title: queryInfo[0].title
+          }
+        );
+        
+        // Notify domain admins for this query's domain
+        const [domainAdmins] = await db.execute(
+          'SELECT id FROM users WHERE role = "domain_admin" AND domain_id = ?',
+          [queryInfo[0].domain_id]
+        );
+        
+        for (const admin of domainAdmins) {
+          await createNotification(
+            admin.id,
+            queryId,
+            'query_assigned',
+            'Query Assigned in Your Domain',
+            `Query "${queryInfo[0].title}" has been assigned to ${assigneeInfo[0].full_name}`,
+            { 
+              assigner_id: adminId, 
+              assigner_name: assignerInfo[0].full_name,
+              assignee_id: expert_reviewer_id,
+              assignee_name: assigneeInfo[0].full_name,
+              query_title: queryInfo[0].title
+            }
+          );
+        }
+      }
+    } catch (notificationError) {
+      console.error('Error sending assignment notifications:', notificationError);
+      // Don't fail the assignment if notification fails
+    }
+
     res.json({ message: 'Query assigned successfully' });
   } catch (error) {
     console.error(error);
@@ -197,6 +262,71 @@ router.put('/queries/:id/reassign', auth, checkAdminRole, [
       'UPDATE queries SET expert_reviewer_id = ? WHERE id = ?',
       [expert_reviewer_id, queryId]
     );
+
+    // Send notifications for reassignment
+    try {
+      const { createNotification } = require('./notifications');
+      
+      // Get query and student info
+      const [queryInfo] = await db.execute(
+        'SELECT q.title, u.full_name as student_name, u.domain_id FROM queries q JOIN users u ON q.student_id = u.id WHERE q.id = ?',
+        [queryId]
+      );
+      
+      // Get reassigner info
+      const [reassignerInfo] = await db.execute(
+        'SELECT full_name FROM users WHERE id = ?',
+        [adminId]
+      );
+      
+      // Get new assignee info
+      const [assigneeInfo] = await db.execute(
+        'SELECT full_name FROM users WHERE id = ?',
+        [expert_reviewer_id]
+      );
+      
+      if (queryInfo.length > 0 && reassignerInfo.length > 0 && assigneeInfo.length > 0) {
+        // Notify the newly assigned expert reviewer
+        await createNotification(
+          expert_reviewer_id,
+          queryId,
+          'query_reassigned',
+          'Query Reassigned to You',
+          `${reassignerInfo[0].full_name} has reassigned you the query: "${queryInfo[0].title}"`,
+          { 
+            reassigner_id: adminId, 
+            reassigner_name: reassignerInfo[0].full_name,
+            query_title: queryInfo[0].title
+          }
+        );
+        
+        // Notify domain admins for this query's domain
+        const [domainAdmins] = await db.execute(
+          'SELECT id FROM users WHERE role = "domain_admin" AND domain_id = ?',
+          [queryInfo[0].domain_id]
+        );
+        
+        for (const admin of domainAdmins) {
+          await createNotification(
+            admin.id,
+            queryId,
+            'query_reassigned',
+            'Query Reassigned in Your Domain',
+            `Query "${queryInfo[0].title}" has been reassigned to ${assigneeInfo[0].full_name}`,
+            { 
+              reassigner_id: adminId, 
+              reassigner_name: reassignerInfo[0].full_name,
+              assignee_id: expert_reviewer_id,
+              assignee_name: assigneeInfo[0].full_name,
+              query_title: queryInfo[0].title
+            }
+          );
+        }
+      }
+    } catch (notificationError) {
+      console.error('Error sending reassignment notifications:', notificationError);
+      // Don't fail the reassignment if notification fails
+    }
 
     res.json({ message: 'Query reassigned successfully' });
   } catch (error) {

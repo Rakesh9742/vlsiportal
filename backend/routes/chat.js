@@ -34,9 +34,21 @@ router.get('/query/:queryId', auth, async (req, res) => {
     const numericQueryId = query.id;
     const isStudent = query.student_id === parsedUserId;
     const isExpert = query.expert_reviewer_id === parsedUserId;
-    const isAdmin = req.user.role === 'admin';
+    const isSuperAdmin = req.user.role === 'admin';
+    
+    // For domain admin, check if they can access this query from their domain
+    let isDomainAdmin = false;
+    if (req.user.role === 'domain_admin') {
+      const [domainCheck] = await db.execute(
+        'SELECT u.domain_id FROM users u WHERE u.id = ?',
+        [query.student_id]
+      );
+      if (domainCheck.length > 0 && domainCheck[0].domain_id === req.user.domainId) {
+        isDomainAdmin = true;
+      }
+    }
 
-    if (!isStudent && !isExpert && !isAdmin) {
+    if (!isStudent && !isExpert && !isSuperAdmin && !isDomainAdmin) {
       return res.status(403).json({ message: 'Access denied to this chat' });
     }
 
@@ -121,7 +133,7 @@ router.get('/:chatId/messages', auth, async (req, res) => {
       [chatIdNum, parseInt(userId)]
     );
 
-    if (participantCheck.length === 0 && req.user.role !== 'admin') {
+    if (participantCheck.length === 0 && !['admin', 'domain_admin'].includes(req.user.role)) {
       return res.status(403).json({ message: 'Access denied to this chat' });
     }
 
@@ -209,7 +221,7 @@ router.post('/:chatId/messages', auth, uploadImages, handleUploadError, [
       [chatIdNum, parseInt(userId)]
     );
 
-    if (participantCheck.length === 0 && req.user.role !== 'admin') {
+    if (participantCheck.length === 0 && !['admin', 'domain_admin'].includes(req.user.role)) {
       return res.status(403).json({ message: 'Access denied to this chat' });
     }
 
