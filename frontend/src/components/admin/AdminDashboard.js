@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
-import { FaUsers, FaClipboardList, FaChartBar, FaUserPlus, FaCog, FaDownload } from 'react-icons/fa';
+import { FaUsers, FaClipboardList, FaChartBar, FaUserPlus, FaCog, FaDownload, FaUserShield } from 'react-icons/fa';
 import DomainQueryCharts from './DomainQueryCharts';
 import './AdminDashboard.css';
 
@@ -19,7 +19,7 @@ const AdminDashboard = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (user?.role !== 'admin') {
+    if (!['admin', 'domain_admin'].includes(user?.role)) {
       navigate('/queries');
       return;
     }
@@ -90,6 +90,11 @@ const AdminDashboard = () => {
     <div className="admin-dashboard">
       <div className="admin-header">
         <h1>Admin Dashboard</h1>
+        {user?.role === 'domain_admin' && (
+          <div className="domain-indicator">
+            <span className="domain-badge">Domain: {user.domain}</span>
+          </div>
+        )}
       </div>
 
       {error && <div className="error-message">{error}</div>}
@@ -148,8 +153,28 @@ const AdminDashboard = () => {
             >
               <FaClipboardList /> Manage Queries
             </button>
+            <button 
+              onClick={() => navigate('/admin/assignments')}
+              className="action-btn"
+            >
+              <FaUserPlus /> Query Assignments
+            </button>
           </div>
         </div>
+
+        {user?.role === 'admin' && (
+          <div className="action-section">
+            <h2>System Administration</h2>
+            <div className="action-buttons">
+              <button 
+                onClick={() => navigate('/admin/domain-admins')}
+                className="action-btn"
+              >
+                <FaUserShield /> Manage Domain Admins
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="action-section">
           <h2>Data Export</h2>

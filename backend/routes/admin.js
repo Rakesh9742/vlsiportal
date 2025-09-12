@@ -1,14 +1,14 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const db = require('../config/database');
-const { auth, checkRole } = require('../middleware/auth');
+const { auth, checkRole, checkAdminRole } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Admin: Get all queries with assignment status
-router.get('/queries', auth, checkRole(['admin']), async (req, res) => {
+// Admin: Get all queries with assignment status (super admin sees all, domain admin sees only their domain)
+router.get('/queries', auth, checkAdminRole, async (req, res) => {
   try {
-    const [queries] = await db.execute(`
+    let query = `
       SELECT 
         q.*,
         u.full_name as student_name,
@@ -29,8 +29,18 @@ router.get('/queries', auth, checkRole(['admin']), async (req, res) => {
       LEFT JOIN issue_categories ic ON q.issue_category_id = ic.id
       LEFT JOIN query_assignments qa ON q.id = qa.query_id
       LEFT JOIN users er ON qa.expert_reviewer_id = er.id
-      ORDER BY q.created_at DESC
-    `);
+    `;
+    let params = [];
+
+    // If user is domain admin, filter by their domain
+    if (req.user.role === 'domain_admin') {
+      query += ` WHERE u.domain_id = ?`;
+      params.push(req.user.domainId);
+    }
+
+    query += ` ORDER BY q.created_at DESC`;
+
+    const [queries] = await db.execute(query, params);
 
     res.json({ queries });
   } catch (error) {
@@ -39,10 +49,10 @@ router.get('/queries', auth, checkRole(['admin']), async (req, res) => {
   }
 });
 
-// Admin: Get unassigned queries
-router.get('/queries/unassigned', auth, checkRole(['admin']), async (req, res) => {
+// Admin: Get unassigned queries (super admin sees all, domain admin sees only their domain)
+router.get('/queries/unassigned', auth, checkAdminRole, async (req, res) => {
   try {
-    const [queries] = await db.execute(`
+    let query = `
       SELECT 
         q.*,
         u.full_name as student_name,
@@ -57,8 +67,18 @@ router.get('/queries/unassigned', auth, checkRole(['admin']), async (req, res) =
       LEFT JOIN stages ds ON q.stage_id = ds.id
       LEFT JOIN issue_categories ic ON q.issue_category_id = ic.id
       WHERE q.id NOT IN (SELECT query_id FROM query_assignments)
-      ORDER BY q.created_at DESC
-    `);
+    `;
+    let params = [];
+
+    // If user is domain admin, filter by their domain
+    if (req.user.role === 'domain_admin') {
+      query += ` AND u.domain_id = ?`;
+      params.push(req.user.domainId);
+    }
+
+    query += ` ORDER BY q.created_at DESC`;
+
+    const [queries] = await db.execute(query, params);
 
     res.json({ queries });
   } catch (error) {
@@ -68,7 +88,7 @@ router.get('/queries/unassigned', auth, checkRole(['admin']), async (req, res) =
 });
 
 // Admin: Assign query to expert reviewer
-router.post('/queries/:id/assign', auth, checkRole(['admin']), [
+router.post('/queries/:id/assign', auth, checkAdminRole, [
   body('expert_reviewer_id').isInt().withMessage('Expert reviewer ID is required'),
   body('notes').optional()
 ], async (req, res) => {
@@ -132,7 +152,7 @@ router.post('/queries/:id/assign', auth, checkRole(['admin']), [
 });
 
 // Admin: Reassign query to different expert reviewer
-router.put('/queries/:id/reassign', auth, checkRole(['admin']), [
+router.put('/queries/:id/reassign', auth, checkAdminRole, [
   body('expert_reviewer_id').isInt().withMessage('Expert reviewer ID is required'),
   body('notes').optional()
 ], async (req, res) => {
@@ -186,7 +206,7 @@ router.put('/queries/:id/reassign', auth, checkRole(['admin']), [
 });
 
 // Admin: Remove query assignment
-router.delete('/queries/:id/assign', auth, checkRole(['admin']), async (req, res) => {
+router.delete('/queries/:id/assign', auth, checkAdminRole, async (req, res) => {
   try {
     const queryId = req.params.id;
 
@@ -219,10 +239,10 @@ router.delete('/queries/:id/assign', auth, checkRole(['admin']), async (req, res
   }
 });
 
-// Admin: Get query assignments
-router.get('/assignments', auth, checkRole(['admin']), async (req, res) => {
+// Admin: Get query assignments (super admin sees all, domain admin sees only their domain)
+router.get('/assignments', auth, checkAdminRole, async (req, res) => {
   try {
-    const [assignments] = await db.execute(`
+    let query = `
       SELECT 
         qa.*,
         q.title as query_title,
@@ -237,8 +257,18 @@ router.get('/assignments', auth, checkRole(['admin']), async (req, res) => {
       JOIN users er ON qa.expert_reviewer_id = er.id
       JOIN users admin ON qa.assigned_by = admin.id
       LEFT JOIN domains d ON s.domain_id = d.id
-      ORDER BY qa.assigned_at DESC
-    `);
+    `;
+    let params = [];
+
+    // If user is domain admin, filter by their domain
+    if (req.user.role === 'domain_admin') {
+      query += ` WHERE s.domain_id = ?`;
+      params.push(req.user.domainId);
+    }
+
+    query += ` ORDER BY qa.assigned_at DESC`;
+
+    const [assignments] = await db.execute(query, params);
 
     res.json({ assignments });
   } catch (error) {
@@ -247,10 +277,10 @@ router.get('/assignments', auth, checkRole(['admin']), async (req, res) => {
   }
 });
 
-// Admin: Get expert reviewer workload
-router.get('/expert-reviewers/workload', auth, checkRole(['admin']), async (req, res) => {
+// Admin: Get expert reviewer workload (super admin sees all, domain admin sees only their domain)
+router.get('/expert-reviewers/workload', auth, checkAdminRole, async (req, res) => {
   try {
-    const [workload] = await db.execute(`
+    let query = `
       SELECT 
         u.id,
         u.full_name,
@@ -263,9 +293,18 @@ router.get('/expert-reviewers/workload', auth, checkRole(['admin']), async (req,
       LEFT JOIN domains d ON u.domain_id = d.id
       LEFT JOIN query_assignments qa ON u.id = qa.expert_reviewer_id
       WHERE u.role = 'expert_reviewer'
-      GROUP BY u.id, u.full_name, d.name
-      ORDER BY u.full_name
-    `);
+    `;
+    let params = [];
+
+    // If user is domain admin, filter by their domain
+    if (req.user.role === 'domain_admin') {
+      query += ` AND u.domain_id = ?`;
+      params.push(req.user.domainId);
+    }
+
+    query += ` GROUP BY u.id, u.full_name, d.name ORDER BY u.full_name`;
+
+    const [workload] = await db.execute(query, params);
 
     res.json({ workload });
   } catch (error) {
@@ -274,10 +313,10 @@ router.get('/expert-reviewers/workload', auth, checkRole(['admin']), async (req,
   }
 });
 
-// Admin: Get domain statistics
-router.get('/statistics/domains', auth, checkRole(['admin']), async (req, res) => {
+// Admin: Get domain statistics (super admin sees all, domain admin sees only their domain)
+router.get('/statistics/domains', auth, checkAdminRole, async (req, res) => {
   try {
-    const [statistics] = await db.execute(`
+    let query = `
       SELECT 
         d.id,
         d.name as domain_name,
@@ -290,9 +329,18 @@ router.get('/statistics/domains', auth, checkRole(['admin']), async (req, res) =
       FROM domains d
       LEFT JOIN users u ON d.id = u.domain_id
       LEFT JOIN queries q ON u.id = q.student_id
-      GROUP BY d.id, d.name
-      ORDER BY d.name
-    `);
+    `;
+    let params = [];
+
+    // If user is domain admin, filter by their domain
+    if (req.user.role === 'domain_admin') {
+      query += ` WHERE d.id = ?`;
+      params.push(req.user.domainId);
+    }
+
+    query += ` GROUP BY d.id, d.name ORDER BY d.name`;
+
+    const [statistics] = await db.execute(query, params);
 
     res.json({ statistics });
   } catch (error) {
@@ -302,7 +350,7 @@ router.get('/statistics/domains', auth, checkRole(['admin']), async (req, res) =
 });
 
 // Admin: Delete query
-router.delete('/queries/:id', auth, checkRole(['admin']), async (req, res) => {
+router.delete('/queries/:id', auth, checkAdminRole, async (req, res) => {
   try {
     const queryId = req.params.id;
 

@@ -25,6 +25,7 @@ import QueryAssignmentManagement from './components/admin/QueryAssignmentManagem
 import UserManagement from './components/admin/UserManagement';
 import QueryManagement from './components/admin/QueryManagement';
 import AdminAnalytics from './components/admin/AdminAnalytics';
+import DomainAdminManagement from './components/admin/DomainAdminManagement';
 import NotificationBanner from './components/notifications/NotificationBanner';
 import NotificationsPage from './components/notifications/NotificationsPage';
 
@@ -165,27 +166,31 @@ function App() {
               />
               <Route 
                 path="/admin" 
-                element={isAuthenticated && user?.role === 'admin' ? <AdminDashboard /> : <Navigate to="/queries" />} 
+                element={isAuthenticated && ['admin', 'domain_admin'].includes(user?.role) ? <AdminDashboard /> : <Navigate to="/queries" />} 
               />
               <Route 
                 path="/admin/expert-reviewers" 
-                element={isAuthenticated && user?.role === 'admin' ? <ExpertReviewerManagement /> : <Navigate to="/queries" />} 
+                element={isAuthenticated && ['admin', 'domain_admin'].includes(user?.role) ? <ExpertReviewerManagement /> : <Navigate to="/queries" />} 
               />
               <Route 
                 path="/admin/assignments" 
-                element={isAuthenticated && user?.role === 'admin' ? <QueryAssignmentManagement /> : <Navigate to="/queries" />} 
+                element={isAuthenticated && ['admin', 'domain_admin'].includes(user?.role) ? <QueryAssignmentManagement /> : <Navigate to="/queries" />} 
               />
               <Route 
                 path="/admin/users" 
-                element={isAuthenticated && user?.role === 'admin' ? <UserManagement /> : <Navigate to="/queries" />} 
+                element={isAuthenticated && ['admin', 'domain_admin'].includes(user?.role) ? <UserManagement /> : <Navigate to="/queries" />} 
               />
               <Route 
                 path="/admin/queries" 
-                element={isAuthenticated && user?.role === 'admin' ? <QueryManagement /> : <Navigate to="/queries" />} 
+                element={isAuthenticated && ['admin', 'domain_admin'].includes(user?.role) ? <QueryManagement /> : <Navigate to="/queries" />} 
               />
               <Route 
                 path="/admin/analytics" 
-                element={isAuthenticated && user?.role === 'admin' ? <AdminAnalytics /> : <Navigate to="/queries" />} 
+                element={isAuthenticated && ['admin', 'domain_admin'].includes(user?.role) ? <AdminAnalytics /> : <Navigate to="/queries" />} 
+              />
+              <Route 
+                path="/admin/domain-admins" 
+                element={isAuthenticated && user?.role === 'admin' ? <DomainAdminManagement /> : <Navigate to="/queries" />} 
               />
               <Route 
                 path="/" 

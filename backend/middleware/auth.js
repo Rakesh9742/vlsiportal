@@ -25,4 +25,20 @@ const checkRole = (roles) => {
   };
 };
 
-module.exports = { auth, checkRole }; 
+// Middleware to check if user has admin privileges (either admin or domain_admin)
+const checkAdminRole = (req, res, next) => {
+  if (!['admin', 'domain_admin'].includes(req.user.role)) {
+    return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+  }
+  next();
+};
+
+// Middleware to check if user is super admin (only admin role, not domain_admin)
+const checkSuperAdminRole = (req, res, next) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Access denied. Super admin privileges required.' });
+  }
+  next();
+};
+
+module.exports = { auth, checkRole, checkAdminRole, checkSuperAdminRole }; 

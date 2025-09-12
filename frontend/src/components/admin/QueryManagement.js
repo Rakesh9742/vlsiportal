@@ -26,7 +26,7 @@ const QueryManagement = () => {
   });
 
   useEffect(() => {
-    if (user?.role !== 'admin') {
+    if (!['admin', 'domain_admin'].includes(user?.role)) {
       navigate('/queries');
       return;
     }

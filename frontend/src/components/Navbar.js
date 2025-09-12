@@ -64,15 +64,15 @@ const Navbar = () => {
   return (
     <nav className="navbar">
       <div className="navbar-container">
-        <Link to={user?.role === 'admin' ? '/admin' : '/queries'} className="navbar-brand">
+        <Link to={['admin', 'domain_admin'].includes(user?.role) ? '/admin' : '/queries'} className="navbar-brand">
           <span className="brand-text">VLSI FORUM</span>
-          {user?.domain && user?.role !== 'admin' && (
+          {user?.domain && !['admin', 'domain_admin'].includes(user?.role) && (
             <span className="domain-badge">{user.domain}</span>
           )}
         </Link>
 
         <div className={`navbar-menu ${isMenuOpen ? 'active' : ''}`}>
-          {user?.role === 'admin' ? (
+          {['admin', 'domain_admin'].includes(user?.role) ? (
             <>
               <Link 
                 to="/admin" 
@@ -82,12 +82,49 @@ const Navbar = () => {
                 Admin Dashboard
               </Link>
               <Link 
+                to="/admin/users" 
+                className={`nav-link ${isActiveLink('/admin/users') ? 'active' : ''}`} 
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Users
+              </Link>
+              <Link 
+                to="/admin/queries" 
+                className={`nav-link ${isActiveLink('/admin/queries') ? 'active' : ''}`} 
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Queries
+              </Link>
+              <Link 
+                to="/admin/assignments" 
+                className={`nav-link ${isActiveLink('/admin/assignments') ? 'active' : ''}`} 
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Assignments
+              </Link>
+              <Link 
                 to="/admin/expert-reviewers" 
                 className={`nav-link ${isActiveLink('/admin/expert-reviewers') ? 'active' : ''}`} 
                 onClick={() => setIsMenuOpen(false)}
               >
                 Expert Reviewers
               </Link>
+              <Link 
+                to="/admin/analytics" 
+                className={`nav-link ${isActiveLink('/admin/analytics') ? 'active' : ''}`} 
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Analytics
+              </Link>
+              {user?.role === 'admin' && (
+                <Link 
+                  to="/admin/domain-admins" 
+                  className={`nav-link ${isActiveLink('/admin/domain-admins') ? 'active' : ''}`} 
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Domain Admins
+                </Link>
+              )}
             </>
           ) : (
             <>

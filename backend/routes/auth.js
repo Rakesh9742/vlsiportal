@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { body, validationResult } = require('express-validator');
 const db = require('../config/database');
-const { auth, checkRole } = require('../middleware/auth');
+const { auth, checkRole, checkSuperAdminRole } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -127,15 +127,25 @@ router.post('/expert-reviewer', auth, checkRole(['admin']), [
   }
 });
 
-// Admin: Get all users
-router.get('/users', auth, checkRole(['admin']), async (req, res) => {
+// Admin: Get all users (super admin sees all, domain admin sees only their domain)
+router.get('/users', auth, checkRole(['admin', 'domain_admin']), async (req, res) => {
   try {
-    const [users] = await db.execute(`
+    let query = `
       SELECT u.id, u.username, u.role, u.full_name, u.created_at, d.name as domain_name
       FROM users u
       LEFT JOIN domains d ON u.domain_id = d.id
-      ORDER BY u.created_at DESC
-    `);
+    `;
+    let params = [];
+
+    // If user is domain admin, filter by their domain
+    if (req.user.role === 'domain_admin') {
+      query += ` WHERE u.domain_id = ?`;
+      params.push(req.user.domainId);
+    }
+
+    query += ` ORDER BY u.created_at DESC`;
+
+    const [users] = await db.execute(query, params);
     res.json({ users });
   } catch (error) {
     console.error(error);
@@ -143,16 +153,26 @@ router.get('/users', auth, checkRole(['admin']), async (req, res) => {
   }
 });
 
-// Admin: Get expert reviewers
-router.get('/expert-reviewers', auth, checkRole(['admin']), async (req, res) => {
+// Admin: Get expert reviewers (super admin sees all, domain admin sees only their domain)
+router.get('/expert-reviewers', auth, checkRole(['admin', 'domain_admin']), async (req, res) => {
   try {
-    const [reviewers] = await db.execute(`
+    let query = `
       SELECT u.id, u.username, u.full_name, u.created_at, d.name as domain_name
       FROM users u
       LEFT JOIN domains d ON u.domain_id = d.id
       WHERE u.role = 'expert_reviewer'
-      ORDER BY u.full_name
-    `);
+    `;
+    let params = [];
+
+    // If user is domain admin, filter by their domain
+    if (req.user.role === 'domain_admin') {
+      query += ` AND u.domain_id = ?`;
+      params.push(req.user.domainId);
+    }
+
+    query += ` ORDER BY u.full_name`;
+
+    const [reviewers] = await db.execute(query, params);
     res.json({ reviewers });
   } catch (error) {
     console.error(error);
@@ -235,8 +255,8 @@ router.post('/register-professional', [
   }
 });
 
-// Admin: Create Admin User
-router.post('/create-admin', auth, checkRole(['admin']), [
+// Super Admin: Create Admin User
+router.post('/create-admin', auth, checkSuperAdminRole, [
   body('username').isLength({ min: 3 }).withMessage('Username must be at least 3 characters'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
   body('full_name').notEmpty().withMessage('Full name is required')
@@ -271,6 +291,61 @@ router.post('/create-admin', auth, checkRole(['admin']), [
     res.status(201).json({
       message: 'Admin user created successfully',
       userId: result.insertId
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Super Admin: Create Domain Admin User
+router.post('/create-domain-admin', auth, checkSuperAdminRole, [
+  body('username').isLength({ min: 3 }).withMessage('Username must be at least 3 characters'),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  body('full_name').notEmpty().withMessage('Full name is required'),
+  body('domain_id').isInt().withMessage('Domain ID is required')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { username, password, full_name, domain_id } = req.body;
+
+    // Check if user already exists
+    const [existingUsers] = await db.execute(
+      'SELECT id FROM users WHERE username = ?',
+      [username]
+    );
+
+    if (existingUsers.length > 0) {
+      return res.status(400).json({ message: 'Username already exists' });
+    }
+
+    // Check if domain exists
+    const [domains] = await db.execute(
+      'SELECT id, name FROM domains WHERE id = ?',
+      [domain_id]
+    );
+
+    if (domains.length === 0) {
+      return res.status(400).json({ message: 'Invalid domain selected' });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Insert new domain admin user
+    const [result] = await db.execute(
+      'INSERT INTO users (username, password, role, full_name, domain_id) VALUES (?, ?, ?, ?, ?)',
+      [username, hashedPassword, 'domain_admin', full_name, domain_id]
+    );
+
+    res.status(201).json({
+      message: 'Domain admin user created successfully',
+      userId: result.insertId,
+      domain: domains[0].name
     });
   } catch (error) {
     console.error(error);

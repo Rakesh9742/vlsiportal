@@ -23,7 +23,7 @@ const AdminAnalytics = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (user?.role !== 'admin') {
+    if (!['admin', 'domain_admin'].includes(user?.role)) {
       navigate('/queries');
       return;
     }
