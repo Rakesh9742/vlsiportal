@@ -138,13 +138,23 @@ export const SelectValue = ({ placeholder }) => {
 // Select Content component
 export const SelectContent = ({ children, className = '' }) => {
   const { isOpen } = useContext(SelectContext);
-  const [position, setPosition] = useState('up'); // Default to upward position
+  const [position, setPosition] = useState('down'); // Default to downward position
   const contentRef = useRef(null);
 
   useEffect(() => {
     if (isOpen) {
-      // Always open upwards to avoid overlap with elements below
-      setPosition('up');
+      // Check if there's enough space below, otherwise open upward
+      const rect = contentRef.current?.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const spaceBelow = viewportHeight - (rect?.bottom || 0);
+      const spaceAbove = rect?.top || 0;
+      
+      // If there's not enough space below (less than 200px) and more space above, open upward
+      if (spaceBelow < 200 && spaceAbove > spaceBelow) {
+        setPosition('up');
+      } else {
+        setPosition('down');
+      }
     }
   }, [isOpen]);
 

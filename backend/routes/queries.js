@@ -341,7 +341,7 @@ router.post('/', auth, checkRole(['student', 'professional']), uploadImages, han
 
     // Get student's domain information for custom query ID generation
     const [studentInfo] = await db.execute(`
-      SELECT u.id, u.full_name, d.name as domain_name 
+      SELECT u.id, u.full_name, u.domain_id, d.name as domain_name 
       FROM users u 
       LEFT JOIN domains d ON u.domain_id = d.id 
       WHERE u.id = ?
@@ -444,11 +444,15 @@ router.post('/', auth, checkRole(['student', 'professional']), uploadImages, han
           'SELECT id FROM users WHERE role = "admin"'
         );
         
-        // Get domain admins for this student's domain
-        const [domainAdmins] = await db.execute(
-          'SELECT id FROM users WHERE role = "domain_admin" AND domain_id = ?',
-          [studentInfo[0].domain_id]
-        );
+        // Get domain admins for this student's domain (only if domain_id exists)
+        let domainAdmins = [];
+        if (studentInfo[0].domain_id) {
+          const [domainAdminsResult] = await db.execute(
+            'SELECT id FROM users WHERE role = "domain_admin" AND domain_id = ?',
+            [studentInfo[0].domain_id]
+          );
+          domainAdmins = domainAdminsResult;
+        }
         
         // Send notifications to super admins
         for (const admin of superAdmins) {
