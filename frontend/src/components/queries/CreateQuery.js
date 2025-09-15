@@ -570,10 +570,6 @@ const CreateQuery = () => {
 
             <div className="form-group">
               <label htmlFor="issue_category_id">Issue Category</label>
-              {/* Debug info */}
-              <div style={{ fontSize: '12px', color: '#666', marginBottom: '5px' }}>
-                Debug: {issueCategories.length} categories loaded, userDomain: {userDomain}, stage_id: {formData.stage_id}
-              </div>
               <Select
                 value={formData.issue_category_id}
                 onValueChange={(value) => handleChange({ target: { name: 'issue_category_id', value } })}

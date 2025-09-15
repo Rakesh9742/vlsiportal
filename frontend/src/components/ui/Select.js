@@ -63,13 +63,17 @@ export const Select = ({ children, value, onValueChange, defaultValue, disabled 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (selectRef.current && !selectRef.current.contains(event.target)) {
+        console.log('Click outside detected, closing dropdown');
         setIsOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    if (isOpen) {
+      // Only add the listener when dropdown is open
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [isOpen]);
 
   const handleValueChange = (newValue, label) => {
     setSelectedValue(newValue);
@@ -82,7 +86,10 @@ export const Select = ({ children, value, onValueChange, defaultValue, disabled 
 
   const contextValue = {
     isOpen,
-    setIsOpen,
+    setIsOpen: (newIsOpen) => {
+      console.log('Setting isOpen to:', newIsOpen);
+      setIsOpen(newIsOpen);
+    },
     selectedValue,
     selectedLabel,
     setSelectedLabel,
@@ -103,7 +110,10 @@ export const Select = ({ children, value, onValueChange, defaultValue, disabled 
 export const SelectTrigger = ({ children, className = '', placeholder }) => {
   const { isOpen, setIsOpen, selectedLabel, disabled } = useContext(SelectContext);
 
-  const handleClick = () => {
+  const handleClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('Select trigger clicked, disabled:', disabled, 'current isOpen:', isOpen);
     if (!disabled) {
       setIsOpen(!isOpen);
     }
@@ -138,33 +148,11 @@ export const SelectValue = ({ placeholder }) => {
 // Select Content component
 export const SelectContent = ({ children, className = '' }) => {
   const { isOpen } = useContext(SelectContext);
-  const [position, setPosition] = useState('down'); // Default to downward position
-  const contentRef = useRef(null);
-
-  useEffect(() => {
-    if (isOpen) {
-      // Check if there's enough space below, otherwise open upward
-      const rect = contentRef.current?.getBoundingClientRect();
-      const viewportHeight = window.innerHeight;
-      const spaceBelow = viewportHeight - (rect?.bottom || 0);
-      const spaceAbove = rect?.top || 0;
-      
-      // If there's not enough space below (less than 200px) and more space above, open upward
-      if (spaceBelow < 200 && spaceAbove > spaceBelow) {
-        setPosition('up');
-      } else {
-        setPosition('down');
-      }
-    }
-  }, [isOpen]);
 
   if (!isOpen) return null;
 
   return (
-    <div 
-      ref={contentRef}
-      className={`select-content ${className} ${position === 'up' ? 'select-content--up' : 'select-content--down'}`}
-    >
+    <div className={`select-content ${className} select-content--down`}>
       <div className="select-content__inner">
         {children}
       </div>

@@ -27,7 +27,8 @@ const corsOptions = {
         'http://localhost:3000',
         'http://127.0.0.1:3001',
         'http://127.0.0.1:3000',
-        'http://vlsiforum.sumedhait.com'
+        'http://vlsiforum.sumedhait.com',
+        'https://vlsiforum.sumedhait.com'
       ];
     
     // Check if origin is allowed
@@ -42,7 +43,8 @@ const corsOptions = {
         origin.includes('192.168.') ||  // Common VNC IP range
         origin.includes('10.') ||       // Common VNC IP range
         origin.includes('172.') ||      // Common VNC IP range
-        origin.match(/^https?:\/\/[^\/]*:\d+$/); // Allow any origin with port
+        origin.match(/^https?:\/\/[^\/]*:\d+$/) || // Allow any origin with port
+        origin.match(/^https?:\/\/vlsiforum\.sumedhait\.com$/); // Allow HTTPS production domain
       
       if (isAllowedPattern) {
         console.log('CORS allowing origin:', origin);

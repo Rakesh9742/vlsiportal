@@ -17,7 +17,7 @@ const getImageUrl = (filename) => {
   let finalUrl;
   if (baseUrl.includes('vlsiforum.sumedhait.com')) {
     // Production - force the correct API URL
-    finalUrl = `http://vlsiforum.sumedhait.com/api/queries/images/${filename}`;
+    finalUrl = `https://vlsiforum.sumedhait.com/api/queries/images/${filename}`;
   } else {
     // Local development
     const apiUrl = baseUrl.includes('/api') ? baseUrl : `${baseUrl}/api`;

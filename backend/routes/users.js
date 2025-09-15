@@ -33,7 +33,7 @@ router.get('/teachers', auth, async (req, res) => {
 router.get('/profile', auth, async (req, res) => {
   try {
     const [users] = await db.execute(
-      `SELECT u.id, u.username, u.role, u.full_name, u.domain_id, u.created_at, d.name as domain 
+      `SELECT u.id, u.username, u.role, u.full_name, u.domain_id, u.created_at, u.updated_at, d.name as domain 
        FROM users u 
        LEFT JOIN domains d ON u.domain_id = d.id 
        WHERE u.id = ?`,
@@ -54,28 +54,24 @@ router.get('/profile', auth, async (req, res) => {
 // Update user profile
 router.put('/profile', auth, async (req, res) => {
   try {
-    const { full_name, domain } = req.body;
+    const { full_name, domain_id } = req.body;
     const userId = req.user.userId;
 
-    let domainId = null;
-    
-    // If domain is provided, find the domain ID
-    if (domain) {
+    // Validate domain_id if provided
+    if (domain_id) {
       const [domains] = await db.execute(
-        'SELECT id FROM domains WHERE name = ?',
-        [domain]
+        'SELECT id FROM domains WHERE id = ?',
+        [domain_id]
       );
       
       if (domains.length === 0) {
         return res.status(400).json({ message: 'Invalid domain selected' });
       }
-      
-      domainId = domains[0].id;
     }
 
     await db.execute(
-      'UPDATE users SET full_name = ?, domain_id = ? WHERE id = ?',
-      [full_name, domainId, userId]
+      'UPDATE users SET full_name = ?, domain_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [full_name, domain_id || null, userId]
     );
 
     res.json({ message: 'Profile updated successfully' });
