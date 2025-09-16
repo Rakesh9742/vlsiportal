@@ -112,14 +112,14 @@ router.post('/queries/:id/assign', auth, checkAdminRole, [
       return res.status(404).json({ message: 'Query not found' });
     }
 
-    // Check if assignee exists and is an expert reviewer or admin
+    // Check if assignee exists and is an expert reviewer, admin, or domain admin
     const [reviewers] = await db.execute(
-      'SELECT * FROM users WHERE id = ? AND role IN (?, ?)',
-      [expert_reviewer_id, 'expert_reviewer', 'admin']
+      'SELECT * FROM users WHERE id = ? AND role IN (?, ?, ?)',
+      [expert_reviewer_id, 'expert_reviewer', 'admin', 'domain_admin']
     );
 
     if (reviewers.length === 0) {
-      return res.status(400).json({ message: 'Invalid assignee - must be expert reviewer or admin' });
+      return res.status(400).json({ message: 'Invalid assignee - must be expert reviewer, admin, or domain admin' });
     }
 
     // Check if query is already assigned
@@ -241,14 +241,14 @@ router.put('/queries/:id/reassign', auth, checkAdminRole, [
       return res.status(404).json({ message: 'Query not found' });
     }
 
-    // Check if assignee exists and is an expert reviewer or admin
+    // Check if assignee exists and is an expert reviewer, admin, or domain admin
     const [reviewers] = await db.execute(
-      'SELECT * FROM users WHERE id = ? AND role IN (?, ?)',
-      [expert_reviewer_id, 'expert_reviewer', 'admin']
+      'SELECT * FROM users WHERE id = ? AND role IN (?, ?, ?)',
+      [expert_reviewer_id, 'expert_reviewer', 'admin', 'domain_admin']
     );
 
     if (reviewers.length === 0) {
-      return res.status(400).json({ message: 'Invalid assignee - must be expert reviewer or admin' });
+      return res.status(400).json({ message: 'Invalid assignee - must be expert reviewer, admin, or domain admin' });
     }
 
     // Update assignment

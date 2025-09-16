@@ -469,16 +469,41 @@ router.get('/me', auth, async (req, res) => {
   }
 });
 
-// Get assignees (only admin and expert reviewer users) for query assignment
+// Get assignees (admin, domain admin, and expert reviewer users) for query assignment
 router.get('/assignees', auth, async (req, res) => {
   try {
-    const [assignees] = await db.execute(
-      `SELECT u.id, u.username, u.full_name, u.role, d.name as domain_name
-       FROM users u
-       LEFT JOIN domains d ON u.domain_id = d.id
-       WHERE u.role IN ('admin', 'expert_reviewer')
-       ORDER BY u.role DESC, u.full_name ASC`
-    );
+    let query = `
+      SELECT u.id, u.username, u.full_name, u.role, d.name as domain_name
+      FROM users u
+      LEFT JOIN domains d ON u.domain_id = d.id
+      WHERE u.role IN ('admin', 'domain_admin', 'expert_reviewer')
+    `;
+    let params = [];
+
+    // If user is domain admin, filter by their domain
+    if (req.user.role === 'domain_admin') {
+      console.log('DEBUG: Domain admin accessing assignees - domainId:', req.user.domainId);
+      if (!req.user.domainId) {
+        console.error('ERROR: domainId is missing for domain_admin user');
+        return res.status(400).json({ message: 'Domain ID is required for domain admin access' });
+      }
+      query += ` AND u.domain_id = ?`;
+      params.push(req.user.domainId);
+    }
+
+    query += ` ORDER BY u.role DESC, u.full_name ASC`;
+
+    const [assignees] = await db.execute(query, params);
+    
+    // Debug logging for domain admin
+    if (req.user.role === 'domain_admin') {
+      console.log('DEBUG: Assignees returned for domain admin:', assignees.map(a => ({ 
+        id: a.id, 
+        name: a.full_name, 
+        role: a.role, 
+        domain: a.domain_name 
+      })));
+    }
 
     res.json({ assignees });
   } catch (error) {
@@ -487,17 +512,35 @@ router.get('/assignees', auth, async (req, res) => {
   }
 });
 
-// Get assignees filtered by domain (only admin users)
+// Get assignees filtered by domain (admin, domain admin, and expert reviewer users)
 router.get('/assignees/domain/:domain', auth, async (req, res) => {
   try {
     const domain = decodeURIComponent(req.params.domain);
+    
+    // If user is domain admin, ensure they can only access their own domain
+    if (req.user.role === 'domain_admin') {
+      // Get the domain name for the domain admin's domain
+      const [domainInfo] = await db.execute(
+        'SELECT name FROM domains WHERE id = ?',
+        [req.user.domainId]
+      );
+      
+      if (domainInfo.length === 0) {
+        return res.status(403).json({ message: 'Domain not found' });
+      }
+      
+      const userDomainName = domainInfo[0].name;
+      if (domain !== userDomainName) {
+        return res.status(403).json({ message: 'Access denied - can only access your own domain' });
+      }
+    }
     
     const [assignees] = await db.execute(
       `SELECT u.id, u.username, u.full_name, u.role, d.name as domain_name
        FROM users u
        LEFT JOIN domains d ON u.domain_id = d.id
-       WHERE u.role IN ('admin', 'expert_reviewer')
-         AND (d.name = ? OR u.role = 'admin')
+       WHERE u.role IN ('admin', 'domain_admin', 'expert_reviewer')
+         AND d.name = ?
        ORDER BY u.role DESC, u.full_name ASC`,
       [domain]
     );
