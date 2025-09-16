@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
-import { FaArrowLeft, FaSearch, FaFilter, FaEye, FaEdit, FaTrash, FaUser, FaClipboardList, FaUserPlus } from 'react-icons/fa';
+import { FaArrowLeft, FaSearch, FaFilter, FaEye, FaTrash, FaUser, FaClipboardList, FaUserPlus } from 'react-icons/fa';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '../ui/Select';
 import './QueryManagement.css';
 
@@ -146,6 +146,9 @@ const QueryManagement = () => {
 
 
 
+  // Get URL filter once to avoid re-computation on every render
+  const urlFilter = searchParams.get('filter');
+  
   const filteredQueries = queries.filter(query => {
     const matchesSearch = query.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          query.student_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -157,8 +160,7 @@ const QueryManagement = () => {
     const matchesDomain = domainFilter === 'all' || query.student_domain === domainFilter;
     
     // Handle unassigned filter from URL parameter
-    const filter = searchParams.get('filter');
-    const matchesAssignment = filter === 'unassigned' ? !query.expert_reviewer_id : true;
+    const matchesAssignment = urlFilter === 'unassigned' ? !query.expert_reviewer_id : true;
     
     return matchesSearch && matchesStatus && matchesDomain && matchesAssignment;
   });
@@ -264,7 +266,8 @@ const QueryManagement = () => {
                 <th>Domain</th>
                 <th>Status</th>
                 <th>Assigned Expert</th>
-                <th>Edit</th>
+                <th>Created Date</th>
+                <th>Response Date</th>
                 <th>Assign</th>
                 <th>Delete</th>
               </tr>
@@ -293,14 +296,11 @@ const QueryManagement = () => {
                       <span className="unassigned-text">Unassigned</span>
                     )}
                   </td>
-                  <td className="action-cell edit-cell" onClick={(e) => e.stopPropagation()}>
-                    <button 
-                      onClick={() => navigate(`/queries/${query.id}/edit`, { state: { from: '/admin/queries' } })}
-                      className="action-btn edit"
-                      title="Edit Query"
-                    >
-                      <FaEdit />
-                    </button>
+                  <td className="date-cell">
+                    {query.created_at ? new Date(query.created_at).toLocaleDateString('en-GB') : 'N/A'}
+                  </td>
+                  <td className="date-cell">
+                    {query.status === 'resolved' && query.updated_at ? new Date(query.updated_at).toLocaleDateString('en-GB') : 'N/A'}
                   </td>
                   <td className="action-cell assign-cell" onClick={(e) => e.stopPropagation()}>
                     <button 

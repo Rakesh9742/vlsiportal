@@ -407,6 +407,55 @@ const CreateQuery = () => {
     setLoading(true);
     setError('');
 
+    // Validate required fields
+    const requiredFields = {
+      title: formData.title,
+      description: formData.description,
+      issue_category_id: formData.issue_category_id,
+      tool_id: formData.tool_id,
+      debug_steps: formData.debug_steps
+    };
+
+    // Add stage_id and technology for non-DV domains
+    if (userDomain !== 'Design Verification') {
+      requiredFields.stage_id = formData.stage_id;
+      requiredFields.technology = formData.technology;
+    }
+
+    // Check for empty required fields
+    const fieldLabels = {
+      title: 'Query Title',
+      description: 'Query Description',
+      stage_id: 'Design Stage',
+      issue_category_id: 'Issue Category',
+      tool_id: 'Tool',
+      technology: 'Technology',
+      debug_steps: 'Debug Steps'
+    };
+
+    const emptyFields = Object.entries(requiredFields)
+      .filter(([key, value]) => !value || value.trim() === '')
+      .map(([key]) => fieldLabels[key] || key);
+
+    if (emptyFields.length > 0) {
+      setError(`Please fill in all required fields: ${emptyFields.join(', ')}`);
+      setLoading(false);
+      return;
+    }
+
+    // Validate custom fields if "Others" is selected
+    if (formData.stage_id === 'others' && !formData.custom_stage) {
+      setError('Please enter a custom design stage');
+      setLoading(false);
+      return;
+    }
+
+    if (formData.issue_category_id === 'others' && !formData.custom_issue_category) {
+      setError('Please enter a custom issue category');
+      setLoading(false);
+      return;
+    }
+
     try {
       // Create FormData for multipart/form-data
       const submitData = new FormData();
@@ -494,12 +543,17 @@ const CreateQuery = () => {
         )}
       </div>
 
-      {error && <div className="error">{error}</div>}
+      {error && (
+        <div className="error">
+          <FaExclamationTriangle />
+          {error}
+        </div>
+      )}
 
       <div className="create-query-form">
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="title">Query Title</label>
+            <label htmlFor="title">Query Title <span style={{color: 'red'}}>*</span></label>
             <input
               type="text"
               id="title"
@@ -513,7 +567,7 @@ const CreateQuery = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="description">Query Description</label>
+            <label htmlFor="description">Query Description <span style={{color: 'red'}}>*</span></label>
             <textarea
               id="description"
               name="description"
@@ -530,10 +584,11 @@ const CreateQuery = () => {
             {/* Show Design Stage only for non-DV domains */}
             {userDomain !== 'Design Verification' && (
               <div className="form-group">
-                <label htmlFor="stage_id">Design Stage</label>
+                <label htmlFor="stage_id">Design Stage <span style={{color: 'red'}}>*</span></label>
                 <Select
                   value={formData.stage_id}
                   onValueChange={(value) => handleChange({ target: { name: 'stage_id', value } })}
+                  required
                 >
                   <SelectTrigger className="form-control">
                     <SelectValue placeholder="Select Design Stage" />
@@ -569,11 +624,12 @@ const CreateQuery = () => {
             )}
 
             <div className="form-group">
-              <label htmlFor="issue_category_id">Issue Category</label>
+              <label htmlFor="issue_category_id">Issue Category <span style={{color: 'red'}}>*</span></label>
               <Select
                 value={formData.issue_category_id}
                 onValueChange={(value) => handleChange({ target: { name: 'issue_category_id', value } })}
                 disabled={userDomain !== 'Design Verification' && !formData.stage_id}
+                required
               >
                 <SelectTrigger className="form-control">
                   <SelectValue 
@@ -615,11 +671,12 @@ const CreateQuery = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="tool_id">Tool</label>
+            <label htmlFor="tool_id">Tool <span style={{color: 'red'}}>*</span></label>
             <Select
               value={formData.tool_id}
               onValueChange={(value) => handleChange({ target: { name: 'tool_id', value } })}
               disabled={userDomain === 'Design Verification' && !formData.issue_category_id}
+              required
             >
               <SelectTrigger className="form-control">
                 <SelectValue 
@@ -645,7 +702,7 @@ const CreateQuery = () => {
           {/* Hide Technology field for DV domain */}
           {userDomain !== 'Design Verification' && (
             <div className="form-group">
-              <label htmlFor="technology">Technology</label>
+              <label htmlFor="technology">Technology <span style={{color: 'red'}}>*</span></label>
               <input
                 type="text"
                 id="technology"
@@ -654,12 +711,13 @@ const CreateQuery = () => {
                 value={formData.technology}
                 onChange={handleChange}
                 placeholder="Enter technology (e.g., TSMC 28nm, GF 22nm, etc.)"
+                required
               />
             </div>
           )}
 
           <div className="form-group">
-            <label htmlFor="debug_steps">Debug Steps </label>
+            <label htmlFor="debug_steps">Debug Steps <span style={{color: 'red'}}>*</span></label>
             <textarea
               id="debug_steps"
               name="debug_steps"
@@ -668,6 +726,7 @@ const CreateQuery = () => {
               onChange={handleChange}
               placeholder="Describe any debugging steps you've already tried..."
               rows="4"
+              required
             />
           </div>
 
