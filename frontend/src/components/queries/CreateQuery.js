@@ -376,8 +376,8 @@ const CreateQuery = () => {
     const newTotalSize = validFiles.reduce((total, file) => total + file.size, 0);
     const totalSize = existingTotalSize + newTotalSize;
     
-    if (totalSize > 10 * 1024 * 1024) { // 10MB total
-      setError('Total file size must be less than 10MB. Please remove some images or reduce their sizes.');
+    if (totalSize > 5 * 1024 * 1024) { // 5MB total
+      setError('Total file size must be less than 5MB. Please remove some images or reduce their sizes.');
       return;
     }
 
@@ -434,7 +434,7 @@ const CreateQuery = () => {
     };
 
     const emptyFields = Object.entries(requiredFields)
-      .filter(([key, value]) => !value || value.trim() === '')
+      .filter(([key, value]) => !value || (typeof value === 'string' && value.trim() === ''))
       .map(([key]) => fieldLabels[key] || key);
 
     if (emptyFields.length > 0) {
@@ -507,7 +507,7 @@ const CreateQuery = () => {
       
       // Handle specific error types
       if (error.response?.status === 413) {
-        setError('File size too large. Please reduce image sizes and try again. Maximum total size allowed is 10MB.');
+        setError('File size too large. Please reduce image sizes and try again. Maximum total size allowed is 5MB.');
       } else if (error.response?.data?.message) {
         setError(error.response.data.message);
       } else if (error.code === 'NETWORK_ERROR') {
@@ -544,9 +544,30 @@ const CreateQuery = () => {
       </div>
 
       {error && (
-        <div className="error">
-          <FaExclamationTriangle />
-          {error}
+        <div className="error-popup-overlay">
+          <div className="error-popup">
+            <div className="error-popup-header">
+              <FaExclamationTriangle className="error-icon" />
+              <h3>Error</h3>
+              <button 
+                className="error-close-btn"
+                onClick={() => setError('')}
+              >
+                <FaTimes />
+              </button>
+            </div>
+            <div className="error-popup-content">
+              <p>{error}</p>
+            </div>
+            <div className="error-popup-actions">
+              <button 
+                className="btn btn-primary"
+                onClick={() => setError('')}
+              >
+                OK
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -759,7 +780,7 @@ const CreateQuery = () => {
               <label htmlFor="images" className="image-upload-label">
                 <FaImage className="upload-icon" />
                 <span>Choose Images</span>
-                <small>Maximum 5 images, 5MB each</small>
+                <small>Maximum 5 images, 5MB total</small>
               </label>
             </div>
             
@@ -767,7 +788,7 @@ const CreateQuery = () => {
               <div className="image-preview-container">
                 <h4>Selected Images ({imagePreview.length}/5):</h4>
                 <div className="total-size-info">
-                  Total size: {(selectedImages.reduce((total, file) => total + file.size, 0) / (1024 * 1024)).toFixed(2)} MB / 10 MB
+                  Total size: {(selectedImages.reduce((total, file) => total + file.size, 0) / (1024 * 1024)).toFixed(2)} MB / 5 MB
                 </div>
                 <div className="image-preview-grid">
                   {imagePreview.map((preview, index) => (

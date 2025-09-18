@@ -26,6 +26,7 @@ import UserManagement from './components/admin/UserManagement';
 import QueryManagement from './components/admin/QueryManagement';
 import AdminAnalytics from './components/admin/AdminAnalytics';
 import DomainAdminManagement from './components/admin/DomainAdminManagement';
+import SystemMonitoring from './components/admin/SystemMonitoring';
 import NotificationBanner from './components/notifications/NotificationBanner';
 import NotificationsPage from './components/notifications/NotificationsPage';
 
@@ -191,6 +192,10 @@ function App() {
               <Route 
                 path="/admin/domain-admins" 
                 element={isAuthenticated && user?.role === 'admin' ? <DomainAdminManagement /> : <Navigate to="/queries" />} 
+              />
+              <Route 
+                path="/admin/system-monitoring" 
+                element={isAuthenticated && user?.role === 'admin' ? <SystemMonitoring /> : <Navigate to="/queries" />} 
               />
               <Route 
                 path="/" 

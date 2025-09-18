@@ -3,6 +3,8 @@ const { body, validationResult } = require('express-validator');
 const db = require('../config/database');
 const { auth, checkRole } = require('../middleware/auth');
 const { uploadImages, handleUploadError } = require('../middleware/upload');
+const { asyncHandler } = require('../middleware/errorHandler');
+const { error: logError } = require('../config/logger');
 const domainConfig = require('../../domain_config');
 const { generateUniqueCustomQueryId } = require('../utils/queryIdGenerator');
 const { createNotification } = require('./notifications');
@@ -11,49 +13,32 @@ const archiver = require('archiver');
 const router = express.Router();
 
 // Get stages for a specific domain
-router.get('/pd-stages', async (req, res) => {
-  try {
-    const { domainId } = req.query;
-    
-    if (!domainId) {
-      return res.status(400).json({ message: 'Domain ID is required' });
-    }
-    
-    const [stages] = await db.execute(
-      'SELECT * FROM stages WHERE domain_id = ? ORDER BY order_sequence, id',
-      [domainId]
-    );
-    res.json({ stages });
-  } catch (error) {
-    console.error('Error in POST /:id/responses:', error);
-    res.status(500).json({ message: 'Server error', error: error.message });
+router.get('/pd-stages', asyncHandler(async (req, res) => {
+  const { domainId } = req.query;
+  
+  if (!domainId) {
+    return res.status(400).json({ message: 'Domain ID is required' });
   }
-});
+  
+  const [stages] = await db.execute(
+    'SELECT * FROM stages WHERE domain_id = ? ORDER BY order_sequence, id',
+    [domainId]
+  );
+  
+  res.json({ stages });
+}));
 
 // Get Physical Design issue categories for a specific stage
-router.get('/pd-issue-categories/:stageId', async (req, res) => {
-  try {
-    const { stageId } = req.params;
-    console.log(`DEBUG: Fetching issue categories for stage_id: ${stageId}`);
+router.get('/pd-issue-categories/:stageId', asyncHandler(async (req, res) => {
+  const { stageId } = req.params;
+  
+  const [categories] = await db.execute(
+    'SELECT * FROM issue_categories WHERE stage_id = ? ORDER BY name',
+    [stageId]
+  );
     
-    const [categories] = await db.execute(
-      'SELECT * FROM issue_categories WHERE stage_id = ? ORDER BY name',
-      [stageId]
-    );
-    
-    console.log(`DEBUG: Found ${categories.length} categories for stage_id ${stageId}`);
-    if (categories.length > 0) {
-      console.log('DEBUG: Categories found:', categories.map(c => `${c.id}: ${c.name}`));
-    } else {
-      console.log('DEBUG: No categories found for this stage_id');
-    }
-    
-    res.json({ categories });
-  } catch (error) {
-    console.error('DEBUG: Error in pd-issue-categories endpoint:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+  res.json({ categories });
+}));
 
 // Get domain-specific stages for any domain
 router.get('/domain-stages/:domainId', async (req, res) => {

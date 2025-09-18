@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
-import { FaUsers, FaClipboardList, FaChartBar, FaUserPlus, FaCog, FaDownload, FaUserShield } from 'react-icons/fa';
+import { FaUsers, FaClipboardList, FaChartBar, FaUserPlus, FaCog, FaDownload, FaUserShield, FaExclamationTriangle, FaEye } from 'react-icons/fa';
 import DomainQueryCharts from './DomainQueryCharts';
 import './AdminDashboard.css';
 
@@ -171,6 +171,12 @@ const AdminDashboard = () => {
                 className="action-btn"
               >
                 <FaUserShield /> Manage Domain Admins
+              </button>
+              <button 
+                onClick={() => navigate('/admin/system-monitoring')}
+                className="action-btn"
+              >
+                <FaExclamationTriangle /> System Monitoring
               </button>
             </div>
           </div>

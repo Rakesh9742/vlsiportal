@@ -8,6 +8,9 @@ const userRoutes = require('./routes/users');
 const adminRoutes = require('./routes/admin');
 const chatRoutes = require('./routes/chat');
 const { router: notificationRoutes } = require('./routes/notifications');
+const systemRoutes = require('./routes/system');
+const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
+const { error: logError } = require('./config/logger');
 
 dotenv.config();
 
@@ -63,14 +66,6 @@ const corsOptions = {
 // Middleware
 app.use(cors(corsOptions));
 
-// Debug middleware to log origins
-app.use((req, res, next) => {
-  console.log('Request Origin:', req.headers.origin);
-  console.log('Request Host:', req.headers.host);
-  console.log('Request Referer:', req.headers.referer);
-  next();
-});
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -84,12 +79,47 @@ app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/system', systemRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {
   res.json({ message: 'VLSI Portal Backend is running!' });
 });
 
+// Error handling middleware (must be after all routes)
+app.use(notFoundHandler);
+app.use(errorHandler);
+
 // Listen on all interfaces for both localhost and production hosting
 app.listen(PORT, '0.0.0.0', () => {
+  console.log(`VLSI Portal Backend server started on port ${PORT}`);
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (err) => {
+  logError('Uncaught Exception', {
+    message: err.message,
+    stack: err.stack
+  });
+  process.exit(1);
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  logError('Unhandled Rejection', {
+    reason: reason,
+    promise: promise
+  });
+  process.exit(1);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully');
+  process.exit(0);
 });

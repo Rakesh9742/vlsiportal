@@ -33,8 +33,11 @@ ehthumbs.db
 Thumbs.db
 
 # Logs
-logs
+logs/
 *.log
+backend/logs/
+backend/logs/*
+!backend/logs/.gitkeep
 
 # Runtime data
 pids
