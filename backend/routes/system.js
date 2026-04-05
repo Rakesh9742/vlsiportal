@@ -1,6 +1,7 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const zlib = require('zlib');
 const { auth, checkRole } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { error: logError } = require('../config/logger');
@@ -70,13 +71,37 @@ router.get('/error-logs', auth, checkRole(['admin']), asyncHandler(async (req, r
       });
     }
 
-    const parseLogFile = (filename, sourceType) => {
+    const parseLogTimestamp = (timestamp) => {
+      if (!timestamp) return 0;
+      const normalized = timestamp.includes('T') ? timestamp : timestamp.replace(' ', 'T');
+      const parsed = new Date(normalized);
+      return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+    };
+
+    const readLogFileContent = (filename) => {
       const filePath = path.join(logsDir, filename);
       if (!fs.existsSync(filePath)) {
+        return '';
+      }
+
+      try {
+        const raw = fs.readFileSync(filePath);
+        if (filename.endsWith('.gz')) {
+          return zlib.gunzipSync(raw).toString('utf8');
+        }
+
+        return raw.toString('utf8');
+      } catch (readErr) {
+        return '';
+      }
+    };
+
+    const parseLogFile = (filename, sourceType) => {
+      const content = readLogFileContent(filename);
+      if (!content) {
         return [];
       }
 
-      const content = fs.readFileSync(filePath, 'utf8');
       const lines = content.split('\n');
       const parsed = [];
       let currentEntry = null;
@@ -134,11 +159,30 @@ router.get('/error-logs', auth, checkRole(['admin']), asyncHandler(async (req, r
       }
 
       flushCurrentEntry();
+
+      // Fallback parser: if format parsing fails, still return raw lines so backend logs are visible.
+      if (parsed.length === 0) {
+        return lines
+          .map(line => line.trim())
+          .filter(Boolean)
+          .slice(-200)
+          .map(line => ({
+            timestamp: null,
+            level: 'error',
+            message: line,
+            stack: null,
+            meta: null,
+            raw: line,
+            source: sourceType,
+            file: filename
+          }));
+      }
+
       return parsed;
     };
 
     const logFiles = fs.readdirSync(logsDir)
-      .filter(file => file.endsWith('.log'))
+      .filter(file => file.endsWith('.log') || file.endsWith('.log.gz'))
       .sort((a, b) => {
         const aPath = path.join(logsDir, a);
         const bPath = path.join(logsDir, b);
@@ -155,11 +199,11 @@ router.get('/error-logs', auth, checkRole(['admin']), asyncHandler(async (req, r
 
     const combinedLogs = [...errorLogs, ...exceptionLogs, ...rejectionLogs]
       .sort((a, b) => {
-        const timeA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
-        const timeB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+        const timeA = parseLogTimestamp(a.timestamp);
+        const timeB = parseLogTimestamp(b.timestamp);
         return timeB - timeA;
       })
-      .slice(0, 300);
+      .slice(0, 1000);
 
     res.json({
       errorLogs,

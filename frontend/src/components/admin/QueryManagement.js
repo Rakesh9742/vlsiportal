@@ -6,6 +6,8 @@ import { FaSearch, FaFilter, FaEye, FaTrash, FaUser, FaClipboardList, FaUserPlus
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '../ui/Select';
 import './QueryManagement.css';
 
+const ITEMS_PER_PAGE = 10;
+
 const QueryManagement = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -30,6 +32,7 @@ const QueryManagement = () => {
   const [assignedExperts, setAssignedExperts] = useState([]);
   const [responderFilter, setResponderFilter] = useState('all');
   const [lastResponders, setLastResponders] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     if (!['admin', 'domain_admin'].includes(user?.role)) {
@@ -228,6 +231,14 @@ const QueryManagement = () => {
   const urlFilter = searchParams.get('filter');
 
   const filteredQueries = queries.filter(query => {
+    const hasAssignedExpert = query.expert_reviewer_id !== null &&
+      query.expert_reviewer_id !== undefined &&
+      query.expert_reviewer_id !== '';
+    const queryExpertId = hasAssignedExpert ? String(query.expert_reviewer_id) : '';
+
+    const normalizedResponder = (query.last_responder_name || '').trim().toLowerCase();
+    const selectedResponder = (responderFilter || '').trim().toLowerCase();
+
     const matchesSearch = query.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       query.student_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       query.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -239,16 +250,18 @@ const QueryManagement = () => {
 
     // Expert filter
     const matchesExpert = expertFilter === 'all' ||
-      (expertFilter === 'unassigned' ? !query.expert_reviewer_id :
-        query.expert_reviewer_id === parseInt(expertFilter));
+      (expertFilter === 'unassigned' ? !hasAssignedExpert :
+        queryExpertId === String(expertFilter));
 
     // Responder filter
     const matchesResponder = responderFilter === 'all' ||
-      (responderFilter === 'no_response' ? !query.last_responder_name :
-        query.last_responder_name === responderFilter);
+      (responderFilter === 'no_response' ? !normalizedResponder :
+        normalizedResponder === selectedResponder);
 
-    // Handle unassigned filter from URL parameter
-    const matchesAssignment = urlFilter === 'unassigned' ? !query.expert_reviewer_id : true;
+    // Handle unassigned filter from URL parameter.
+    // If a specific expert is selected, do not force URL unassigned filter.
+    const isSpecificExpertSelected = expertFilter !== 'all' && expertFilter !== 'unassigned';
+    const matchesAssignment = (urlFilter === 'unassigned' && !isSpecificExpertSelected) ? !hasAssignedExpert : true;
 
     return matchesSearch && matchesStatus && matchesDomain && matchesExpert && matchesResponder && matchesAssignment;
   }).sort((a, b) => {
@@ -277,6 +290,21 @@ const QueryManagement = () => {
     if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
     return 0;
   });
+
+  useEffect(() => {
+    // Keep pagination consistent whenever search/filter/sort conditions change.
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, domainFilter, expertFilter, responderFilter, sortField, sortDirection, urlFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredQueries.length / ITEMS_PER_PAGE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (safeCurrentPage - 1) * ITEMS_PER_PAGE;
+  const paginatedQueries = filteredQueries.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  const goToPage = (pageNumber) => {
+    const next = Math.max(1, Math.min(totalPages, pageNumber));
+    setCurrentPage(next);
+  };
 
   if (loading) {
     return (
@@ -441,7 +469,7 @@ const QueryManagement = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredQueries.map(query => (
+              {paginatedQueries.map(query => (
                 <tr
                   key={query.id}
                   className="query-table-row"
@@ -502,6 +530,51 @@ const QueryManagement = () => {
             </tbody>
           </table>
         </div>
+
+        {filteredQueries.length > 0 && (
+          <div className="pagination-bar">
+            <div className="pagination-info">
+              Showing {startIndex + 1}-{Math.min(startIndex + ITEMS_PER_PAGE, filteredQueries.length)} of {filteredQueries.length}
+            </div>
+            <div className="pagination-controls">
+              <button
+                className="pagination-btn"
+                onClick={() => goToPage(safeCurrentPage - 1)}
+                disabled={safeCurrentPage === 1}
+              >
+                Prev
+              </button>
+
+              {Array.from({ length: totalPages }, (_, idx) => idx + 1)
+                .filter(page => {
+                  if (totalPages <= 7) return true;
+                  if (page === 1 || page === totalPages) return true;
+                  return Math.abs(page - safeCurrentPage) <= 1;
+                })
+                .map((page, idx, arr) => (
+                  <React.Fragment key={page}>
+                    {idx > 0 && arr[idx - 1] !== page - 1 && (
+                      <span className="pagination-ellipsis">...</span>
+                    )}
+                    <button
+                      className={`pagination-btn page-number ${safeCurrentPage === page ? 'active' : ''}`}
+                      onClick={() => goToPage(page)}
+                    >
+                      {page}
+                    </button>
+                  </React.Fragment>
+                ))}
+
+              <button
+                className="pagination-btn"
+                onClick={() => goToPage(safeCurrentPage + 1)}
+                disabled={safeCurrentPage === totalPages}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
 
         {filteredQueries.length === 0 && (
           <div className="empty-state">
