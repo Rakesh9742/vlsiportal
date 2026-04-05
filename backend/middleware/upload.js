@@ -48,28 +48,28 @@ const uploadImages = upload.array('images', 5);
 const handleUploadError = (err, req, res, next) => {
   if (err instanceof multer.MulterError) {
     if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({ 
-        message: 'File too large. Maximum size is 5MB per file.' 
+      return res.status(400).json({
+        message: 'File too large. Maximum size is 5MB per file.'
       });
     }
     if (err.code === 'LIMIT_FILE_COUNT') {
-      return res.status(400).json({ 
-        message: 'Too many files. Maximum 5 images per query.' 
+      return res.status(400).json({
+        message: 'Too many files. Maximum 5 images per query.'
       });
     }
     if (err.code === 'LIMIT_UNEXPECTED_FILE') {
-      return res.status(400).json({ 
-        message: 'Unexpected file field.' 
+      return res.status(400).json({
+        message: 'Unexpected file field.'
       });
     }
   }
-  
+
   if (err.message === 'Only image files are allowed!') {
-    return res.status(400).json({ 
-      message: 'Only image files (jpg, png, gif, etc.) are allowed.' 
+    return res.status(400).json({
+      message: 'Only image files (jpg, png, gif, etc.) are allowed.'
     });
   }
-  
+
   next(err);
 };
 

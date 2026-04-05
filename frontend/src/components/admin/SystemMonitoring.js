@@ -133,16 +133,24 @@ const SystemMonitoring = () => {
     setSelectedError(null);
   };
 
+  const parseTimestamp = (timestamp) => {
+    if (!timestamp) return null;
+    const normalized = typeof timestamp === 'string' ? timestamp.replace(' ', 'T') : timestamp;
+    const parsed = new Date(normalized);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  };
+
   const formatTimestamp = (timestamp) => {
-    return new Date(timestamp).toLocaleString();
+    const parsed = parseTimestamp(timestamp);
+    return parsed ? parsed.toLocaleString() : 'Unknown time';
   };
 
   const formatTimeAgo = (isoString) => {
     if (!isoString) return 'Unknown time';
     
     try {
-      const date = new Date(isoString);
-      if (isNaN(date.getTime())) return 'Invalid time';
+      const date = parseTimestamp(isoString);
+      if (!date) return 'Invalid time';
       
       const seconds = Math.floor((new Date() - date) / 1000);
       let interval = seconds / 31536000;
@@ -162,6 +170,10 @@ const SystemMonitoring = () => {
   };
 
   const getAllErrorLogs = () => {
+    if (errorLogs.combinedLogs && Array.isArray(errorLogs.combinedLogs) && errorLogs.combinedLogs.length > 0) {
+      return errorLogs.combinedLogs;
+    }
+
     const allLogs = [];
     
     // Add application errors
@@ -216,8 +228,8 @@ const SystemMonitoring = () => {
     
     // Sort by timestamp (newest first)
     return allLogs.sort((a, b) => {
-      const timeA = a.timestamp ? new Date(a.timestamp) : new Date(0);
-      const timeB = b.timestamp ? new Date(b.timestamp) : new Date(0);
+      const timeA = a.timestamp ? parseTimestamp(a.timestamp) : new Date(0);
+      const timeB = b.timestamp ? parseTimestamp(b.timestamp) : new Date(0);
       return timeB - timeA;
     });
   };
@@ -367,6 +379,7 @@ const SystemMonitoring = () => {
               <table className="error-table-modern">
                 <thead className="error-table-header-modern">
                   <tr>
+                    <th className="error-table-th-modern">Source</th>
                     <th className="error-table-th-modern">Level</th>
                     <th className="error-table-th-modern">Message</th>
                     <th className="error-table-th-modern">Time</th>
@@ -375,10 +388,10 @@ const SystemMonitoring = () => {
                 <tbody>
                   {getAllErrorLogs().length === 0 ? (
                     <tr>
-                      <td colSpan="3" className="no-errors-modern">
+                      <td colSpan="4" className="no-errors-modern">
                         <div className="no-errors-content-modern">
                           <FaExclamationTriangle className="no-errors-icon-modern" />
-                          <span>No errors found today - System is running smoothly!</span>
+                          <span>No backend error logs found in recent files.</span>
                         </div>
                       </td>
                     </tr>
@@ -390,6 +403,11 @@ const SystemMonitoring = () => {
                         onClick={() => handleErrorClick(log)}
                       >
                         <td className="error-table-td-modern">
+                          <span className={`error-source-badge ${log.source || 'application'}`}>
+                            {(log.source || 'application').toUpperCase()}
+                          </span>
+                        </td>
+                        <td className="error-table-td-modern">
                           <span className={`error-level-badge-modern error-level-${log.level || 'error'}-modern`}>
                             {(log.level || 'error').toUpperCase()}
                           </span>
@@ -399,6 +417,7 @@ const SystemMonitoring = () => {
                         </td>
                         <td className="error-table-td-modern">
                           <div className="error-time-modern-text">{log.timestamp ? formatTimeAgo(log.timestamp) : 'Unknown time'}</div>
+                          {log.timestamp && <div className="error-time-exact">{formatTimestamp(log.timestamp)}</div>}
                         </td>
                       </tr>
                     ))
@@ -490,14 +509,7 @@ const SystemMonitoring = () => {
                     index === self.findIndex(v => v.ip === visitor.ip)
                   );
                   
-                  // Add demo visitors if no real visitors
-                  const demoVisitors = uniqueVisitors.length === 0 ? [
-                    { userRole: 'admin', timestamp: new Date().toISOString(), ip: '192.168.1.1' },
-                    { userRole: 'student', timestamp: new Date(Date.now() - 2 * 60 * 1000).toISOString(), ip: '192.168.1.2' },
-                    { userRole: 'professional', timestamp: new Date(Date.now() - 3 * 60 * 1000).toISOString(), ip: '192.168.1.3' }
-                  ] : uniqueVisitors;
-                  
-                  return demoVisitors.slice(0, 8).map((visitor, index) => {
+                  return uniqueVisitors.slice(0, 8).map((visitor, index) => {
                     // Random angle with some variation
                     const baseAngle = (index * 360) / 8;
                     const randomVariation = (Math.random() - 0.5) * 60; // ±30 degrees variation
@@ -704,6 +716,14 @@ const SystemMonitoring = () => {
                 <span className={`error-level-badge-modern error-level-${selectedError.level || 'error'}-modern`}>
                   {(selectedError.level || 'error').toUpperCase()}
                 </span>
+              </div>
+
+              <div className="error-detail-section">
+                <h4 className="error-detail-label">Source</h4>
+                <p className="error-detail-value">
+                  {(selectedError.source || 'application').toUpperCase()}
+                  {selectedError.file ? ` (${selectedError.file})` : ''}
+                </p>
               </div>
               
               <div className="error-detail-section">

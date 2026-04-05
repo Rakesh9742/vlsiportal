@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
-import { FaArrowLeft, FaSearch, FaFilter, FaEye, FaTrash, FaUser, FaClipboardList, FaUserPlus } from 'react-icons/fa';
+import { FaSearch, FaFilter, FaEye, FaTrash, FaUser, FaClipboardList, FaUserPlus, FaSortUp, FaSortDown, FaSort } from 'react-icons/fa';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '../ui/Select';
 import './QueryManagement.css';
 
@@ -24,27 +24,63 @@ const QueryManagement = () => {
     expert_reviewer_id: '',
     notes: ''
   });
+  const [sortField, setSortField] = useState(null);
+  const [sortDirection, setSortDirection] = useState('asc'); // 'asc' or 'desc'
+  const [expertFilter, setExpertFilter] = useState('all');
+  const [assignedExperts, setAssignedExperts] = useState([]);
+  const [responderFilter, setResponderFilter] = useState('all');
+  const [lastResponders, setLastResponders] = useState([]);
 
   useEffect(() => {
     if (!['admin', 'domain_admin'].includes(user?.role)) {
       navigate('/queries');
       return;
     }
-    
+
     // Set initial filters based on URL parameters
     const filter = searchParams.get('filter');
     if (filter === 'unassigned') {
       setStatusFilter('open'); // Show open queries for unassigned filter
     }
-    
+
     fetchQueries();
     fetchDomains();
+    fetchAssignedExperts();
   }, [user, navigate, searchParams]);
 
   const fetchQueries = async () => {
     try {
       const response = await axios.get('/admin/queries');
       setQueries(response.data.queries);
+
+      // Update assigned experts list
+      const expertMap = new Map();
+      response.data.queries.forEach(query => {
+        if (query.assigned_expert_name && query.expert_reviewer_id) {
+          if (!expertMap.has(query.expert_reviewer_id)) {
+            expertMap.set(query.expert_reviewer_id, {
+              id: query.expert_reviewer_id,
+              name: query.assigned_expert_name
+            });
+          }
+        }
+      });
+      setAssignedExperts(Array.from(expertMap.values()));
+
+      // Update last responders list
+      const responderMap = new Map();
+      response.data.queries.forEach(query => {
+        if (query.last_responder_name) {
+          const key = query.last_responder_name;
+          if (!responderMap.has(key)) {
+            responderMap.set(key, {
+              name: query.last_responder_name,
+              role: query.last_responder_role
+            });
+          }
+        }
+      });
+      setLastResponders(Array.from(responderMap.values()));
     } catch (error) {
       setError('Failed to load queries');
     } finally {
@@ -57,6 +93,30 @@ const QueryManagement = () => {
       const response = await axios.get('/auth/domains');
       setDomains(response.data.domains);
     } catch (error) {
+    }
+  };
+
+  const fetchAssignedExperts = async () => {
+    try {
+      const response = await axios.get('/admin/queries');
+      // Extract unique experts who have queries assigned
+      const uniqueExperts = [];
+      const expertMap = new Map();
+
+      response.data.queries.forEach(query => {
+        if (query.assigned_expert_name && query.expert_reviewer_id) {
+          if (!expertMap.has(query.expert_reviewer_id)) {
+            expertMap.set(query.expert_reviewer_id, {
+              id: query.expert_reviewer_id,
+              name: query.assigned_expert_name
+            });
+          }
+        }
+      });
+
+      setAssignedExperts(Array.from(expertMap.values()));
+    } catch (error) {
+      console.error('Error fetching assigned experts:', error);
     }
   };
 
@@ -95,40 +155,40 @@ const QueryManagement = () => {
       expert_reviewer_id: '',
       notes: ''
     });
-    
+
     // Fetch reviewers for the specific domain
     await fetchReviewers(query.student_domain);
     setShowAssignModal(true);
   };
 
   const handleAssignmentSubmit = async (e) => {
-     e.preventDefault();
-     
-     try {
-       // Ensure expert_reviewer_id is sent as an integer
-       const dataToSend = {
-         ...assignmentData,
-         expert_reviewer_id: parseInt(assignmentData.expert_reviewer_id, 10)
-       };
-       
-       if (selectedQuery.expert_reviewer_id) {
-         // Reassign existing assignment
-         await axios.put(`/admin/queries/${selectedQuery.id}/reassign`, dataToSend);
-       } else {
-         // Create new assignment
-         await axios.post(`/admin/queries/${selectedQuery.id}/assign`, dataToSend);
-       }
-       
-       // Refresh queries
-       await fetchQueries();
-       
-       setShowAssignModal(false);
-       setSelectedQuery(null);
-       setAssignmentData({ expert_reviewer_id: '', notes: '' });
-     } catch (error) {
-       setError('Failed to assign query');
-     }
-    };
+    e.preventDefault();
+
+    try {
+      // Ensure expert_reviewer_id is sent as an integer
+      const dataToSend = {
+        ...assignmentData,
+        expert_reviewer_id: parseInt(assignmentData.expert_reviewer_id, 10)
+      };
+
+      if (selectedQuery.expert_reviewer_id) {
+        // Reassign existing assignment
+        await axios.put(`/admin/queries/${selectedQuery.id}/reassign`, dataToSend);
+      } else {
+        // Create new assignment
+        await axios.post(`/admin/queries/${selectedQuery.id}/assign`, dataToSend);
+      }
+
+      // Refresh queries
+      await fetchQueries();
+
+      setShowAssignModal(false);
+      setSelectedQuery(null);
+      setAssignmentData({ expert_reviewer_id: '', notes: '' });
+    } catch (error) {
+      setError('Failed to assign query');
+    }
+  };
 
   const getStatusBadge = (status) => {
     const statusClasses = {
@@ -136,7 +196,7 @@ const QueryManagement = () => {
       'in_progress': 'status-in-progress',
       'resolved': 'status-resolved'
     };
-    
+
     return (
       <span className={`status-badge ${statusClasses[status] || 'status-open'}`}>
         {status.replace('_', ' ').toUpperCase()}
@@ -144,25 +204,78 @@ const QueryManagement = () => {
     );
   };
 
+  const handleSort = (field) => {
+    if (sortField === field) {
+      // Toggle direction if clicking the same field
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Set new field and default to ascending
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
 
+  const getSortIcon = (field) => {
+    if (sortField !== field) {
+      return <FaSort className="sort-icon" />;
+    }
+    return sortDirection === 'asc' ?
+      <FaSortUp className="sort-icon active" /> :
+      <FaSortDown className="sort-icon active" />;
+  };
 
   // Get URL filter once to avoid re-computation on every render
   const urlFilter = searchParams.get('filter');
-  
+
   const filteredQueries = queries.filter(query => {
     const matchesSearch = query.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         query.student_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         query.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (query.custom_query_id && query.custom_query_id.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                         query.id.toString().includes(searchTerm);
-    
+      query.student_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      query.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (query.custom_query_id && query.custom_query_id.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      query.id.toString().includes(searchTerm);
+
     const matchesStatus = statusFilter === 'all' || query.status === statusFilter;
     const matchesDomain = domainFilter === 'all' || query.student_domain === domainFilter;
-    
+
+    // Expert filter
+    const matchesExpert = expertFilter === 'all' ||
+      (expertFilter === 'unassigned' ? !query.expert_reviewer_id :
+        query.expert_reviewer_id === parseInt(expertFilter));
+
+    // Responder filter
+    const matchesResponder = responderFilter === 'all' ||
+      (responderFilter === 'no_response' ? !query.last_responder_name :
+        query.last_responder_name === responderFilter);
+
     // Handle unassigned filter from URL parameter
     const matchesAssignment = urlFilter === 'unassigned' ? !query.expert_reviewer_id : true;
-    
-    return matchesSearch && matchesStatus && matchesDomain && matchesAssignment;
+
+    return matchesSearch && matchesStatus && matchesDomain && matchesExpert && matchesResponder && matchesAssignment;
+  }).sort((a, b) => {
+    if (!sortField) return 0;
+
+    let aValue, bValue;
+
+    switch (sortField) {
+      case 'assigned_expert':
+        aValue = a.assigned_expert_name || '';
+        bValue = b.assigned_expert_name || '';
+        break;
+      case 'created_date':
+        aValue = new Date(a.created_at || 0);
+        bValue = new Date(b.created_at || 0);
+        break;
+      case 'response_date':
+        aValue = new Date(a.last_response_date || 0);
+        bValue = new Date(b.last_response_date || 0);
+        break;
+      default:
+        return 0;
+    }
+
+    if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+    if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+    return 0;
   });
 
   if (loading) {
@@ -176,12 +289,6 @@ const QueryManagement = () => {
   return (
     <div className="query-management">
       <div className="page-header">
-        <button 
-          onClick={() => navigate('/admin')} 
-          className="back-btn"
-        >
-          <FaArrowLeft /> Back to Admin Dashboard
-        </button>
         <h1>
           {searchParams.get('filter') === 'unassigned' ? 'Unassigned Queries' : 'Query Management'}
         </h1>
@@ -190,17 +297,6 @@ const QueryManagement = () => {
       {error && <div className="error-message">{error}</div>}
 
       <div className="filters-section">
-        <div className="search-box">
-          <FaSearch className="search-icon" />
-          <input
-            type="text"
-            placeholder="Search queries by title, student, or description..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="search-input"
-          />
-        </div>
-
         <div className="filter-controls">
           <div className="filter-group">
             <label htmlFor="status-filter">Status:</label>
@@ -232,16 +328,16 @@ const QueryManagement = () => {
                 <SelectValue placeholder="All Domains" />
               </SelectTrigger>
               <SelectContent>
-                 <SelectGroup>
-                   <SelectItem value="all">All Domains</SelectItem>
-                   {domains.map(domain => (
-                     <SelectItem key={domain.id} value={domain.name}>
-                       {domain.name}
-                     </SelectItem>
-                   ))}
-                 </SelectGroup>
-               </SelectContent>
-             </Select>
+                <SelectGroup>
+                  <SelectItem value="all">All Domains</SelectItem>
+                  {domains.map(domain => (
+                    <SelectItem key={domain.id} value={domain.name}>
+                      {domain.name}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </div>
@@ -249,10 +345,23 @@ const QueryManagement = () => {
       <div className="queries-list">
         <div className="list-header">
           <h3>Queries ({filteredQueries.length})</h3>
-          <div className="list-stats">
-            <span>Open: {queries.filter(q => q.status === 'open').length}</span>
-            <span>In Progress: {queries.filter(q => q.status === 'in_progress').length}</span>
-            <span>Resolved: {queries.filter(q => q.status === 'resolved').length}</span>
+          <div className="list-controls">
+            <div className="search-box table-search-box">
+              <FaSearch className="search-icon" />
+              <input
+                type="text"
+                placeholder="Search queries in table..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="search-input"
+              />
+            </div>
+
+            <div className="list-stats">
+              <span>Open: {queries.filter(q => q.status === 'open').length}</span>
+              <span>In Progress: {queries.filter(q => q.status === 'in_progress').length}</span>
+              <span>Resolved: {queries.filter(q => q.status === 'resolved').length}</span>
+            </div>
           </div>
         </div>
 
@@ -260,22 +369,81 @@ const QueryManagement = () => {
           <table className="queries-table">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Title</th>
+                <th className="query-id-header">ID</th>
+                <th className="query-title-header">Title</th>
                 <th>Student</th>
                 <th>Domain</th>
                 <th>Status</th>
-                <th>Assigned Expert</th>
-                <th>Created Date</th>
-                <th>Response Date</th>
+                <th className="expert-filter-header">
+                  <div className="header-with-filter">
+                    <span>Assigned Expert</span>
+                    <Select
+                      value={expertFilter}
+                      onValueChange={(value) => setExpertFilter(value)}
+                    >
+                      <SelectTrigger className="table-filter-select">
+                        <SelectValue placeholder="Filter" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem value="all">All</SelectItem>
+                          <SelectItem value="unassigned">Unassigned</SelectItem>
+                          {assignedExperts.map(expert => (
+                            <SelectItem key={expert.id} value={expert.id.toString()}>
+                              {expert.name}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort('created_date')}
+                  className="sortable-header"
+                  style={{ cursor: 'pointer' }}
+                >
+                  Created Date {getSortIcon('created_date')}
+                </th>
+                <th
+                  onClick={() => handleSort('response_date')}
+                  className="sortable-header"
+                  style={{ cursor: 'pointer' }}
+                >
+                  Last Response Date {getSortIcon('response_date')}
+                </th>
+                <th className="responder-filter-header">
+                  <div className="header-with-filter">
+                    <span>Last Responder</span>
+                    <Select
+                      value={responderFilter}
+                      onValueChange={(value) => setResponderFilter(value)}
+                    >
+                      <SelectTrigger className="table-filter-select">
+                        <SelectValue placeholder="Filter" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem value="all">All</SelectItem>
+                          <SelectItem value="no_response">No Response</SelectItem>
+                          {lastResponders.map((responder, index) => (
+                            <SelectItem key={index} value={responder.name}>
+                              {responder.name} ({responder.role})
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </th>
                 <th>Assign</th>
                 <th>Delete</th>
               </tr>
             </thead>
             <tbody>
               {filteredQueries.map(query => (
-                <tr 
-                  key={query.id} 
+                <tr
+                  key={query.id}
                   className="query-table-row"
                   onClick={() => navigate(`/queries/${query.id}/edit`, { state: { from: '/admin/queries' } })}
                   style={{ cursor: 'pointer' }}
@@ -300,10 +468,19 @@ const QueryManagement = () => {
                     {query.created_at ? new Date(query.created_at).toLocaleDateString('en-GB') : 'N/A'}
                   </td>
                   <td className="date-cell">
-                    {query.status === 'resolved' && query.updated_at ? new Date(query.updated_at).toLocaleDateString('en-GB') : 'N/A'}
+                    {query.last_response_date ? new Date(query.last_response_date).toLocaleDateString('en-GB') : 'N/A'}
+                  </td>
+                  <td className="responder-cell">
+                    {query.last_responder_name ? (
+                      <span className="responder-name" title={`Role: ${query.last_responder_role || 'Unknown'}`}>
+                        {query.last_responder_name}
+                      </span>
+                    ) : (
+                      <span className="no-response-text">No responses</span>
+                    )}
                   </td>
                   <td className="action-cell assign-cell" onClick={(e) => e.stopPropagation()}>
-                    <button 
+                    <button
                       onClick={() => handleAssignQuery(query)}
                       className="action-btn assign"
                       title={query.expert_reviewer_id ? "Reassign Query" : "Assign Query"}
@@ -312,7 +489,7 @@ const QueryManagement = () => {
                     </button>
                   </td>
                   <td className="action-cell delete-cell" onClick={(e) => e.stopPropagation()}>
-                    <button 
+                    <button
                       onClick={() => handleDeleteQuery(query.id)}
                       className="action-btn delete"
                       title="Delete Query"
@@ -325,7 +502,7 @@ const QueryManagement = () => {
             </tbody>
           </table>
         </div>
-        
+
         {filteredQueries.length === 0 && (
           <div className="empty-state">
             <FaClipboardList className="empty-icon" />
@@ -340,14 +517,14 @@ const QueryManagement = () => {
           <div className="modal-content">
             <div className="modal-header">
               <h3>{selectedQuery.expert_reviewer_id ? 'Reassign Query' : 'Assign Query'}</h3>
-              <button 
+              <button
                 onClick={() => setShowAssignModal(false)}
                 className="modal-close"
               >
                 ×
               </button>
             </div>
-            
+
             <div className="modal-body">
               <div className="query-summary">
                 <h4>{selectedQuery.title}</h4>
@@ -357,7 +534,7 @@ const QueryManagement = () => {
                   <span>Status: {selectedQuery.status}</span>
                 </div>
               </div>
-              
+
               <form onSubmit={handleAssignmentSubmit}>
                 <div className="form-group">
                   <label htmlFor="expert_reviewer_id">
@@ -365,7 +542,7 @@ const QueryManagement = () => {
                     {selectedQuery.student_domain && (
                       <span className="domain-filter-note">
                         (Filtered for {selectedQuery.student_domain} domain)
-                        <button 
+                        <button
                           type="button"
                           onClick={() => fetchReviewers()}
                           className="btn-link"
@@ -387,17 +564,17 @@ const QueryManagement = () => {
                       <SelectValue placeholder="Select Expert Reviewer" />
                     </SelectTrigger>
                     <SelectContent>
-                       <SelectGroup>
-                         {reviewers.map(reviewer => (
-                           <SelectItem key={reviewer.id} value={reviewer.id}>
-                             {reviewer.full_name} ({reviewer.domain_name})
-                           </SelectItem>
-                         ))}
-                       </SelectGroup>
-                      </SelectContent>
-                    </Select>
+                      <SelectGroup>
+                        {reviewers.map(reviewer => (
+                          <SelectItem key={reviewer.id} value={reviewer.id}>
+                            {reviewer.full_name} ({reviewer.domain_name})
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
                 </div>
-                
+
                 <div className="form-group">
                   <label htmlFor="notes">Notes (Optional)</label>
                   <textarea
@@ -411,17 +588,17 @@ const QueryManagement = () => {
                     rows="3"
                   />
                 </div>
-                
+
                 <div className="modal-actions">
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={() => setShowAssignModal(false)}
                     className="btn-secondary"
                   >
                     Cancel
                   </button>
-                  <button 
-                    type="submit" 
+                  <button
+                    type="submit"
                     className="btn-primary"
                     disabled={!assignmentData.expert_reviewer_id}
                   >

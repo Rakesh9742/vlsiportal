@@ -44,10 +44,9 @@ const StudentLogin = ({ onLogin }) => {
           <div className="website-name">
             <img src="/logo.png" alt="VLSI FORUM Logo" className="website-logo" />
             <h1 className="website-title">VLSI FORUM</h1>
-            <p className="website-subtitle">Advanced Learning Platform</p>
+            <p className="website-subtitle">Student Learning Portal</p>
             <p className="website-description">
-              Empowering students and professionals with cutting-edge VLSI design tools, 
-              comprehensive learning resources, and expert guidance for semiconductor innovation.
+              Learn faster with guided support, query tracking, and expert help in one place.
             </p>
           </div>
         </div>

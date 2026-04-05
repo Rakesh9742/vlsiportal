@@ -148,6 +148,20 @@ const QueryAssignmentManagement = () => {
     }
   };
 
+  const getAssigneeDisplayName = (assignee) => {
+    if (!assignee) return 'Unknown User';
+    const fullName = assignee.full_name?.trim();
+    const username = assignee.username?.trim();
+    return fullName || username || `User #${assignee.id}`;
+  };
+
+  const getAssigneeRoleLabel = (role) => {
+    if (role === 'expert_reviewer') return 'Expert Reviewer';
+    if (role === 'domain_admin') return 'Domain Admin';
+    if (role === 'admin') return 'Admin';
+    return 'User';
+  };
+
   const getStatusBadge = (status) => {
     const statusConfig = {
       'open': { class: 'status-open', icon: FaExclamationTriangle, label: 'Open' },
@@ -168,16 +182,18 @@ const QueryAssignmentManagement = () => {
 
   const getAssignmentStatusBadge = (status) => {
     const statusConfig = {
-      'assigned': { class: 'assignment-assigned', label: 'Assigned' },
-      'accepted': { class: 'assignment-accepted', label: 'Accepted' },
-      'rejected': { class: 'assignment-rejected', label: 'Rejected' },
-      'completed': { class: 'assignment-completed', label: 'Completed' }
+      'assigned': { class: 'assignment-assigned', icon: FaUserPlus, label: 'Assigned' },
+      'accepted': { class: 'assignment-accepted', icon: FaCheck, label: 'Accepted' },
+      'rejected': { class: 'assignment-rejected', icon: FaTimes, label: 'Rejected' },
+      'completed': { class: 'assignment-completed', icon: FaCheckCircle, label: 'Completed' }
     };
     
     const config = statusConfig[status] || statusConfig['assigned'];
+    const IconComponent = config.icon;
     
     return (
       <span className={`assignment-badge ${config.class}`}>
+        <IconComponent className="assignment-status-icon" />
         {config.label}
       </span>
     );
@@ -302,7 +318,7 @@ const QueryAssignmentManagement = () => {
                         </div>
                         <div className="info-row">
                           <FaUsers />
-                          <span>Assigned to: {query.assigned_expert_name}</span>
+                          <span>Assigned to: {query.assigned_expert_name || 'Not available'}</span>
                         </div>
                         <div className="info-row">
                           <FaCalendarAlt />
@@ -484,7 +500,7 @@ const QueryAssignmentManagement = () => {
                         {reviewers.length > 0 ? (
                            reviewers.map(reviewer => (
                              <SelectItem key={reviewer.id} value={reviewer.id}>
-                               {reviewer.full_name}
+                               {`${getAssigneeDisplayName(reviewer)} (${getAssigneeRoleLabel(reviewer.role)})`}
                              </SelectItem>
                            ))
                          ) : (

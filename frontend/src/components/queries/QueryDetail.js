@@ -18,22 +18,22 @@ const AuthenticatedImage = ({ filename, alt, onClick, className }) => {
       try {
         setLoading(true);
         setError(false);
-        
+
         const token = localStorage.getItem('token');
         const imageUrl = getImageUrl(filename);
-        
+
         console.log(`DEBUG: Loading image: ${filename}`);
         console.log(`DEBUG: Image URL: ${imageUrl}`);
         console.log(`DEBUG: Has token: ${!!token}`);
-        
+
         const response = await axios.get(imageUrl, {
           headers: { Authorization: `Bearer ${token}` },
           responseType: 'blob'
         });
-        
+
         console.log(`DEBUG: Image loaded successfully: ${filename}`);
         console.log(`DEBUG: Response type: ${response.headers['content-type']}`);
-        
+
         const objectUrl = URL.createObjectURL(response.data);
         setImageSrc(objectUrl);
       } catch (error) {
@@ -43,7 +43,7 @@ const AuthenticatedImage = ({ filename, alt, onClick, className }) => {
           statusText: error.response?.statusText,
           data: error.response?.data
         });
-        
+
         // Fallback to direct static route
         console.log(`DEBUG: Trying fallback static route for ${filename}`);
         try {
@@ -81,9 +81,9 @@ const AuthenticatedImage = ({ filename, alt, onClick, className }) => {
   }
 
   return (
-    <img 
-      src={imageSrc} 
-      alt={alt} 
+    <img
+      src={imageSrc}
+      alt={alt}
       onClick={onClick}
       className={className}
     />
@@ -107,7 +107,7 @@ const QueryDetail = () => {
 
   useEffect(() => {
     fetchQuery();
-    
+
     // Check if we should auto-open chat from URL parameter
     const urlParams = new URLSearchParams(location.search);
     if (urlParams.get('openChat') === 'true') {
@@ -136,7 +136,7 @@ const QueryDetail = () => {
     const referrer = location.state?.from;
     const urlParams = new URLSearchParams(location.search);
     const fromAdmin = urlParams.get('from') === 'admin';
-    
+
     if (referrer && referrer.includes('/admin/queries')) {
       navigate('/admin/queries');
     } else if (['admin', 'domain_admin'].includes(user?.role) && document.referrer.includes('/admin/queries')) {
@@ -174,10 +174,10 @@ const QueryDetail = () => {
       setShowResponseForm(false);
       setError(''); // Clear any previous errors
       setSuccess('Response added successfully! Open discussion has been started with your response as the first message.');
-      
+
       // Auto-open chat to show the discussion
       setShowChat(true);
-      
+
       fetchQuery(); // Refresh the query to show new response
     } catch (error) {
       setError(error.response?.data?.message || 'Failed to submit answer');
@@ -211,7 +211,7 @@ const QueryDetail = () => {
         headers: { Authorization: `Bearer ${token}` },
         responseType: 'blob'
       });
-      
+
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
@@ -240,7 +240,7 @@ const QueryDetail = () => {
       'resolved': { class: 'status-resolved', icon: <FaCheck />, text: 'Resolved' },
 
     };
-    
+
     const config = statusConfig[status] || statusConfig['open'];
     return (
       <span className={`status-badge ${config.class}`}>
@@ -256,7 +256,7 @@ const QueryDetail = () => {
       'high': { class: 'priority-high', text: 'High' },
       'urgent': { class: 'priority-urgent', text: 'Urgent' }
     };
-    
+
     const config = priorityConfig[priority] || priorityConfig['medium'];
     return (
       <span className={`priority-badge ${config.class}`}>
@@ -295,11 +295,13 @@ const QueryDetail = () => {
     );
   }
 
+  const isStudentView = user?.role === 'student';
+
   return (
-    <div className="query-detail-page">
+    <div className={`query-detail-page ${isStudentView ? 'student-query-detail' : ''}`}>
       <div className="page-header">
-        <button 
-          onClick={handleBackNavigation} 
+        <button
+          onClick={handleBackNavigation}
           className="back-btn"
         >
           <FaArrowLeft /> Back to Queries
@@ -417,7 +419,7 @@ const QueryDetail = () => {
             <div className="images-grid">
               {query.images.map((image) => (
                 <div key={image.id} className="query-image-item">
-                  <AuthenticatedImage 
+                  <AuthenticatedImage
                     filename={image.filename}
                     alt={image.original_name}
                     onClick={() => setSelectedImage(image)}
@@ -473,8 +475,8 @@ const QueryDetail = () => {
         {/* Teacher Responses Section */}
         <div className="query-responses">
           <div className="responses-header">
-                    <h3>Expert Reviewer Responses</h3>
-        {(user?.role === 'expert_reviewer' || user?.role === 'admin' || user?.role === 'domain_admin') && query.status !== 'resolved' && (
+            <h3>Expert Reviewer Responses</h3>
+            {(user?.role === 'expert_reviewer' || user?.role === 'admin' || user?.role === 'domain_admin') && query.status !== 'resolved' && (
               <button
                 onClick={() => setShowResponseForm(!showResponseForm)}
                 className="btn btn-primary"
@@ -580,10 +582,10 @@ const QueryDetail = () => {
         {/* Expert Reviewer and Admin Actions */}
         {(user?.role === 'expert_reviewer' || user?.role === 'admin' || user?.role === 'domain_admin') && query.status !== 'resolved' && (
           <div className="teacher-actions">
-                          <div className="teacher-actions-header">
-                <h3>{['admin', 'domain_admin'].includes(user?.role) ? 'Admin Actions' : 'Expert Reviewer Actions'}</h3>
-                <p>Provide guidance and update query status</p>
-              </div>
+            <div className="teacher-actions-header">
+              <h3>{['admin', 'domain_admin'].includes(user?.role) ? 'Admin Actions' : 'Expert Reviewer Actions'}</h3>
+              <p>Provide guidance and update query status</p>
+            </div>
 
             <div className="teacher-actions-content">
               {/* Status Update Section */}
@@ -642,13 +644,13 @@ const QueryDetail = () => {
       {selectedImage && (
         <div className="image-modal-overlay" onClick={() => setSelectedImage(null)}>
           <div className="image-modal-content" onClick={(e) => e.stopPropagation()}>
-            <button 
+            <button
               className="image-modal-close"
               onClick={() => setSelectedImage(null)}
             >
               <FaTimes />
             </button>
-            <AuthenticatedImage 
+            <AuthenticatedImage
               filename={selectedImage.filename}
               alt={selectedImage.original_name}
             />

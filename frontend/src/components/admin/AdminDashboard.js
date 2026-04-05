@@ -1,19 +1,25 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
-import { FaUsers, FaClipboardList, FaChartBar, FaUserPlus, FaCog, FaDownload, FaUserShield, FaExclamationTriangle, FaEye } from 'react-icons/fa';
-import DomainQueryCharts from './DomainQueryCharts';
+import {
+  FaUsers, FaClipboardList, FaChartBar, FaUserPlus,
+  FaDownload, FaUserShield, FaExclamationTriangle,
+  FaArrowRight, FaShieldAlt, FaSpinner
+} from 'react-icons/fa';
 import './AdminDashboard.css';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalQueries: 0,
     unassignedQueries: 0,
-    totalExpertReviewers: 0
+    totalExpertReviewers: 0,
+    openQueries: 0,
+    inProgressQueries: 0,
+    resolvedQueries: 0,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -23,47 +29,38 @@ const AdminDashboard = () => {
       navigate('/queries');
       return;
     }
-    
     fetchDashboardStats();
   }, [user, navigate]);
 
   const fetchDashboardStats = async () => {
     try {
       setLoading(true);
-      
-      // Fetch users
-      const usersRes = await axios.get('/auth/users');
-      const totalUsers = usersRes.data.users.length;
-      const totalExpertReviewers = usersRes.data.users.filter(u => u.role === 'expert_reviewer').length;
-      
-      // Fetch queries
-      const queriesRes = await axios.get('/admin/queries');
-      const totalQueries = queriesRes.data.queries.length;
-      const unassignedQueries = queriesRes.data.queries.filter(q => !q.expert_reviewer_id).length;
-      
+      const [usersRes, queriesRes] = await Promise.all([
+        axios.get('/auth/users'),
+        axios.get('/admin/queries'),
+      ]);
+      const users = usersRes.data.users;
+      const queries = queriesRes.data.queries;
       setStats({
-        totalUsers,
-        totalQueries,
-        unassignedQueries,
-        totalExpertReviewers
+        totalUsers: users.length,
+        totalQueries: queries.length,
+        unassignedQueries: queries.filter(q => !q.expert_reviewer_id).length,
+        totalExpertReviewers: users.filter(u => u.role === 'expert_reviewer').length,
+        openQueries: queries.filter(q => q.status === 'open').length,
+        inProgressQueries: queries.filter(q => q.status === 'in_progress').length,
+        resolvedQueries: queries.filter(q => q.status === 'resolved').length,
       });
-    } catch (error) {
+    } catch {
       setError('Failed to load dashboard statistics');
     } finally {
       setLoading(false);
     }
   };
 
-
-
   const handleExportQueries = async () => {
     try {
-      setError(''); // Clear any previous errors
-      const response = await axios.get('/queries/export-new', {
-        responseType: 'blob'
-      });
-      
-      // Create a download link
+      setError('');
+      const response = await axios.get('/queries/export-new', { responseType: 'blob' });
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
@@ -72,158 +69,149 @@ const AdminDashboard = () => {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Export error:', error);
-      setError('Failed to export queries: ' + (error.response?.data?.message || error.message));
+    } catch (err) {
+      setError('Failed to export queries: ' + (err.response?.data?.message || err.message));
     }
   };
+
+  const kpiCards = [
+    { label: 'Total Users',       value: stats.totalUsers,           icon: FaUsers,              color: 'indigo',  path: '/admin/users' },
+    { label: 'Total Queries',     value: stats.totalQueries,         icon: FaClipboardList,      color: 'violet',  path: '/admin/queries' },
+    { label: 'Unassigned',        value: stats.unassignedQueries,    icon: FaExclamationTriangle,color: 'amber',   path: '/admin/queries?filter=unassigned' },
+    { label: 'Expert Reviewers',  value: stats.totalExpertReviewers, icon: FaShieldAlt,          color: 'emerald', path: '/admin/expert-reviewers' },
+  ];
+
+  const baseNavItems = [
+    { icon: FaClipboardList, label: 'Manage Queries',    desc: 'View, filter and manage all queries',        path: '/admin/queries',           color: 'indigo'  },
+    { icon: FaUserPlus,      label: 'Assignments',       desc: 'Assign queries to expert reviewers',         path: '/admin/assignments',       color: 'violet'  },
+    { icon: FaUsers,         label: 'Manage Users',      desc: 'View and manage user accounts',              path: '/admin/users',             color: 'cyan'    },
+    { icon: FaUserPlus,      label: 'Expert Reviewers',  desc: 'Manage the expert reviewer pool',            path: '/admin/expert-reviewers',  color: 'emerald' },
+    { icon: FaChartBar,      label: 'Analytics',         desc: 'Detailed reports and insights',              path: '/admin/analytics',         color: 'amber'   },
+    { icon: FaDownload,      label: 'Export Data',       desc: 'Download resolved queries as ZIP',           action: handleExportQueries,      color: 'rose'    },
+  ];
+
+  const adminOnlyItems = [
+    { icon: FaUserShield,          label: 'Domain Admins',   desc: 'Configure domain administrators',    path: '/admin/domain-admins',       color: 'purple' },
+    { icon: FaExclamationTriangle, label: 'System Monitor',  desc: 'Check system health and logs',       path: '/admin/system-monitoring',   color: 'red'    },
+  ];
+
+  const navItems = user?.role === 'admin' ? [...baseNavItems, ...adminOnlyItems] : baseNavItems;
+
+  const totalForBar = (stats.openQueries + stats.inProgressQueries + stats.resolvedQueries) || 1;
 
   if (loading) {
     return (
       <div className="admin-dashboard">
-        <div className="loading">Loading admin dashboard...</div>
+        <div className="dash-loading">
+          <FaSpinner className="spin-icon" />
+          <span>Loading dashboard...</span>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="admin-dashboard">
-      <div className="admin-header">
-        <h1>Admin Dashboard</h1>
-        {user?.role === 'domain_admin' && (
-          <div className="domain-indicator">
-            <span className="domain-badge">Domain: {user.domain}</span>
+
+      {/* Hero Header */}
+      <div className="dash-hero">
+        <div className="dash-hero-content">
+          <div className="dash-hero-badge">
+            {user?.role === 'admin' ? 'Super Admin' : 'Domain Admin'}
+          </div>
+          <h1>Welcome back, <span>{user?.fullName || user?.username}</span></h1>
+          <p>Here's an overview of your portal activity.</p>
+        </div>
+        {user?.role === 'domain_admin' && user?.domain && (
+          <div className="dash-domain-pill">
+            <FaShieldAlt /> {user.domain}
           </div>
         )}
       </div>
 
-      {error && <div className="error-message">{error}</div>}
+      {error && <div className="error">{error}</div>}
 
-      <div className="stats-grid">
-        <div className="stat-card clickable" onClick={() => navigate('/admin/users')}>
-          <div className="stat-icon">
-            <FaUsers />
+      {/* KPI Cards */}
+      <div className="kpi-grid">
+        {kpiCards.map(({ label, value, icon: Icon, color, path }) => (
+          <div key={label} className={`kpi-card kpi-${color}`} onClick={() => navigate(path)}>
+            <div className="kpi-icon-wrap">
+              <Icon />
+            </div>
+            <div className="kpi-body">
+              <div className="kpi-value">{value}</div>
+              <div className="kpi-label">{label}</div>
+            </div>
+            <FaArrowRight className="kpi-arrow" />
           </div>
-          <div className="stat-content">
-            <h3>{stats.totalUsers}</h3>
-            <p>Total Users</p>
-          </div>
-        </div>
-
-        <div className="stat-card clickable" onClick={() => navigate('/admin/queries')}>
-          <div className="stat-icon">
-            <FaClipboardList />
-          </div>
-          <div className="stat-content">
-            <h3>{stats.totalQueries}</h3>
-            <p>Total Queries</p>
-          </div>
-        </div>
-
-        <div className="stat-card clickable" onClick={() => navigate('/admin/queries?filter=unassigned')}>
-          <div className="stat-icon">
-            <FaChartBar />
-          </div>
-          <div className="stat-content">
-            <h3>{stats.unassignedQueries}</h3>
-            <p>Unassigned Queries</p>
-          </div>
-        </div>
-
-        <div className="stat-card clickable" onClick={() => navigate('/admin/expert-reviewers')}>
-          <div className="stat-icon">
-            <FaUserPlus />
-          </div>
-          <div className="stat-content">
-            <h3>{stats.totalExpertReviewers}</h3>
-            <p>Expert Reviewers</p>
-          </div>
-        </div>
+        ))}
       </div>
 
-      <DomainQueryCharts />
-
-      <div className="admin-actions">
-        <div className="action-section">
-          <h2>Query Management</h2>
-          <div className="action-buttons">
-            <button 
-              onClick={() => navigate('/admin/queries')}
-              className="action-btn"
-            >
-              <FaClipboardList /> Manage Queries
-            </button>
-            <button 
-              onClick={() => navigate('/admin/assignments')}
-              className="action-btn"
-            >
-              <FaUserPlus /> Query Assignments
-            </button>
-          </div>
+      {/* Query Status Overview */}
+      <div className="status-overview">
+        <div className="status-ov-header">
+          <h2>Query Status Overview</h2>
+          <button className="status-ov-link" onClick={() => navigate('/admin/queries')}>
+            View All <FaArrowRight />
+          </button>
         </div>
-
-        {user?.role === 'admin' && (
-          <div className="action-section">
-            <h2>System Administration</h2>
-            <div className="action-buttons">
-              <button 
-                onClick={() => navigate('/admin/domain-admins')}
-                className="action-btn"
-              >
-                <FaUserShield /> Manage Domain Admins
-              </button>
-              <button 
-                onClick={() => navigate('/admin/system-monitoring')}
-                className="action-btn"
-              >
-                <FaExclamationTriangle /> System Monitoring
-              </button>
+        <div className="status-track-row">
+          <div className="status-track-item">
+            <div className="status-track-top">
+              <span className="status-dot s-open"></span>
+              <span className="status-track-label">Open</span>
+              <span className="status-track-count">{stats.openQueries}</span>
+            </div>
+            <div className="status-progress-bar">
+              <div className="status-fill s-open" style={{ width: `${(stats.openQueries / totalForBar) * 100}%` }}></div>
             </div>
           </div>
-        )}
-
-        <div className="action-section">
-          <h2>Data Export</h2>
-          <div className="action-buttons">
-            <button 
-              onClick={handleExportQueries}
-              className="action-btn export-btn"
-            >
-              <FaDownload /> Export Resolved Queries (Fixed)
-            </button>
+          <div className="status-track-item">
+            <div className="status-track-top">
+              <span className="status-dot s-inprog"></span>
+              <span className="status-track-label">In Progress</span>
+              <span className="status-track-count">{stats.inProgressQueries}</span>
+            </div>
+            <div className="status-progress-bar">
+              <div className="status-fill s-inprog" style={{ width: `${(stats.inProgressQueries / totalForBar) * 100}%` }}></div>
+            </div>
           </div>
-        </div>
-
-        <div className="action-section">
-          <h2>User Management</h2>
-          <div className="action-buttons">
-            <button 
-              onClick={() => navigate('/admin/users')}
-              className="action-btn"
-            >
-              <FaUsers /> Manage Users
-            </button>
-            <button 
-              onClick={() => navigate('/admin/expert-reviewers')}
-              className="action-btn"
-            >
-              <FaUserPlus /> Manage Expert Reviewers
-            </button>
-          </div>
-        </div>
-
-        <div className="action-section">
-          <h2>Analytics</h2>
-          <div className="action-buttons">
-            <button 
-              onClick={() => navigate('/admin/analytics')}
-              className="action-btn"
-            >
-              <FaChartBar /> View Analytics
-            </button>
+          <div className="status-track-item">
+            <div className="status-track-top">
+              <span className="status-dot s-resolved"></span>
+              <span className="status-track-label">Resolved</span>
+              <span className="status-track-count">{stats.resolvedQueries}</span>
+            </div>
+            <div className="status-progress-bar">
+              <div className="status-fill s-resolved" style={{ width: `${(stats.resolvedQueries / totalForBar) * 100}%` }}></div>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Navigation Cards */}
+      <div className="nav-section">
+        <h2 className="nav-section-title">Quick Actions</h2>
+        <div className="nav-cards-grid">
+          {navItems.map(({ icon: Icon, label, desc, path, action, color }) => (
+            <div
+              key={label}
+              className={`nav-card nav-card-${color}`}
+              onClick={action ? action : () => navigate(path)}
+            >
+              <div className="nav-card-icon">
+                <Icon />
+              </div>
+              <div className="nav-card-body">
+                <div className="nav-card-title">{label}</div>
+                <div className="nav-card-desc">{desc}</div>
+              </div>
+              <FaArrowRight className="nav-card-arrow" />
+            </div>
+          ))}
+        </div>
+      </div>
+
     </div>
   );
 };

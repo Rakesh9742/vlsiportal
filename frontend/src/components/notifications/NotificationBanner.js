@@ -107,7 +107,7 @@ const NotificationBanner = () => {
   return (
     <div className="notification-banner">
       <div className="notification-header">
-        <h3>🔔 New Notifications</h3>
+        <h3>New Notifications ({notifications.length})</h3>
         <button className="dismiss-all-btn" onClick={dismissAll}>
           Dismiss All
         </button>

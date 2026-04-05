@@ -92,6 +92,7 @@ const QueryList = () => {
   };
 
   const currentQueries = getCurrentQueries();
+  const isStudentView = user?.role === 'student';
   const totalQueries = currentQueries.length;
   const openQueries = currentQueries.filter(q => q.status === 'open').length;
   const inProgressQueries = currentQueries.filter(q => q.status === 'in_progress').length;
@@ -155,11 +156,11 @@ const QueryList = () => {
   }
 
   return (
-    <div className="queries-page">
+    <div className={`queries-page ${isStudentView ? 'student-queries' : ''}`}>
       <div className="page-header">
         <div className="header-content">
-                <h1>{user?.role === 'expert_reviewer' ? 'Dashboard' : user?.role === 'admin' ? 'Query Management' : 'Queries'}</h1>
-      <p>{user?.role === 'expert_reviewer' ? 'Review and respond to student queries' : user?.role === 'admin' ? 'Manage and respond to all student queries' : 'Manage and track your VLSI design queries'}</p>
+                <h1>{user?.role === 'expert_reviewer' ? 'Dashboard' : user?.role === 'admin' ? 'Query Management' : 'My Learning Queries'}</h1>
+      <p>{user?.role === 'expert_reviewer' ? 'Review and respond to student queries' : user?.role === 'admin' ? 'Manage and respond to all student queries' : 'Track your questions, progress, and resolved solutions in one clean view'}</p>
         </div>
         <div className="header-actions">
           {user?.role === 'admin' && (
@@ -210,19 +211,19 @@ const QueryList = () => {
 
       {activeTab !== 'resolved-queries' && (
         <div className="queries-stats">
-          <div className="stat-card">
+          <div className="stat-card total-stat">
             <h3>Total</h3>
             <span className="stat-number">{totalQueries}</span>
           </div>
-          <div className="stat-card">
+          <div className="stat-card open-stat">
             <h3>Open</h3>
             <span className="stat-number">{openQueries}</span>
           </div>
-          <div className="stat-card">
+          <div className="stat-card progress-stat">
             <h3>In Progress</h3>
             <span className="stat-number">{inProgressQueries}</span>
           </div>
-          <div className="stat-card">
+          <div className="stat-card resolved-stat">
             <h3>Resolved</h3>
             <span className="stat-number">{resolvedQueriesCount}</span>
           </div>
@@ -339,86 +340,138 @@ const QueryList = () => {
           </div>
         ) : (
           filteredQueries.map(query => (
-            <div key={query.id} className={`query-item ${query.status} ${query.is_edited ? 'edited' : ''}`}>
-              <div className="query-row">
-                <div className="query-title">
-                  <Link to={`/queries/${query.id}`} className="query-link">
-                    {query.title}
-                    {query.is_edited && (
-                      <span className="edit-indicator" title={`Edited ${query.edit_count} time(s)`}>
-                        <FaHistory className="edit-icon" />
-                        <span className="edit-count">{query.edit_count}</span>
+            <div key={query.id} className={`query-item ${query.status} ${query.is_edited ? 'edited' : ''} ${isStudentView ? 'student-query-card' : ''}`}>
+              {isStudentView ? (
+                <>
+                  <div className="student-query-top">
+                    <div className="student-query-heading">
+                      <Link to={`/queries/${query.id}`} className="query-link">
+                        {query.title}
+                      </Link>
+                      <div className="student-query-meta-row">
+                        {activeTab !== 'resolved-queries' && (
+                          <span className="student-meta-chip">ID: {query.custom_query_id || query.id}</span>
+                        )}
+                        {query.technology && (
+                          <span className="student-meta-chip">{query.technology}</span>
+                        )}
+                        <span className="student-meta-chip">
+                          <FaClock /> {new Date(query.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="query-status">
+                      <span className={`status-indicator ${query.status}`}>
+                        {query.status === 'open' && 'Open'}
+                        {query.status === 'in_progress' && 'In Progress'}
+                        {query.status === 'resolved' && 'Resolved'}
                       </span>
-                    )}
-                  </Link>
-                  {activeTab !== 'resolved-queries' && (
-                    <div className="query-id">ID: {query.custom_query_id || query.id}</div>
-                  )}
-                </div>
-                
-                <div className="query-info">
-                  <div className="info-item">
-                    <span className="info-value">{query.student_name}</span>
+                    </div>
                   </div>
-                  <div className="info-item">
-                    <span className="info-value">
-                      {new Date(query.created_at).toLocaleDateString()}
+
+                  <p className="student-query-preview">{query.description || 'No description provided.'}</p>
+
+                  <div className="query-actions student-query-actions">
+                    {query.is_edited && (
+                      <button
+                        onClick={() => {
+                          setSelectedQueryId(query.id);
+                          setShowEditHistory(true);
+                        }}
+                        className="btn btn-outline edit-history-btn"
+                        title="View edit history"
+                      >
+                        <FaHistory />
+                        History
+                      </button>
+                    )}
+                    <Link to={`/queries/${query.id}`} className="btn btn-outline">
+                      <FaEye />
+                      View Details
+                    </Link>
+                  </div>
+                </>
+              ) : (
+                <div className="query-row">
+                  <div className="query-title">
+                    <Link to={`/queries/${query.id}`} className="query-link">
+                      {query.title}
+                      {query.is_edited && (
+                        <span className="edit-indicator" title={`Edited ${query.edit_count} time(s)`}>
+                          <FaHistory className="edit-icon" />
+                          <span className="edit-count">{query.edit_count}</span>
+                        </span>
+                      )}
+                    </Link>
+                    {activeTab !== 'resolved-queries' && (
+                      <div className="query-id">ID: {query.custom_query_id || query.id}</div>
+                    )}
+                  </div>
+
+                  <div className="query-info">
+                    <div className="info-item">
+                      <span className="info-value">{query.student_name}</span>
+                    </div>
+                    <div className="info-item">
+                      <span className="info-value">
+                        {new Date(query.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                    {query.technology && (
+                      <div className="info-item">
+                        <span className="info-value">{query.technology}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="query-status">
+                    <span className={`status-indicator ${query.status}`}>
+                      {query.status === 'open' && 'Open'}
+                      {query.status === 'in_progress' && 'In Progress'}
+                      {query.status === 'resolved' && 'Resolved'}
+
                     </span>
                   </div>
-                  {query.technology && (
-                    <div className="info-item">
-                      <span className="info-value">{query.technology}</span>
-                    </div>
-                  )}
-                </div>
 
-                <div className="query-status">
-                  <span className={`status-indicator ${query.status}`}>
-                    {query.status === 'open' && 'Open'}
-                    {query.status === 'in_progress' && 'In Progress'}
-                    {query.status === 'resolved' && 'Resolved'}
-
-                  </span>
+                  <div className="query-actions">
+                    {query.is_edited && (
+                      <button 
+                        onClick={() => {
+                          setSelectedQueryId(query.id);
+                          setShowEditHistory(true);
+                        }}
+                        className="btn btn-outline edit-history-btn"
+                        title="View edit history"
+                      >
+                        <FaHistory />
+                        History
+                      </button>
+                    )}
+                    {(user?.role === 'expert_reviewer' || user?.role === 'admin') && (
+                      <>
+                        <Link to={`/queries/${query.id}/edit`} className="edit-query-btn">
+                          <FaEdit />
+                          Edit
+                        </Link>
+                        {user?.role === 'admin' && query.status === 'resolved' && (
+                          <button 
+                            onClick={() => exportSingleQuery(query.id, query.title)}
+                            className="btn btn-secondary export-btn"
+                            title="Export this resolved query to CSV"
+                          >
+                            <FaDownload />
+                            Export
+                          </button>
+                        )}
+                      </>
+                    )}
+                    <Link to={`/queries/${query.id}`} className="btn btn-outline">
+                      <FaEye />
+                      View Details
+                    </Link>
+                  </div>
                 </div>
-
-                <div className="query-actions">
-                  {query.is_edited && (
-                    <button 
-                      onClick={() => {
-                        setSelectedQueryId(query.id);
-                        setShowEditHistory(true);
-                      }}
-                      className="btn btn-outline edit-history-btn"
-                      title="View edit history"
-                    >
-                      <FaHistory />
-                      History
-                    </button>
-                  )}
-                  {(user?.role === 'expert_reviewer' || user?.role === 'admin') && (
-                    <>
-                      <Link to={`/queries/${query.id}/edit`} className="edit-query-btn">
-                        <FaEdit />
-                        Edit
-                      </Link>
-                      {user?.role === 'admin' && query.status === 'resolved' && (
-                        <button 
-                          onClick={() => exportSingleQuery(query.id, query.title)}
-                          className="btn btn-secondary export-btn"
-                          title="Export this resolved query to CSV"
-                        >
-                          <FaDownload />
-                          Export
-                        </button>
-                      )}
-                    </>
-                  )}
-                  <Link to={`/queries/${query.id}`} className="btn btn-outline">
-                    <FaEye />
-                    View Details
-                  </Link>
-                </div>
-              </div>
+              )}
             </div>
           ))
         )}

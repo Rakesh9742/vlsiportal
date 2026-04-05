@@ -20,7 +20,10 @@ router.get('/queries', auth, checkAdminRole, async (req, res) => {
         qa.status as assignment_status,
         qa.assigned_at,
         qa.notes as assignment_notes,
-        er.full_name as assigned_expert_name
+        er.full_name as assigned_expert_name,
+        lr.last_response_date,
+        lr.last_responder_name,
+        lr.last_responder_role
       FROM queries q
       JOIN users u ON q.student_id = u.id
       LEFT JOIN domains d ON u.domain_id = d.id
@@ -29,6 +32,49 @@ router.get('/queries', auth, checkAdminRole, async (req, res) => {
       LEFT JOIN issue_categories ic ON q.issue_category_id = ic.id
       LEFT JOIN query_assignments qa ON q.id = qa.query_id
       LEFT JOIN users er ON qa.expert_reviewer_id = er.id
+      LEFT JOIN (
+        SELECT 
+          combined.query_id,
+          combined.last_response_date,
+          combined.last_responder_name,
+          combined.last_responder_role
+        FROM (
+          SELECT 
+            r.query_id,
+            r.created_at as last_response_date,
+            responder.full_name as last_responder_name,
+            responder.role as last_responder_role
+          FROM responses r
+          INNER JOIN users responder ON r.responder_id = responder.id
+          
+          UNION ALL
+          
+          SELECT 
+            qc.query_id,
+            cm.created_at as last_response_date,
+            sender.full_name as last_responder_name,
+            sender.role as last_responder_role
+          FROM chat_messages cm
+          INNER JOIN query_chats qc ON cm.chat_id = qc.id
+          INNER JOIN users sender ON cm.sender_id = sender.id
+          WHERE cm.message_type != 'system'
+        ) combined
+        INNER JOIN (
+          SELECT 
+            query_id, 
+            MAX(last_response_date) as max_date
+          FROM (
+            SELECT query_id, created_at as last_response_date FROM responses
+            UNION ALL
+            SELECT qc.query_id, cm.created_at as last_response_date 
+            FROM chat_messages cm
+            INNER JOIN query_chats qc ON cm.chat_id = qc.id
+            WHERE cm.message_type != 'system'
+          ) all_responses
+          GROUP BY query_id
+        ) latest ON combined.query_id = latest.query_id 
+                AND combined.last_response_date = latest.max_date
+      ) lr ON q.id = lr.query_id
     `;
     let params = [];
 
@@ -147,25 +193,25 @@ router.post('/queries/:id/assign', auth, checkAdminRole, [
     // Send notifications for assignment
     try {
       const { createNotification } = require('./notifications');
-      
+
       // Get query and student info
       const [queryInfo] = await db.execute(
         'SELECT q.title, u.full_name as student_name, u.domain_id FROM queries q JOIN users u ON q.student_id = u.id WHERE q.id = ?',
         [queryId]
       );
-      
+
       // Get assigner info
       const [assignerInfo] = await db.execute(
         'SELECT full_name FROM users WHERE id = ?',
         [adminId]
       );
-      
+
       // Get assignee info
       const [assigneeInfo] = await db.execute(
         'SELECT full_name FROM users WHERE id = ?',
         [expert_reviewer_id]
       );
-      
+
       if (queryInfo.length > 0 && assignerInfo.length > 0 && assigneeInfo.length > 0) {
         // Notify the assigned expert reviewer
         await createNotification(
@@ -174,19 +220,19 @@ router.post('/queries/:id/assign', auth, checkAdminRole, [
           'query_assigned',
           'Query Assigned to You',
           `${assignerInfo[0].full_name} has assigned you the query: "${queryInfo[0].title}"`,
-          { 
-            assigner_id: adminId, 
+          {
+            assigner_id: adminId,
             assigner_name: assignerInfo[0].full_name,
             query_title: queryInfo[0].title
           }
         );
-        
+
         // Notify domain admins for this query's domain
         const [domainAdmins] = await db.execute(
           'SELECT id FROM users WHERE role = "domain_admin" AND domain_id = ?',
           [queryInfo[0].domain_id]
         );
-        
+
         for (const admin of domainAdmins) {
           await createNotification(
             admin.id,
@@ -194,8 +240,8 @@ router.post('/queries/:id/assign', auth, checkAdminRole, [
             'query_assigned',
             'Query Assigned in Your Domain',
             `Query "${queryInfo[0].title}" has been assigned to ${assigneeInfo[0].full_name}`,
-            { 
-              assigner_id: adminId, 
+            {
+              assigner_id: adminId,
               assigner_name: assignerInfo[0].full_name,
               assignee_id: expert_reviewer_id,
               assignee_name: assigneeInfo[0].full_name,
@@ -266,25 +312,25 @@ router.put('/queries/:id/reassign', auth, checkAdminRole, [
     // Send notifications for reassignment
     try {
       const { createNotification } = require('./notifications');
-      
+
       // Get query and student info
       const [queryInfo] = await db.execute(
         'SELECT q.title, u.full_name as student_name, u.domain_id FROM queries q JOIN users u ON q.student_id = u.id WHERE q.id = ?',
         [queryId]
       );
-      
+
       // Get reassigner info
       const [reassignerInfo] = await db.execute(
         'SELECT full_name FROM users WHERE id = ?',
         [adminId]
       );
-      
+
       // Get new assignee info
       const [assigneeInfo] = await db.execute(
         'SELECT full_name FROM users WHERE id = ?',
         [expert_reviewer_id]
       );
-      
+
       if (queryInfo.length > 0 && reassignerInfo.length > 0 && assigneeInfo.length > 0) {
         // Notify the newly assigned expert reviewer
         await createNotification(
@@ -293,19 +339,19 @@ router.put('/queries/:id/reassign', auth, checkAdminRole, [
           'query_reassigned',
           'Query Reassigned to You',
           `${reassignerInfo[0].full_name} has reassigned you the query: "${queryInfo[0].title}"`,
-          { 
-            reassigner_id: adminId, 
+          {
+            reassigner_id: adminId,
             reassigner_name: reassignerInfo[0].full_name,
             query_title: queryInfo[0].title
           }
         );
-        
+
         // Notify domain admins for this query's domain
         const [domainAdmins] = await db.execute(
           'SELECT id FROM users WHERE role = "domain_admin" AND domain_id = ?',
           [queryInfo[0].domain_id]
         );
-        
+
         for (const admin of domainAdmins) {
           await createNotification(
             admin.id,
@@ -313,8 +359,8 @@ router.put('/queries/:id/reassign', auth, checkAdminRole, [
             'query_reassigned',
             'Query Reassigned in Your Domain',
             `Query "${queryInfo[0].title}" has been reassigned to ${assigneeInfo[0].full_name}`,
-            { 
-              reassigner_id: adminId, 
+            {
+              reassigner_id: adminId,
               reassigner_name: reassignerInfo[0].full_name,
               assignee_id: expert_reviewer_id,
               assignee_name: assigneeInfo[0].full_name,

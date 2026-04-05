@@ -1,8 +1,8 @@
-.domain-admin-management {
+﻿.domain-admin-management {
   width: 100%;
   margin: 0;
   padding: 20px;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: var(--font-sans);
 }
 
 .header {
@@ -11,11 +11,11 @@
   align-items: center;
   margin-bottom: 30px;
   padding-bottom: 20px;
-  border-bottom: 2px solid #e0e0e0;
+  border-bottom: 2px solid var(--border-color);
 }
 
 .header h1 {
-  color: #2c3e50;
+  color: var(--gray-900);
   margin: 0;
   font-size: 2.5rem;
   font-weight: 600;
@@ -25,7 +25,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #6c757d;
+  background: var(--gray-500);
   color: white;
   border: none;
   padding: 10px 20px;
@@ -43,7 +43,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #28a745;
+  background: var(--success);
   color: white;
   border: none;
   padding: 12px 24px;
@@ -100,7 +100,7 @@
 
 .create-form h2 {
   margin: 0 0 20px 0;
-  color: #2c3e50;
+  color: var(--gray-900);
   text-align: center;
 }
 
@@ -112,7 +112,7 @@
   display: block;
   margin-bottom: 5px;
   font-weight: 500;
-  color: #2c3e50;
+  color: var(--gray-900);
 }
 
 .form-group input,
@@ -128,7 +128,7 @@
 .form-group input:focus,
 .form-group select:focus {
   outline: none;
-  border-color: #007bff;
+  border-color: var(--primary);
   box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
 }
 
@@ -140,7 +140,7 @@
 }
 
 .submit-button {
-  background: #007bff;
+  background: var(--primary);
   color: white;
   border: none;
   padding: 10px 20px;
@@ -151,11 +151,11 @@
 }
 
 .submit-button:hover {
-  background: #0056b3;
+  background: var(--primary-dark);
 }
 
 .cancel-button {
-  background: #6c757d;
+  background: var(--gray-500);
   color: white;
   border: none;
   padding: 10px 20px;
@@ -170,17 +170,17 @@
 }
 
 .domain-admins-list h2 {
-  color: #2c3e50;
+  color: var(--gray-900);
   margin-bottom: 20px;
   font-size: 1.8rem;
 }
 
 .no-data {
   text-align: center;
-  color: #6c757d;
+  color: var(--gray-500);
   font-style: italic;
   padding: 40px;
-  background: #f8f9fa;
+  background: var(--bg-page);
   border-radius: 5px;
 }
 
@@ -192,7 +192,7 @@
 
 .admin-card {
   background: white;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border-color);
   border-radius: 10px;
   padding: 20px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -213,23 +213,23 @@
 
 .admin-icon {
   font-size: 2rem;
-  color: #007bff;
+  color: var(--primary);
 }
 
 .admin-info h3 {
   margin: 0 0 5px 0;
-  color: #2c3e50;
+  color: var(--gray-900);
   font-size: 1.2rem;
 }
 
 .admin-info p {
   margin: 0 0 8px 0;
-  color: #6c757d;
+  color: var(--gray-500);
   font-size: 0.9rem;
 }
 
 .domain-badge {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--gradient-primary);
   color: white;
   padding: 4px 12px;
   border-radius: 15px;
@@ -244,7 +244,7 @@
 }
 
 .delete-button {
-  background: #dc3545;
+  background: var(--error);
   color: white;
   border: none;
   padding: 8px 12px;
@@ -260,6 +260,9 @@
 .loading {
   text-align: center;
   padding: 40px;
-  color: #6c757d;
+  color: var(--gray-500);
   font-size: 1.1rem;
 }
+
+
+

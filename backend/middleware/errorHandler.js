@@ -1,4 +1,4 @@
-const { error, warn, info } = require('../config/logger');
+const { error } = require('../config/logger');
 
 // Global error handling middleware
 const errorHandler = (err, req, res, next) => {
@@ -18,10 +18,10 @@ const errorHandler = (err, req, res, next) => {
 
   // Don't leak error details in production
   const isDevelopment = process.env.NODE_ENV !== 'production';
-  
+
   // Determine status code
   let statusCode = err.statusCode || err.status || 500;
-  
+
   // Handle specific error types
   if (err.name === 'ValidationError') {
     statusCode = 400;
@@ -53,17 +53,12 @@ const errorHandler = (err, req, res, next) => {
 
 // 404 handler for undefined routes
 const notFoundHandler = (req, res, next) => {
-  const error = new Error(`Route not found: ${req.method} ${req.originalUrl}`);
-  error.statusCode = 404;
-  
-  warn('Route Not Found', {
-    method: req.method,
-    url: req.originalUrl,
-    ip: req.ip || req.connection.remoteAddress,
-    userAgent: req.get('User-Agent')
-  });
-  
-  next(error);
+  const err = new Error(`Route not found: ${req.method} ${req.originalUrl}`);
+  err.statusCode = 404;
+
+  // 404s are handled by the error handler, no need to log here
+
+  next(err);
 };
 
 // Async error wrapper to catch async errors
@@ -73,36 +68,18 @@ const asyncHandler = (fn) => {
   };
 };
 
-// Request logging middleware
+// Request logging middleware - only logs errors (4xx/5xx)
 const requestLogger = (req, res, next) => {
   const start = Date.now();
-  
-  // Log request
-  info('Incoming Request', {
-    method: req.method,
-    url: req.originalUrl,
-    ip: req.ip || req.connection.remoteAddress,
-    userAgent: req.get('User-Agent'),
-    userId: req.user ? req.user.id : null
-  });
 
-  // Override res.end to log response
+  // Override res.end to log error responses only
   const originalEnd = res.end;
-  res.end = function(chunk, encoding) {
+  res.end = function (chunk, encoding) {
     const duration = Date.now() - start;
-    
-    // Log response
+
+    // Only log error responses (4xx and 5xx)
     if (res.statusCode >= 400) {
-      warn('Request Completed with Error', {
-        method: req.method,
-        url: req.originalUrl,
-        statusCode: res.statusCode,
-        duration: `${duration}ms`,
-        ip: req.ip || req.connection.remoteAddress,
-        userId: req.user ? req.user.id : null
-      });
-    } else {
-      info('Request Completed', {
+      error('Request Completed with Error', {
         method: req.method,
         url: req.originalUrl,
         statusCode: res.statusCode,
@@ -111,10 +88,11 @@ const requestLogger = (req, res, next) => {
         userId: req.user ? req.user.id : null
       });
     }
-    
+    // Don't log successful requests
+
     originalEnd.call(this, chunk, encoding);
   };
-  
+
   next();
 };
 

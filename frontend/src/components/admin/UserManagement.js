@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
-import { FaArrowLeft, FaUserPlus, FaEdit, FaTrash, FaEye, FaUser, FaUserTie, FaUserShield } from 'react-icons/fa';
+import { FaUserPlus, FaTrash, FaUser, FaUserTie, FaUserShield } from 'react-icons/fa';
 import './UserManagement.css';
 
 const UserManagement = () => {
@@ -121,6 +121,7 @@ const UserManagement = () => {
   const getRoleBadge = (role) => {
     const roleClasses = {
       'admin': 'role-badge admin',
+      'domain_admin': 'role-badge domain-admin',
       'expert_reviewer': 'role-badge expert',
       'student': 'role-badge student'
     };
@@ -148,26 +149,20 @@ const UserManagement = () => {
   return (
     <div className="user-management">
       <div className="page-header">
-        <button 
-          onClick={() => navigate('/admin')} 
-          className="back-btn"
-        >
-          <FaArrowLeft /> Back to Admin Dashboard
-        </button>
         <h1>User Management</h1>
       </div>
 
       {error && <div className="error-message">{error}</div>}
       {success && <div className="success-message">{success}</div>}
 
-      <div className="management-actions">
+      <div className="users-toolbar">
         <button 
           onClick={() => setShowCreateForm(!showCreateForm)}
           className="action-btn primary"
         >
           <FaUserPlus /> {showCreateForm ? 'Cancel' : 'Create New User'}
         </button>
-        
+
         <div className="filter-controls">
           <label htmlFor="role-filter">Filter by Role:</label>
           <select
@@ -185,93 +180,98 @@ const UserManagement = () => {
       </div>
 
       {showCreateForm && (
-        <div className="create-form">
-          <h3>Create New User</h3>
-          <form onSubmit={handleCreateUser}>
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="username">Username *</label>
-                <input
-                  type="text"
-                  id="username"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleInputChange}
-                  required
-                  minLength="3"
-                  placeholder="Enter username"
-                />
+        <div className="create-user-modal-overlay" onClick={() => setShowCreateForm(false)}>
+          <div className="create-form create-user-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Create New User</h3>
+            <form onSubmit={handleCreateUser}>
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="username">Username *</label>
+                  <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    value={formData.username}
+                    onChange={handleInputChange}
+                    required
+                    minLength="3"
+                    placeholder="Enter username"
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="password">Password *</label>
+                  <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    required
+                    minLength="6"
+                    placeholder="Enter password"
+                  />
+                </div>
               </div>
-              <div className="form-group">
-                <label htmlFor="password">Password *</label>
-                <input
-                  type="password"
-                  id="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  required
-                  minLength="6"
-                  placeholder="Enter password"
-                />
-              </div>
-            </div>
 
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="full_name">Full Name *</label>
-                <input
-                  type="text"
-                  id="full_name"
-                  name="full_name"
-                  value={formData.full_name}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="Enter full name"
-                />
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="full_name">Full Name *</label>
+                  <input
+                    type="text"
+                    id="full_name"
+                    name="full_name"
+                    value={formData.full_name}
+                    onChange={handleInputChange}
+                    required
+                    placeholder="Enter full name"
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="role">Role *</label>
+                  <select
+                    id="role"
+                    name="role"
+                    value={formData.role}
+                    onChange={handleInputChange}
+                    required
+                  >
+                    <option value="student">Student</option>
+                    <option value="expert_reviewer">Expert Reviewer</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
               </div>
-              <div className="form-group">
-                <label htmlFor="role">Role *</label>
-                <select
-                  id="role"
-                  name="role"
-                  value={formData.role}
-                  onChange={handleInputChange}
-                  required
-                >
-                  <option value="student">Student</option>
-                  <option value="expert_reviewer">Expert Reviewer</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
-            </div>
 
-            {formData.role !== 'admin' && (
-              <div className="form-group">
-                <label htmlFor="domain_id">Domain *</label>
-                <select
-                  id="domain_id"
-                  name="domain_id"
-                  value={formData.domain_id}
-                  onChange={handleInputChange}
-                  required
-                >
-                  <option value="">Select Domain</option>
-                  {domains.map(domain => (
-                    <option key={domain.id} value={domain.id}>
-                      {domain.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+              {formData.role !== 'admin' && (
+                <div className="form-group">
+                  <label htmlFor="domain_id">Domain *</label>
+                  <select
+                    id="domain_id"
+                    name="domain_id"
+                    value={formData.domain_id}
+                    onChange={handleInputChange}
+                    required
+                  >
+                    <option value="">Select Domain</option>
+                    {domains.map(domain => (
+                      <option key={domain.id} value={domain.id}>
+                        {domain.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
-            <div className="form-actions">
-              <button type="submit" className="btn btn-primary">
-                <FaUserPlus /> Create User
-              </button>
-            </div>
-          </form>
+              <div className="form-actions">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowCreateForm(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  <FaUserPlus /> Create User
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 

@@ -70,98 +70,102 @@ router.get('/error-logs', auth, checkRole(['admin']), asyncHandler(async (req, r
       });
     }
 
-    const files = fs.readdirSync(logsDir);
-    const today = new Date().toISOString().split('T')[0];
-    
-    // Get today's log files
-    const errorLogFile = `error-${today}.log`;
-    const exceptionLogFile = `exceptions-${today}.log`;
-    const rejectionLogFile = `rejections-${today}.log`;
-
-    const parseLogFile = (filename) => {
+    const parseLogFile = (filename, sourceType) => {
       const filePath = path.join(logsDir, filename);
       if (!fs.existsSync(filePath)) {
         return [];
       }
 
       const content = fs.readFileSync(filePath, 'utf8');
-      const lines = content.split('\n').filter(line => line.trim());
-      
-      const validLogs = [];
-      let currentLogEntry = null;
-      let metaLines = [];
-      let inMetaSection = false;
-      
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim();
-        
-        // Check if this is a timestamp line (starts with date pattern)
-        if (line.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/)) {
-          // If we have a previous log entry, save it
-          if (currentLogEntry) {
-            validLogs.push(currentLogEntry);
+      const lines = content.split('\n');
+      const parsed = [];
+      let currentEntry = null;
+
+      const flushCurrentEntry = () => {
+        if (!currentEntry) return;
+
+        const details = currentEntry.details.join('\n').trim();
+        let stack = null;
+        let meta = null;
+
+        if (details) {
+          const stackMatch = details.match(/Stack:\s*([\s\S]*?)(\nMeta:|$)/);
+          if (stackMatch && stackMatch[1]) {
+            stack = stackMatch[1].trim();
           }
-          
-          // Parse the timestamp line
-          const timestampMatch = line.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) \[(\w+)\]: (.+)$/);
-          if (timestampMatch) {
-            currentLogEntry = {
-              timestamp: timestampMatch[1],
-              level: timestampMatch[2].toLowerCase(),
-              message: timestampMatch[3],
-              stack: null,
-              meta: null
-            };
-            inMetaSection = false;
-            metaLines = [];
-          }
-        }
-        // Check if this is a "Meta:" line
-        else if (line === 'Meta: {') {
-          inMetaSection = true;
-          metaLines = ['{'];
-        }
-        // If we're in meta section, collect lines until we find the closing brace
-        else if (inMetaSection) {
-          metaLines.push(line);
-          
-          // Check if this line closes the meta section
-          if (line === '}') {
+
+          const metaMatch = details.match(/Meta:\s*([\s\S]*)$/);
+          if (metaMatch && metaMatch[1]) {
             try {
-              const metaJson = metaLines.join('\n');
-              const metaData = JSON.parse(metaJson);
-              if (currentLogEntry) {
-                currentLogEntry.meta = metaData;
-              }
+              meta = JSON.parse(metaMatch[1].trim());
             } catch (e) {
-              // If meta parsing fails, ignore it
+              meta = { raw: metaMatch[1].trim() };
             }
-            inMetaSection = false;
-            metaLines = [];
           }
         }
-        // Check if this is a "Stack:" line (for stack traces)
-        else if (line.startsWith('Stack:') && currentLogEntry) {
-          currentLogEntry.stack = line.substring(6).trim();
+
+        parsed.push({
+          timestamp: currentEntry.timestamp,
+          level: (currentEntry.level || 'error').toLowerCase(),
+          message: currentEntry.message || 'No message available',
+          stack,
+          meta,
+          raw: details,
+          source: sourceType,
+          file: filename
+        });
+      };
+
+      for (const lineRaw of lines) {
+        const line = lineRaw || '';
+        const timestampMatch = line.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\s+\[(\w+)\]:\s*(.*)$/);
+
+        if (timestampMatch) {
+          flushCurrentEntry();
+          currentEntry = {
+            timestamp: timestampMatch[1],
+            level: timestampMatch[2],
+            message: timestampMatch[3],
+            details: []
+          };
+        } else if (currentEntry && line.trim()) {
+          currentEntry.details.push(line);
         }
       }
-      
-      // Don't forget the last log entry
-      if (currentLogEntry) {
-        validLogs.push(currentLogEntry);
-      }
-      
-      return validLogs;
+
+      flushCurrentEntry();
+      return parsed;
     };
 
-    const errorLogs = parseLogFile(errorLogFile);
-    const exceptionLogs = parseLogFile(exceptionLogFile);
-    const rejectionLogs = parseLogFile(rejectionLogFile);
+    const logFiles = fs.readdirSync(logsDir)
+      .filter(file => file.endsWith('.log'))
+      .sort((a, b) => {
+        const aPath = path.join(logsDir, a);
+        const bPath = path.join(logsDir, b);
+        return fs.statSync(bPath).mtimeMs - fs.statSync(aPath).mtimeMs;
+      });
+
+    const errorFiles = logFiles.filter(file => file.startsWith('error-'));
+    const exceptionFiles = logFiles.filter(file => file.startsWith('exceptions-'));
+    const rejectionFiles = logFiles.filter(file => file.startsWith('rejections-'));
+
+    const errorLogs = errorFiles.flatMap(file => parseLogFile(file, 'application'));
+    const exceptionLogs = exceptionFiles.flatMap(file => parseLogFile(file, 'exception'));
+    const rejectionLogs = rejectionFiles.flatMap(file => parseLogFile(file, 'rejection'));
+
+    const combinedLogs = [...errorLogs, ...exceptionLogs, ...rejectionLogs]
+      .sort((a, b) => {
+        const timeA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+        const timeB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+        return timeB - timeA;
+      })
+      .slice(0, 300);
 
     res.json({
       errorLogs,
       exceptionLogs,
       rejectionLogs,
+      combinedLogs,
       totalErrors: errorLogs.length + exceptionLogs.length + rejectionLogs.length
     });
 

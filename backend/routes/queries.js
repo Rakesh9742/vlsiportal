@@ -15,28 +15,28 @@ const router = express.Router();
 // Get stages for a specific domain
 router.get('/pd-stages', asyncHandler(async (req, res) => {
   const { domainId } = req.query;
-  
+
   if (!domainId) {
     return res.status(400).json({ message: 'Domain ID is required' });
   }
-  
+
   const [stages] = await db.execute(
     'SELECT * FROM stages WHERE domain_id = ? ORDER BY order_sequence, id',
     [domainId]
   );
-  
+
   res.json({ stages });
 }));
 
 // Get Physical Design issue categories for a specific stage
 router.get('/pd-issue-categories/:stageId', asyncHandler(async (req, res) => {
   const { stageId } = req.params;
-  
+
   const [categories] = await db.execute(
     'SELECT * FROM issue_categories WHERE stage_id = ? ORDER BY name',
     [stageId]
   );
-    
+
   res.json({ categories });
 }));
 
@@ -73,19 +73,19 @@ router.get('/domain-issue-categories/:stageId', async (req, res) => {
   try {
     const { stageId } = req.params;
     console.log(`DEBUG: Fetching domain issue categories for stage_id: ${stageId}`);
-    
+
     // First, let's check if this stage exists and get its details
     const [stageInfo] = await db.execute(
       'SELECT * FROM stages WHERE id = ?',
       [stageId]
     );
     console.log(`DEBUG: Stage info for stage_id ${stageId}:`, stageInfo[0] || 'No stage found');
-    
+
     const [categories] = await db.execute(
       'SELECT * FROM issue_categories WHERE stage_id = ? ORDER BY name',
       [stageId]
     );
-    
+
     console.log(`DEBUG: Found ${categories.length} domain categories for stage_id ${stageId}`);
     if (categories.length > 0) {
       console.log('DEBUG: Domain categories found:', categories.map(c => `${c.id}: ${c.name}`));
@@ -97,7 +97,7 @@ router.get('/domain-issue-categories/:stageId', async (req, res) => {
       );
       console.log('DEBUG: All stage_id counts in issue_categories:', allCategories);
     }
-    
+
     res.json({ categories });
   } catch (error) {
     console.error('DEBUG: Error in domain-issue-categories endpoint:', error);
@@ -109,11 +109,11 @@ router.get('/domain-issue-categories/:stageId', async (req, res) => {
 router.get('/pd-issue-categories', async (req, res) => {
   try {
     const { domainId } = req.query;
-    
+
     if (!domainId) {
       return res.status(400).json({ message: 'Domain ID is required' });
     }
-    
+
     const [categories] = await db.execute(`
       SELECT ic.*, ps.name as stage_name 
       FROM issue_categories ic 
@@ -131,13 +131,13 @@ router.get('/pd-issue-categories', async (req, res) => {
 router.get('/domain-config/:domainName', async (req, res) => {
   try {
     const { domainName } = req.params;
-    
+
     if (!domainConfig[domainName]) {
       return res.status(404).json({ message: 'Domain not found' });
     }
-    
+
     const config = domainConfig[domainName];
-    res.json({ 
+    res.json({
       domain: domainName,
       stages: config.stages,
       issueCategories: config.issueCategories
@@ -151,25 +151,25 @@ router.get('/domain-config/:domainName', async (req, res) => {
 router.get('/domain-config-by-id/:domainId', async (req, res) => {
   try {
     const { domainId } = req.params;
-    
+
     // Get domain name first
     const [domains] = await db.execute(
       'SELECT name FROM domains WHERE id = ?',
       [domainId]
     );
-    
+
     if (domains.length === 0) {
       return res.status(404).json({ message: 'Domain not found' });
     }
-    
+
     const domainName = domains[0].name;
-    
+
     // Get stages for this domain
     const [stages] = await db.execute(
       'SELECT * FROM stages WHERE domain_id = ? ORDER BY id',
       [domainId]
     );
-    
+
     // Get issue categories for this domain
     const [categories] = await db.execute(`
       SELECT ic.*, ds.name as stage_name 
@@ -178,7 +178,7 @@ router.get('/domain-config-by-id/:domainId', async (req, res) => {
       WHERE ic.domain_id = ?
       ORDER BY ds.id, ic.name
     `, [domainId]);
-    
+
     // Group categories by stage
     const issueCategories = {};
     stages.forEach(stage => {
@@ -186,8 +186,8 @@ router.get('/domain-config-by-id/:domainId', async (req, res) => {
         .filter(cat => cat.stage_id === stage.id)
         .map(cat => cat.name);
     });
-    
-    res.json({ 
+
+    res.json({
       domain: domainName,
       domainId: parseInt(domainId),
       stages: stages.map(stage => stage.name),
@@ -351,24 +351,24 @@ router.post('/', auth, checkRole(['student', 'professional']), uploadImages, han
       // Handle custom stage - set stage_id to null when "others" is selected
       const processedStageId = stage_id === 'others' ? null : (stage_id || null);
       const processedCustomStage = stage_id === 'others' ? (custom_stage || null) : null;
-      
+
       // For DV domain, tool_id should be a valid database ID from dv_tools table
       let processedToolId = tool_id || null;
-      
+
       // Ensure all values are null instead of undefined
       const queryValues = [
-        studentId, 
-        customQueryId, 
-        title, 
-        description, 
-        processedToolId, 
-        technology || null, 
-        processedStageId, 
-        processedCustomStage, 
-        debug_steps || null, 
+        studentId,
+        customQueryId,
+        title,
+        description,
+        processedToolId,
+        technology || null,
+        processedStageId,
+        processedCustomStage,
+        debug_steps || null,
         resolution || null
       ];
-      
+
       // Handle custom issue category
       let issue_category_id = null;
       if (custom_issue_category) {
@@ -386,7 +386,7 @@ router.post('/', auth, checkRole(['student', 'professional']), uploadImages, han
           );
           isDVQuery = dvToolCheck.length > 0;
         }
-        
+
         if (isDVQuery) {
           // This is a DV domain query, store the issue category name in custom_issue_category
           const categoryName = req.body.issue_category_name || 'Unknown Category';
@@ -398,7 +398,7 @@ router.post('/', auth, checkRole(['student', 'professional']), uploadImages, han
           queryValues.push(req.body.issue_category_id || null);
         }
       }
-      
+
       const [result] = await connection.execute(
         `INSERT INTO queries (${queryFields.join(', ')}) VALUES (${queryFields.map(() => '?').join(', ')})`,
         queryValues
@@ -428,7 +428,7 @@ router.post('/', auth, checkRole(['student', 'professional']), uploadImages, han
         const [superAdmins] = await db.execute(
           'SELECT id FROM users WHERE role = "admin"'
         );
-        
+
         // Get domain admins for this student's domain (only if domain_id exists)
         let domainAdmins = [];
         if (studentInfo[0].domain_id) {
@@ -438,7 +438,7 @@ router.post('/', auth, checkRole(['student', 'professional']), uploadImages, han
           );
           domainAdmins = domainAdminsResult;
         }
-        
+
         // Send notifications to super admins
         for (const admin of superAdmins) {
           await createNotification(
@@ -450,7 +450,7 @@ router.post('/', auth, checkRole(['student', 'professional']), uploadImages, han
             { student_id: studentId, student_name: studentInfo[0].full_name }
           );
         }
-        
+
         // Send notifications to domain admins
         for (const admin of domainAdmins) {
           await createNotification(
@@ -467,12 +467,12 @@ router.post('/', auth, checkRole(['student', 'professional']), uploadImages, han
         // Don't fail the query creation if notification fails
       }
 
-    res.status(201).json({ 
-      message: 'Query created successfully',
+      res.status(201).json({
+        message: 'Query created successfully',
         queryId: queryId,
         customQueryId: customQueryId,
         imagesUploaded: req.files ? req.files.length : 0
-    });
+      });
     } catch (error) {
       await connection.rollback();
       connection.release();
@@ -501,7 +501,7 @@ router.get('/resolved-domain', auth, checkRole(['student', 'professional']), asy
 
     const user = userInfo[0];
     if (!user.domain_id) {
-      return res.json({ 
+      return res.json({
         queries: [],
         message: 'No domain assigned to user'
       });
@@ -664,7 +664,7 @@ router.get('/export-resolved-domain', auth, checkRole(['student', 'professional'
     }
 
     const archive = archiver('zip', { zlib: { level: 9 } });
-    
+
     res.attachment(`resolved_queries_${domainName}_${new Date().toISOString().split('T')[0]}.zip`);
     archive.pipe(res);
 
@@ -708,7 +708,7 @@ router.get('/export-resolved-domain', auth, checkRole(['student', 'professional'
         `Status: ${query.status}\n` +
         `Created: ${query.created_at}\n` +
         `Updated: ${query.updated_at}\n`;
-      
+
       const filename = `query_${query.custom_query_id || query.id}.txt`;
       archive.append(queryContent, { name: filename });
     }
@@ -720,15 +720,18 @@ router.get('/export-resolved-domain', auth, checkRole(['student', 'professional'
 });
 
 // New Export queries to ZIP with CSV and images (admins only) - Fixed version
-router.get('/export-new', auth, checkRole(['admin']), async (req, res) => {
+router.get('/export-new', auth, checkRole(['admin', 'domain_admin']), async (req, res) => {
   try {
     console.log('NEW Export function called by user:', req.user.userId, 'role:', req.user.role);
     const archiver = require('archiver');
     const fs = require('fs');
     const path = require('path');
 
-    // Get all resolved queries with a simpler query
-    const [queries] = await db.execute(`
+    const isDomainAdmin = req.user.role === 'domain_admin';
+    const domainId = req.user.domainId;
+
+    // Get resolved queries, filtered by domain for domain admins
+    const exportQuery = `
       SELECT 
         q.id,
         q.title,
@@ -753,8 +756,11 @@ router.get('/export-new', auth, checkRole(['admin']), async (req, res) => {
       LEFT JOIN stages ds ON q.stage_id = ds.id
       LEFT JOIN issue_categories ic ON q.issue_category_id = ic.id
       WHERE q.status = 'resolved'
+      ${isDomainAdmin ? 'AND u.domain_id = ?' : ''}
       ORDER BY q.created_at DESC
-    `);
+    `;
+    const exportParams = isDomainAdmin ? [domainId] : [];
+    const [queries] = await db.execute(exportQuery, exportParams);
 
     console.log(`NEW Export: Found ${queries.length} resolved queries`);
 
@@ -776,7 +782,7 @@ router.get('/export-new', auth, checkRole(['admin']), async (req, res) => {
     // Process each query
     for (const query of queries) {
       console.log(`Processing query ${query.id}: ${query.title}`);
-      
+
       // Get responses
       const [responses] = await db.execute(`
         SELECT content FROM responses 
@@ -784,19 +790,19 @@ router.get('/export-new', auth, checkRole(['admin']), async (req, res) => {
         ORDER BY created_at DESC 
         LIMIT 1
       `, [query.id]);
-      
+
       // Get images
       const [images] = await db.execute(`
         SELECT original_name, file_path FROM query_images 
         WHERE query_id = ? 
         ORDER BY created_at ASC
       `, [query.id]);
-      
+
       console.log(`Query ${query.id}: Found ${images.length} images`);
-      
+
       const answer = responses.length > 0 ? responses[0].content : '';
       const imageNames = images.map(img => img.original_name).join('; ');
-      
+
       // Format dates
       const formatDate = (dateString) => {
         try {
@@ -813,10 +819,10 @@ router.get('/export-new', auth, checkRole(['admin']), async (req, res) => {
           return 'Invalid Date';
         }
       };
-      
+
       const createdDate = formatDate(query.created_at);
       const updatedDate = formatDate(query.updated_at);
-      
+
       csvRows.push({
         csvRow: [
           `"${(query.title || '').replace(/"/g, '""')}"`,
@@ -837,7 +843,7 @@ router.get('/export-new', auth, checkRole(['admin']), async (req, res) => {
         ],
         images: images
       });
-      
+
       totalImages += images.length;
     }
 
@@ -845,15 +851,15 @@ router.get('/export-new', auth, checkRole(['admin']), async (req, res) => {
 
     // Create ZIP archive
     const archive = archiver('zip', { zlib: { level: 9 } });
-    
+
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', `attachment; filename="resolved_queries_${new Date().toISOString().split('T')[0]}.zip"`);
-    
+
     archive.pipe(res);
-    
+
     // Add CSV file
     archive.append(csvContent, { name: 'queries.csv' });
-    
+
     // Add images
     console.log('Adding images to archive...');
     for (const row of csvRows) {
@@ -862,7 +868,7 @@ router.get('/export-new', auth, checkRole(['admin']), async (req, res) => {
         if (!path.isAbsolute(imagePath)) {
           imagePath = path.join(__dirname, imagePath);
         }
-        
+
         if (fs.existsSync(imagePath)) {
           const fileName = `${image.original_name}`;
           archive.file(imagePath, { name: `images/${fileName}` });
@@ -873,11 +879,11 @@ router.get('/export-new', auth, checkRole(['admin']), async (req, res) => {
         }
       }
     }
-    
+
     console.log(`NEW Export summary: ${addedImages}/${totalImages} images added to archive`);
-    
+
     await archive.finalize();
-    
+
   } catch (error) {
     console.error('NEW Export error:', error);
     res.status(500).json({ message: 'Failed to export queries' });
@@ -885,15 +891,17 @@ router.get('/export-new', auth, checkRole(['admin']), async (req, res) => {
 });
 
 // Export queries to ZIP with CSV and images (admins only)
-router.get('/export', auth, checkRole(['admin']), async (req, res) => {
+router.get('/export', auth, checkRole(['admin', 'domain_admin']), async (req, res) => {
   try {
     console.log('Export function called by user:', req.user.userId, 'role:', req.user.role);
     const archiver = require('archiver');
     const fs = require('fs');
     const path = require('path');
 
+    const isDomainAdmin = req.user.role === 'domain_admin';
+    const domainId = req.user.domainId;
 
-    // Get all resolved queries (admin access only)
+    // Get resolved queries, filtered by domain for domain admins
     const query = `
       SELECT 
         q.id,
@@ -920,10 +928,11 @@ router.get('/export', auth, checkRole(['admin']), async (req, res) => {
       LEFT JOIN stages ds ON q.stage_id = ds.id
       LEFT JOIN issue_categories ic ON q.issue_category_id = ic.id
       WHERE q.status = 'resolved'
+      ${isDomainAdmin ? 'AND u.domain_id = ?' : ''}
       ORDER BY q.created_at DESC
     `;
-    const params = [];
-    
+    const params = isDomainAdmin ? [domainId] : [];
+
     const [queries] = await db.execute(query, params);
 
     console.log(`Found ${queries.length} resolved queries for export`);
@@ -971,7 +980,7 @@ router.get('/export', auth, checkRole(['admin']), async (req, res) => {
           ORDER BY created_at DESC 
           LIMIT 1
         `, [query.id]);
-        
+
         // Get images for this query
         console.log(`Fetching images for query ${query.id}...`);
         const [images] = await db.execute(`
@@ -979,7 +988,7 @@ router.get('/export', auth, checkRole(['admin']), async (req, res) => {
           WHERE query_id = ? 
           ORDER BY created_at ASC
         `, [query.id]);
-        
+
         console.log(`Query ${query.id} (${query.title}): Found ${images.length} images`);
         if (images.length > 0) {
           console.log('Sample image:', images[0]);
@@ -990,10 +999,10 @@ router.get('/export', auth, checkRole(['admin']), async (req, res) => {
           `, [query.id]);
           console.log(`Debug: All images for query ${query.id}:`, allImages);
         }
-        
+
         const answer = responses.length > 0 ? responses[0].content : '';
         const imageNames = images.map(img => img.original_name).join('; ');
-        
+
         // Format dates to show only date without timezone - use consistent format
         const formatDate = (dateString) => {
           try {
@@ -1003,21 +1012,21 @@ router.get('/export', auth, checkRole(['admin']), async (req, res) => {
             }
             const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            
+
             const day = days[date.getDay()];
             const month = months[date.getMonth()];
             const dateNum = date.getDate().toString().padStart(2, '0');
             const year = date.getFullYear();
-            
+
             return `${day} ${month} ${dateNum} ${year}`;
           } catch (dateError) {
             return 'Invalid Date';
           }
         };
-        
+
         const createdDate = formatDate(query.created_at);
         const updatedDate = formatDate(query.updated_at);
-        
+
         return {
           csvRow: [
             `"${(query.title || '').replace(/"/g, '""')}"`,
@@ -1096,7 +1105,7 @@ router.get('/export', auth, checkRole(['admin']), async (req, res) => {
           imagePath = path.join(__dirname, imagePath);
         }
         // If it's already absolute, use it as is
-        
+
         if (fs.existsSync(imagePath)) {
           const fileName = `${image.original_name}`;
           archive.file(imagePath, { name: `images/${fileName}` });
@@ -1106,7 +1115,7 @@ router.get('/export', auth, checkRole(['admin']), async (req, res) => {
         }
       }
     }
-    
+
     console.log(`Export summary: ${addedImages}/${totalImages} images added to archive`);
 
     // Finalize the archive
@@ -1124,7 +1133,7 @@ router.get('/:id', auth, async (req, res) => {
     const queryId = req.params.id;
     let sqlQuery;
     let params = [queryId];
-    
+
     // Determine if queryId is numeric (database ID) or custom_query_id
     const isNumericId = /^\d+$/.test(queryId);
     const idField = isNumericId ? 'q.id' : 'q.custom_query_id';
@@ -1252,7 +1261,7 @@ router.post('/:id/responses', auth, checkRole(['expert_reviewer', 'admin', 'doma
     // Check if query exists and if expert reviewer is assigned to it
     let queryCheckSql;
     let queryCheckParams;
-    
+
     if (req.user.role === 'expert_reviewer') {
       queryCheckSql = `
         SELECT q.* FROM queries q
@@ -1273,7 +1282,7 @@ router.post('/:id/responses', auth, checkRole(['expert_reviewer', 'admin', 'doma
       queryCheckSql = 'SELECT * FROM queries WHERE id = ?';
       queryCheckParams = [queryId];
     }
-    
+
     const [queries] = await db.execute(queryCheckSql, queryCheckParams);
 
     if (queries.length === 0) {
@@ -1285,6 +1294,14 @@ router.post('/:id/responses', auth, checkRole(['expert_reviewer', 'admin', 'doma
       'INSERT INTO responses (query_id, responder_id, content) VALUES (?, ?, ?)',
       [queryId, teacherId, answer]
     );
+
+    // If query was unassigned, create assignment record
+    if (queries[0] && !queries[0].expert_reviewer_id) {
+      await db.execute(
+        'INSERT INTO query_assignments (query_id, expert_reviewer_id, assigned_by, notes) VALUES (?, ?, ?, ?)',
+        [queryId, teacherId, teacherId, 'Auto-assigned via response']
+      );
+    }
 
     // Update query status and assign expert reviewer
     await db.execute(
@@ -1313,13 +1330,13 @@ router.post('/:id/responses', auth, checkRole(['expert_reviewer', 'admin', 'doma
         [queryId, 'active']
       );
       chatId = chatResult.insertId;
-      
+
       // Add participants
       await db.execute(
         'INSERT INTO chat_participants (chat_id, user_id, role) VALUES (?, ?, ?)',
         [chatId, query.student_id, 'student']
       );
-      
+
       await db.execute(
         'INSERT INTO chat_participants (chat_id, user_id, role) VALUES (?, ?, ?)',
         [chatId, teacherId, 'expert']
@@ -1369,7 +1386,7 @@ router.put('/:id/responses/:responseId', auth, checkRole(['expert_reviewer', 'ad
     // Check if response exists and belongs to the user (for expert reviewers) or allow admin to edit any
     let responseCheckSql;
     let responseCheckParams;
-    
+
     if (req.user.role === 'expert_reviewer') {
       responseCheckSql = `
         SELECT r.* FROM responses r
@@ -1380,7 +1397,7 @@ router.put('/:id/responses/:responseId', auth, checkRole(['expert_reviewer', 'ad
       responseCheckSql = 'SELECT * FROM responses WHERE id = ? AND query_id = ?';
       responseCheckParams = [responseId, queryId];
     }
-    
+
     const [responses] = await db.execute(responseCheckSql, responseCheckParams);
 
     if (responses.length === 0) {
@@ -1451,7 +1468,7 @@ router.put('/:id/status', auth, checkRole(['expert_reviewer', 'admin', 'domain_a
     // Check if query exists and if expert reviewer is assigned to it
     let queryCheckSql;
     let queryCheckParams;
-    
+
     if (req.user.role === 'expert_reviewer') {
       queryCheckSql = `
         SELECT q.* FROM queries q
@@ -1472,7 +1489,7 @@ router.put('/:id/status', auth, checkRole(['expert_reviewer', 'admin', 'domain_a
       queryCheckSql = 'SELECT * FROM queries WHERE id = ?';
       queryCheckParams = [queryId];
     }
-    
+
     const [queries] = await db.execute(queryCheckSql, queryCheckParams);
 
     if (queries.length === 0) {
@@ -1584,14 +1601,14 @@ router.put('/:id', auth, [
 
     // Handle DV domain logic for updates
     let processedBody = { ...req.body };
-    
+
     // Check if this is a DV domain query by checking the tool_id
     if (req.body.tool_id) {
       const [dvToolCheck] = await db.execute(
         'SELECT id FROM tools WHERE id = ? AND domain_id = 3',
         [req.body.tool_id]
       );
-      
+
       if (dvToolCheck.length > 0) {
         // This is a DV domain query
         if (req.body.issue_category_name) {
@@ -1623,15 +1640,15 @@ router.put('/:id', auth, [
 
     // Store original query data for comparison
     const originalQuery = queries[0];
-    
+
     // Track edit history for each changed field with readable values
     const editHistoryPromises = [];
-    
+
     for (const fieldName of Object.keys(processedBody)) {
       if (processedBody[fieldName] !== undefined && originalQuery[fieldName] !== processedBody[fieldName]) {
         let oldValue = originalQuery[fieldName];
         let newValue = processedBody[fieldName];
-        
+
         // Convert IDs to readable names for better history display
         if (fieldName === 'stage_id') {
           // Get stage names
@@ -1664,7 +1681,7 @@ router.put('/:id', auth, [
             newValue = newCategory.length > 0 ? newCategory[0].name : newValue;
           }
         }
-        
+
         editHistoryPromises.push(
           db.execute(
             `INSERT INTO query_edit_history (query_id, editor_id, editor_role, field_name, old_value, new_value) 
@@ -1674,12 +1691,12 @@ router.put('/:id', auth, [
         );
       }
     }
-    
+
     // Execute all edit history inserts
     if (editHistoryPromises.length > 0) {
       await Promise.all(editHistoryPromises);
     }
-    
+
     // Update the query with is_edited flag and increment edit_count
     const updateFieldsWithEdit = [...updateFields, 'is_edited = TRUE', 'edit_count = edit_count + 1', 'updated_at = CURRENT_TIMESTAMP'];
     await db.execute(
@@ -1694,7 +1711,7 @@ router.put('/:id', auth, [
         'SELECT full_name FROM users WHERE id = ?',
         [userId]
       );
-      
+
       // Get assigned expert reviewer for notification
       const [assignedExpert] = await db.execute(
         `SELECT u.id, u.full_name 
@@ -1703,7 +1720,7 @@ router.put('/:id', auth, [
          WHERE qa.query_id = ?`,
         [queryId]
       );
-      
+
       if (assignedExpert.length > 0 && userInfo.length > 0) {
         // Create notification for assigned expert reviewer
         await createNotification(
@@ -1712,20 +1729,20 @@ router.put('/:id', auth, [
           'query_edited',
           'Query Updated by Student',
           `${userInfo[0].full_name} has edited their query: "${originalQuery.title}"`,
-          { 
-            editor_id: userId, 
+          {
+            editor_id: userId,
             editor_name: userInfo[0].full_name,
             edited_fields: Object.keys(req.body)
           }
         );
       }
-      
+
       // Also notify domain admins when students edit queries
       const [domainAdmins] = await db.execute(
         'SELECT id FROM users WHERE role = "domain_admin" AND domain_id = ?',
         [originalQuery.domain_id]
       );
-      
+
       for (const admin of domainAdmins) {
         await createNotification(
           admin.id,
@@ -1733,8 +1750,8 @@ router.put('/:id', auth, [
           'query_edited',
           'Query Updated by Student',
           `${userInfo[0].full_name} has edited their query: "${originalQuery.title}" in your domain`,
-          { 
-            editor_id: userId, 
+          {
+            editor_id: userId,
             editor_name: userInfo[0].full_name,
             edited_fields: Object.keys(req.body)
           }
@@ -1807,7 +1824,7 @@ router.delete('/:id/images/:imageId', auth, async (req, res) => {
     // Delete file from filesystem
     const fs = require('fs');
     const path = require('path');
-    
+
     // Handle both absolute and relative paths
     let imagePath = image.file_path;
     if (!path.isAbsolute(imagePath)) {
@@ -1815,7 +1832,7 @@ router.delete('/:id/images/:imageId', auth, async (req, res) => {
       imagePath = path.join(__dirname, imagePath);
     }
     // If it's already absolute, use it as is
-    
+
     if (fs.existsSync(imagePath)) {
       fs.unlinkSync(imagePath);
     } else {
@@ -1841,7 +1858,7 @@ router.get('/:id/export', auth, checkRole(['admin']), async (req, res) => {
     const archiver = require('archiver');
     const fs = require('fs');
     const path = require('path');
-    
+
     // Get single query with related data (admin access only)
     const query = `
       SELECT 
@@ -1870,7 +1887,7 @@ router.get('/:id/export', auth, checkRole(['admin']), async (req, res) => {
       WHERE q.id = ?
     `;
     const params = [queryId];
-    
+
     const [queries] = await db.execute(query, params);
 
     if (queries.length === 0) {
@@ -1935,24 +1952,24 @@ router.get('/:id/export', auth, checkRole(['admin']), async (req, res) => {
     const latestResponse = responses.length > 0 ? responses[responses.length - 1] : null;
     const answer = latestResponse ? latestResponse.answer : '';
     const imageNames = images.map(img => img.original_name).join('; ');
-    
+
     // Format dates to show only date without timezone - use consistent format
     const formatDate = (dateString) => {
       const date = new Date(dateString);
       const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      
+
       const day = days[date.getDay()];
       const month = months[date.getMonth()];
       const dateNum = date.getDate().toString().padStart(2, '0');
       const year = date.getFullYear();
-      
+
       return `${day} ${month} ${dateNum} ${year}`;
     };
-    
+
     const createdDate = formatDate(queryData.created_at);
     const updatedDate = formatDate(queryData.updated_at);
-    
+
     console.log(`Exporting query ${queryId}:`, {
       queryTitle: queryData.title,
       responseCount: responses.length,
@@ -2014,7 +2031,7 @@ router.get('/:id/export', auth, checkRole(['admin']), async (req, res) => {
         imagePath = path.join(__dirname, imagePath);
       }
       // If it's already absolute, use it as is
-      
+
       if (fs.existsSync(imagePath)) {
         const fileName = `${image.original_name}`;
         archive.file(imagePath, { name: `images/${fileName}` });
@@ -2023,7 +2040,7 @@ router.get('/:id/export', auth, checkRole(['admin']), async (req, res) => {
         console.log(`Image file not found: ${imagePath} (original path: ${image.file_path})`);
       }
     }
-    
+
     console.log(`Single query export summary: ${addedImages}/${totalImages} images added to archive`);
 
     // Finalize the archive
@@ -2134,7 +2151,7 @@ router.get('/images/:filename', auth, async (req, res) => {
   try {
     const { filename } = req.params;
     const { userId, role: userRole } = req.user;
-    
+
     console.log(`DEBUG: ========== IMAGE REQUEST START ==========`);
     console.log(`DEBUG: User ${userId} (${userRole}) requesting image: ${filename}`);
     console.log(`DEBUG: Request URL: ${req.originalUrl}`);
@@ -2174,7 +2191,7 @@ router.get('/images/:filename', auth, async (req, res) => {
          WHERE q.id = ?`,
         [queryId]
       );
-      
+
       if (queryInfo.length > 0 && queryInfo[0].student_domain_id === req.user.domainId) {
         hasPermission = true;
         permissionReason = 'domain admin access to same domain';
@@ -2210,9 +2227,9 @@ router.get('/images/:filename', auth, async (req, res) => {
            WHERE q.id = ?`,
           [queryId]
         );
-        
-        if (queryInfo.length > 0 && queryInfo[0].status === 'resolved' && 
-            queryInfo[0].student_domain_id === req.user.domainId) {
+
+        if (queryInfo.length > 0 && queryInfo[0].status === 'resolved' &&
+          queryInfo[0].student_domain_id === req.user.domainId) {
           hasPermission = true;
           permissionReason = 'resolved query from same domain';
         } else {
@@ -2231,7 +2248,7 @@ router.get('/images/:filename', auth, async (req, res) => {
     // Serve the image file
     const path = require('path');
     const fs = require('fs');
-    
+
     let imagePath = image.file_path;
     if (!path.isAbsolute(imagePath)) {
       imagePath = path.join(__dirname, '..', imagePath);
@@ -2246,15 +2263,15 @@ router.get('/images/:filename', auth, async (req, res) => {
     console.log(`DEBUG: Image path: ${imagePath}`);
     console.log(`DEBUG: MIME type: ${image.mime_type}`);
     console.log(`DEBUG: File size: ${image.file_size}`);
-    
+
     // Set appropriate headers
     res.setHeader('Content-Type', image.mime_type);
     res.setHeader('Content-Length', image.file_size);
-    
+
     // Send the file
     res.sendFile(imagePath);
     console.log(`DEBUG: ========== IMAGE REQUEST END ==========`);
-    
+
   } catch (error) {
     console.error('DEBUG: ========== IMAGE REQUEST ERROR ==========');
     console.error('Error serving image:', error);

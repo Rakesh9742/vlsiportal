@@ -1,4 +1,4 @@
-/* Modern Dark Theme System Monitoring */
+﻿/* Modern Dark Theme System Monitoring */
 .system-monitoring-modern {
   background: #111827;
   color: white;
@@ -46,7 +46,7 @@
 }
 
 .monitoring-header h1 {
-  color: #2c3e50;
+  color: var(--gray-900);
   margin: 0;
   font-size: 2rem;
 }
@@ -153,7 +153,7 @@
 }
 
 .refresh-btn {
-  background: #007bff;
+  background: var(--primary);
   color: white;
   border: none;
   padding: 10px 20px;
@@ -167,7 +167,7 @@
 }
 
 .refresh-btn:hover {
-  background: #0056b3;
+  background: var(--primary-dark);
 }
 
 /* Modern Tabs */
@@ -420,6 +420,45 @@
   white-space: nowrap;
 }
 
+.error-time-exact {
+  margin-top: 4px;
+  font-size: 0.7rem;
+  color: #6B7280;
+  white-space: nowrap;
+}
+
+.error-source-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 84px;
+  padding: 0.2rem 0.45rem;
+  border-radius: 0.375rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+}
+
+.error-source-badge.application {
+  background: rgba(59, 130, 246, 0.18);
+  color: #93C5FD;
+  border-color: rgba(59, 130, 246, 0.32);
+}
+
+.error-source-badge.exception {
+  background: rgba(168, 85, 247, 0.18);
+  color: #D8B4FE;
+  border-color: rgba(168, 85, 247, 0.32);
+}
+
+.error-source-badge.rejection {
+  background: rgba(245, 158, 11, 0.18);
+  color: #FDE68A;
+  border-color: rgba(245, 158, 11, 0.32);
+}
+
 .no-errors-modern {
   text-align: center;
   padding: 3rem;
@@ -594,18 +633,18 @@
 
 .summary-icon-modern {
   font-size: 2rem;
-  color: #6c757d;
+  color: var(--gray-500);
 }
 
 .summary-content-modern h3 {
   margin: 0;
   font-size: 2rem;
-  color: #2c3e50;
+  color: var(--gray-900);
 }
 
 .summary-content-modern p {
   margin: 5px 0 0 0;
-  color: #6c757d;
+  color: var(--gray-500);
   font-size: 14px;
 }
 
@@ -653,7 +692,7 @@
 }
 
 .clear-btn-modern {
-  background: #dc3545;
+  background: var(--error);
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -816,7 +855,7 @@
   background: #1F2937;
   color: white;
   padding: 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
   border: 1px solid #374151;
   min-width: 200px;
@@ -1000,7 +1039,7 @@
 .role-badge-modern {
   color: white;
   padding: 2px 6px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-size: 0.6rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -1091,20 +1130,20 @@
   align-items: center;
   gap: 8px;
   font-size: 16px;
-  color: #6c757d;
+  color: var(--gray-500);
   border-bottom: 3px solid transparent;
   transition: all 0.3s;
 }
 
 .tab-btn:hover {
-  color: #007bff;
-  background: #f8f9fa;
+  color: var(--primary);
+  background: var(--bg-page);
 }
 
 .tab-btn.active {
-  color: #007bff;
-  border-bottom-color: #007bff;
-  background: #f8f9fa;
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+  background: var(--bg-page);
 }
 
 .error-summary, .visitor-summary {
@@ -1117,7 +1156,7 @@
 .summary-card {
   background: white;
   border: 1px solid #dee2e6;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 20px;
   display: flex;
   align-items: center;
@@ -1127,11 +1166,11 @@
 
 .summary-icon {
   font-size: 2rem;
-  color: #6c757d;
+  color: var(--gray-500);
 }
 
 .summary-icon.error {
-  color: #dc3545;
+  color: var(--error);
 }
 
 .summary-icon.exception {
@@ -1139,18 +1178,18 @@
 }
 
 .summary-icon.rejection {
-  color: #ffc107;
+  color: var(--warning);
 }
 
 .summary-content h3 {
   margin: 0;
   font-size: 2rem;
-  color: #2c3e50;
+  color: var(--gray-900);
 }
 
 .summary-content p {
   margin: 5px 0 0 0;
-  color: #6c757d;
+  color: var(--gray-500);
   font-size: 14px;
 }
 
@@ -1159,7 +1198,7 @@
 }
 
 .error-logs h3 {
-  color: #2c3e50;
+  color: var(--gray-900);
   margin-bottom: 15px;
   padding-bottom: 10px;
   border-bottom: 1px solid #dee2e6;
@@ -1170,7 +1209,7 @@
   overflow-y: auto;
   border: 1px solid #dee2e6;
   border-radius: 5px;
-  background: #f8f9fa;
+  background: var(--bg-page);
 }
 
 .log-entry {
@@ -1185,7 +1224,7 @@
 }
 
 .log-entry.error {
-  border-left: 4px solid #dc3545;
+  border-left: 4px solid var(--error);
 }
 
 .log-entry.exception {
@@ -1193,7 +1232,7 @@
 }
 
 .log-entry.rejection {
-  border-left: 4px solid #ffc107;
+  border-left: 4px solid var(--warning);
 }
 
 .log-header {
@@ -1204,18 +1243,18 @@
 }
 
 .log-timestamp {
-  color: #6c757d;
+  color: var(--gray-500);
   font-size: 12px;
 }
 
 .log-message {
-  color: #2c3e50;
+  color: var(--gray-900);
   font-weight: 500;
   margin-bottom: 10px;
 }
 
 .log-meta, .log-stack {
-  background: #f8f9fa;
+  background: var(--bg-page);
   border: 1px solid #dee2e6;
   border-radius: 3px;
   padding: 10px;
@@ -1232,7 +1271,7 @@
 
 .no-logs, .no-data {
   text-align: center;
-  color: #6c757d;
+  color: var(--gray-500);
   padding: 40px;
   font-style: italic;
 }
@@ -1244,7 +1283,7 @@
 }
 
 .clear-btn {
-  background: #dc3545;
+  background: var(--error);
   color: white;
   border: none;
   padding: 10px 20px;
@@ -1270,13 +1309,13 @@
 .visitor-section {
   background: white;
   border: 1px solid #dee2e6;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   padding: 20px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .visitor-section h3 {
-  color: #2c3e50;
+  color: var(--gray-900);
   margin-bottom: 20px;
   padding-bottom: 10px;
   border-bottom: 1px solid #dee2e6;
@@ -1297,7 +1336,7 @@
 }
 
 .visitor-item:hover {
-  background: #f8f9fa;
+  background: var(--bg-page);
 }
 
 .visitor-item:last-child {
@@ -1313,15 +1352,15 @@
 
 .device-icon {
   font-size: 1.2rem;
-  color: #6c757d;
+  color: var(--gray-500);
 }
 
 .device-icon.mobile {
-  color: #007bff;
+  color: var(--primary);
 }
 
 .device-icon.desktop {
-  color: #28a745;
+  color: var(--success);
 }
 
 .visitor-details {
@@ -1330,19 +1369,19 @@
 
 .visitor-ip {
   font-weight: 600;
-  color: #2c3e50;
+  color: var(--gray-900);
   font-size: 14px;
 }
 
 .visitor-url {
-  color: #6c757d;
+  color: var(--gray-500);
   font-size: 12px;
   margin: 2px 0;
   word-break: break-all;
 }
 
 .visitor-time {
-  color: #6c757d;
+  color: var(--gray-500);
   font-size: 11px;
 }
 
@@ -1353,7 +1392,7 @@
 .role-badge {
   color: white;
   padding: 4px 8px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
@@ -1377,7 +1416,7 @@
 }
 
 .page-url {
-  color: #2c3e50;
+  color: var(--gray-900);
   font-size: 14px;
   word-break: break-all;
   flex: 1;
@@ -1385,7 +1424,7 @@
 }
 
 .page-visits, .role-count {
-  color: #6c757d;
+  color: var(--gray-500);
   font-size: 12px;
   font-weight: 600;
 }
@@ -1422,7 +1461,7 @@
 .loading {
   text-align: center;
   padding: 40px;
-  color: #6c757d;
+  color: var(--gray-500);
   font-size: 18px;
 }
 
@@ -1508,3 +1547,6 @@
     align-self: flex-end;
   }
 }
+
+
+

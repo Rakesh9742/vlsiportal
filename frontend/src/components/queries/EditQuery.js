@@ -660,7 +660,7 @@ const EditQuery = () => {
   }
 
   return (
-    <div className="create-query-page">
+    <div className="create-query-page edit-query-page">
       <div className="page-header">
         <button 
           onClick={() => {
@@ -757,7 +757,7 @@ const EditQuery = () => {
               value={formData.description}
               onChange={handleInputChange}
               className="form-control"
-              rows="6"
+              rows="10"
               required
               placeholder="Describe the VLSI design issue or question..."
             />
@@ -895,7 +895,7 @@ const EditQuery = () => {
               value={formData.debug_steps}
               onChange={handleInputChange}
               className="form-control"
-              rows="4"
+              rows="8"
               placeholder="Describe any debugging steps already attempted..."
             />
           </div>
@@ -908,7 +908,7 @@ const EditQuery = () => {
                value={formData.resolution}
                onChange={handleInputChange}
                className="form-control"
-               rows="4"
+               rows="8"
                placeholder="Describe how this issue was resolved..."
              />
            </div>

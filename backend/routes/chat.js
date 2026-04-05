@@ -12,7 +12,7 @@ router.get('/query/:queryId', auth, async (req, res) => {
   try {
     const { queryId } = req.params;
     const userId = req.user.userId;
-    
+
     // Determine if queryId is numeric (database ID) or custom_query_id
     const isNumericId = /^\d+$/.test(queryId);
     const idField = isNumericId ? 'q.id' : 'q.custom_query_id';
@@ -35,7 +35,7 @@ router.get('/query/:queryId', auth, async (req, res) => {
     const isStudent = query.student_id === parsedUserId;
     const isExpert = query.expert_reviewer_id === parsedUserId;
     const isSuperAdmin = req.user.role === 'admin';
-    
+
     // For domain admin, check if they can access this query from their domain
     let isDomainAdmin = false;
     if (req.user.role === 'domain_admin') {
@@ -64,22 +64,22 @@ router.get('/query/:queryId', auth, async (req, res) => {
         'INSERT INTO query_chats (query_id, chat_status) VALUES (?, ?)',
         [numericQueryId, 'active']
       );
-      
+
       const chatId = chatResult.insertId;
-      
+
       // Add participants
       await db.execute(
         'INSERT INTO chat_participants (chat_id, user_id, role) VALUES (?, ?, ?)',
         [chatId, query.student_id, 'student']
       );
-      
+
       if (query.expert_reviewer_id) {
         await db.execute(
           'INSERT INTO chat_participants (chat_id, user_id, role) VALUES (?, ?, ?)',
           [chatId, query.expert_reviewer_id, 'expert']
         );
       }
-      
+
       // Get the newly created chat
       [chat] = await db.execute(
         'SELECT * FROM query_chats WHERE id = ?',
@@ -114,7 +114,7 @@ router.get('/:chatId/messages', auth, async (req, res) => {
     const pageNum = Math.max(1, parseInt(page) || 1);
     const limitNum = Math.max(1, Math.min(100, parseInt(limit) || 50));
     const offset = Math.max(0, (pageNum - 1) * limitNum);
-    
+
     // Ensure all values are valid integers
     if (isNaN(pageNum) || isNaN(limitNum) || isNaN(offset)) {
       return res.status(400).json({ message: 'Invalid pagination parameters' });
@@ -141,17 +141,15 @@ router.get('/:chatId/messages', auth, async (req, res) => {
     const sqlChatId = Number(chatIdNum);
     const sqlLimit = Number(limitNum);
     const sqlOffset = Number(offset);
-    
 
-    
     // Validate SQL parameters are valid positive integers
-    if (!Number.isInteger(sqlChatId) || sqlChatId <= 0 || 
-        !Number.isInteger(sqlLimit) || sqlLimit <= 0 || sqlLimit > 100 ||
-        !Number.isInteger(sqlOffset) || sqlOffset < 0) {
+    if (!Number.isInteger(sqlChatId) || sqlChatId <= 0 ||
+      !Number.isInteger(sqlLimit) || sqlLimit <= 0 || sqlLimit > 100 ||
+      !Number.isInteger(sqlOffset) || sqlOffset < 0) {
 
       return res.status(400).json({ message: 'Invalid SQL parameters' });
     }
-    
+
     const [messages] = await db.execute(
       `SELECT cm.*, u.username, u.full_name, u.role
        FROM chat_messages cm
@@ -172,7 +170,7 @@ router.get('/:chatId/messages', auth, async (req, res) => {
     if (messages.length > 0) {
       const messageIds = messages.map(m => m.id);
       const placeholders = messageIds.map(() => '?').join(',');
-      
+
       await db.execute(
         `INSERT IGNORE INTO message_read_status (message_id, user_id) 
          VALUES ${messageIds.map(() => '(?, ?)').join(', ')}`,
@@ -278,6 +276,51 @@ router.post('/:chatId/messages', auth, uploadImages, handleUploadError, [
       [result.insertId]
     );
 
+    // Auto-assign expert if query is unassigned and responder is expert/admin
+    if (['expert_reviewer', 'admin', 'domain_admin'].includes(req.user.role)) {
+      try {
+        // Fetch query info to check current assignment
+        const [queryInfo] = await db.execute(
+          `SELECT q.id, q.expert_reviewer_id, q.status 
+           FROM query_chats qc
+           JOIN queries q ON qc.query_id = q.id
+           WHERE qc.id = ?`,
+          [chatIdNum]
+        );
+
+        if (queryInfo.length > 0 && !queryInfo[0].expert_reviewer_id) {
+          const queryId = queryInfo[0].id;
+
+          // Update query assignment
+          await db.execute(
+            'UPDATE queries SET expert_reviewer_id = ?, status = ? WHERE id = ?',
+            [userId, 'in_progress', queryId]
+          );
+
+          // Create assignment record
+          await db.execute(
+            'INSERT INTO query_assignments (query_id, expert_reviewer_id, assigned_by, notes) VALUES (?, ?, ?, ?)',
+            [queryId, userId, userId, 'Auto-assigned via chat response']
+          );
+
+          // Ensure they are added as a participant if not already
+          const [existingParticipant] = await db.execute(
+            'SELECT * FROM chat_participants WHERE chat_id = ? AND user_id = ?',
+            [chatIdNum, userId]
+          );
+
+          if (existingParticipant.length === 0) {
+            await db.execute(
+              'INSERT INTO chat_participants (chat_id, user_id, role) VALUES (?, ?, ?)',
+              [chatIdNum, userId, 'expert']
+            );
+          }
+        }
+      } catch (assignError) {
+        console.error('Error auto-assigning expert:', assignError);
+      }
+    }
+
     // Create notifications for other participants
     try {
       // Get query info and other participants
@@ -291,7 +334,7 @@ router.post('/:chatId/messages', auth, uploadImages, handleUploadError, [
 
       if (chatInfo.length > 0) {
         const queryInfo = chatInfo[0];
-        
+
         // Get other participants (exclude the sender)
         const [participants] = await db.execute(
           `SELECT cp.user_id, u.username, u.full_name
@@ -361,9 +404,9 @@ router.get('/unread-count', auth, async (req, res) => {
        GROUP BY cm.chat_id, q.id, q.title, u.full_name
        ORDER BY latest_message_time DESC`,
       [userId, userId, userId]
-     );
+    );
 
-    res.json({ 
+    res.json({
       unread_count: totalResult[0].unread_count,
       expert_messages: expertMessages
     });

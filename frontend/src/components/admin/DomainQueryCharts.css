@@ -1,10 +1,10 @@
-.domain-charts {
+﻿.domain-charts {
   background: white;
   border-radius: 15px;
   padding: 25px;
   margin-bottom: 30px;
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border-color);
 }
 
 .charts-header {
@@ -14,7 +14,7 @@
 }
 
 .charts-header h2 {
-  color: #2c3e50;
+  color: var(--gray-900);
   margin: 0;
   font-size: 1.8rem;
   font-weight: 600;
@@ -42,8 +42,8 @@
 }
 
 .chart-container {
-  background: #f8f9fa;
-  border-radius: 12px;
+  background: var(--bg-page);
+  border-radius: var(--radius-md);
   padding: 20px;
   border: 1px solid #e9ecef;
   transition: all 0.3s ease;
@@ -100,3 +100,5 @@
     height: 250px;
   }
 }
+
+

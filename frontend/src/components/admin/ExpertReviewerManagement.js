@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
-import { FaUserPlus, FaEdit, FaTrash, FaArrowLeft, FaEye, FaCheck, FaTimes } from 'react-icons/fa';
+import { FaUserPlus, FaEdit, FaTrash, FaEye, FaCheck, FaTimes } from 'react-icons/fa';
 import './ExpertReviewerManagement.css';
 
 const ExpertReviewerManagement = () => {
@@ -118,12 +118,6 @@ const ExpertReviewerManagement = () => {
   return (
     <div className="expert-reviewer-management">
       <div className="page-header">
-        <button 
-          onClick={() => navigate('/admin')} 
-          className="back-btn"
-        >
-          <FaArrowLeft /> Back to Admin Dashboard
-        </button>
         <h1>Expert Reviewer Management</h1>
       </div>
 
@@ -135,13 +129,13 @@ const ExpertReviewerManagement = () => {
           onClick={() => setShowCreateForm(!showCreateForm)}
           className="action-btn primary"
         >
-          <FaUserPlus /> {showCreateForm ? 'Cancel' : 'Create Expert Reviewer'}
+          <FaUserPlus /> {showCreateForm ? 'Cancel' : 'New Reviewer'}
         </button>
         <button 
           onClick={fetchWorkload}
           className="action-btn secondary"
         >
-          <FaEye /> View Workload
+          <FaEye /> Workload
         </button>
       </div>
 
