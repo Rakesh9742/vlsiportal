@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useRef, useEffect, Children } from 'react';
+import { createPortal } from 'react-dom';
 import { FaChevronDown, FaCheck } from 'react-icons/fa';
 import './Select.css';
 
@@ -11,6 +12,8 @@ export const Select = ({ children, value, onValueChange, defaultValue, disabled 
   const [selectedValue, setSelectedValue] = useState(value || defaultValue || '');
   const [selectedLabel, setSelectedLabel] = useState('');
   const selectRef = useRef(null);
+  const triggerRef = useRef(null);
+  const contentRef = useRef(null);
 
   useEffect(() => {
     if (value !== undefined) {
@@ -62,7 +65,10 @@ export const Select = ({ children, value, onValueChange, defaultValue, disabled 
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (selectRef.current && !selectRef.current.contains(event.target)) {
+      const clickedInsideTrigger = selectRef.current && selectRef.current.contains(event.target);
+      const clickedInsideContent = contentRef.current && contentRef.current.contains(event.target);
+
+      if (!clickedInsideTrigger && !clickedInsideContent) {
         console.log('Click outside detected, closing dropdown');
         setIsOpen(false);
       }
@@ -93,6 +99,8 @@ export const Select = ({ children, value, onValueChange, defaultValue, disabled 
     selectedValue,
     selectedLabel,
     setSelectedLabel,
+    triggerRef,
+    contentRef,
     handleValueChange,
     disabled
   };
@@ -108,7 +116,7 @@ export const Select = ({ children, value, onValueChange, defaultValue, disabled 
 
 // Select Trigger component
 export const SelectTrigger = ({ children, className = '', placeholder }) => {
-  const { isOpen, setIsOpen, selectedLabel, disabled } = useContext(SelectContext);
+  const { isOpen, setIsOpen, selectedLabel, disabled, triggerRef } = useContext(SelectContext);
 
   const handleClick = (e) => {
     e.preventDefault();
@@ -121,6 +129,7 @@ export const SelectTrigger = ({ children, className = '', placeholder }) => {
 
   return (
     <button
+      ref={triggerRef}
       type="button"
       className={`select-trigger ${className} ${isOpen ? 'select-trigger--open' : ''} ${disabled ? 'select-trigger--disabled' : ''}`}
       onClick={handleClick}
@@ -146,18 +155,65 @@ export const SelectValue = ({ placeholder }) => {
 };
 
 // Select Content component
-export const SelectContent = ({ children, className = '' }) => {
-  const { isOpen } = useContext(SelectContext);
+export const SelectContent = ({ children, className = '', portal = false, side = 'down' }) => {
+  const { isOpen, triggerRef, contentRef } = useContext(SelectContext);
+  const [contentStyle, setContentStyle] = useState({});
+  const [positionClass, setPositionClass] = useState('select-content--down');
+
+  const updatePosition = () => {
+    if (!portal || !triggerRef?.current) return;
+
+    const rect = triggerRef.current.getBoundingClientRect();
+    const estimatedMenuHeight = 260;
+    const spaceAbove = rect.top;
+    const spaceBelow = window.innerHeight - rect.bottom;
+
+    const shouldOpenUp = side === 'up' || (side === 'auto' && spaceBelow < estimatedMenuHeight && spaceAbove > spaceBelow);
+
+    setPositionClass(shouldOpenUp ? 'select-content--portal-up' : 'select-content--portal-down');
+    setContentStyle({
+      position: 'fixed',
+      left: `${rect.left}px`,
+      top: shouldOpenUp ? `${rect.top - 4}px` : `${rect.bottom + 4}px`,
+      width: `${rect.width}px`,
+      zIndex: 2200
+    });
+  };
+
+  useEffect(() => {
+    if (!isOpen || !portal) return;
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [isOpen, portal, side]);
+
+  useEffect(() => {
+    if (!portal) {
+      setPositionClass(side === 'up' ? 'select-content--up' : 'select-content--down');
+    }
+  }, [portal, side]);
 
   if (!isOpen) return null;
 
-  return (
-    <div className={`select-content ${className} select-content--down`}>
+  const contentNode = (
+    <div ref={contentRef} style={portal ? contentStyle : undefined} className={`select-content ${className} ${positionClass} ${portal ? 'select-content--portal' : ''}`}>
       <div className="select-content__inner">
         {children}
       </div>
     </div>
   );
+
+  if (portal) {
+    return createPortal(contentNode, document.body);
+  }
+
+  return contentNode;
 };
 
 // Select Group component

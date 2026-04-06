@@ -8,10 +8,33 @@ import './QueryManagement.css';
 
 const ITEMS_PER_PAGE = 10;
 
+const dedupeQueriesById = (queryList) => {
+  const queryMap = new Map();
+
+  queryList.forEach((query) => {
+    const existing = queryMap.get(query.id);
+    if (!existing) {
+      queryMap.set(query.id, query);
+      return;
+    }
+
+    const existingAssignedAt = existing.assigned_at ? new Date(existing.assigned_at).getTime() : 0;
+    const currentAssignedAt = query.assigned_at ? new Date(query.assigned_at).getTime() : 0;
+    const shouldReplace = (!existing.assigned_expert_name && query.assigned_expert_name) || currentAssignedAt > existingAssignedAt;
+
+    if (shouldReplace) {
+      queryMap.set(query.id, query);
+    }
+  });
+
+  return Array.from(queryMap.values());
+};
+
 const QueryManagement = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
+  const isDomainAdmin = user?.role === 'domain_admin';
   const [queries, setQueries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -47,18 +70,24 @@ const QueryManagement = () => {
     }
 
     fetchQueries();
-    fetchDomains();
+    if (!isDomainAdmin) {
+      fetchDomains();
+    } else {
+      setDomainFilter('all');
+      setDomains([]);
+    }
     fetchAssignedExperts();
-  }, [user, navigate, searchParams]);
+  }, [user, navigate, searchParams, isDomainAdmin]);
 
   const fetchQueries = async () => {
     try {
       const response = await axios.get('/admin/queries');
-      setQueries(response.data.queries);
+      const uniqueQueries = dedupeQueriesById(response.data.queries || []);
+      setQueries(uniqueQueries);
 
       // Update assigned experts list
       const expertMap = new Map();
-      response.data.queries.forEach(query => {
+      uniqueQueries.forEach(query => {
         if (query.assigned_expert_name && query.expert_reviewer_id) {
           if (!expertMap.has(query.expert_reviewer_id)) {
             expertMap.set(query.expert_reviewer_id, {
@@ -72,7 +101,7 @@ const QueryManagement = () => {
 
       // Update last responders list
       const responderMap = new Map();
-      response.data.queries.forEach(query => {
+      uniqueQueries.forEach(query => {
         if (query.last_responder_name) {
           const key = query.last_responder_name;
           if (!responderMap.has(key)) {
@@ -102,11 +131,12 @@ const QueryManagement = () => {
   const fetchAssignedExperts = async () => {
     try {
       const response = await axios.get('/admin/queries');
+      const uniqueQueries = dedupeQueriesById(response.data.queries || []);
+
       // Extract unique experts who have queries assigned
-      const uniqueExperts = [];
       const expertMap = new Map();
 
-      response.data.queries.forEach(query => {
+      uniqueQueries.forEach(query => {
         if (query.assigned_expert_name && query.expert_reviewer_id) {
           if (!expertMap.has(query.expert_reviewer_id)) {
             expertMap.set(query.expert_reviewer_id, {
@@ -246,7 +276,7 @@ const QueryManagement = () => {
       query.id.toString().includes(searchTerm);
 
     const matchesStatus = statusFilter === 'all' || query.status === statusFilter;
-    const matchesDomain = domainFilter === 'all' || query.student_domain === domainFilter;
+    const matchesDomain = isDomainAdmin || domainFilter === 'all' || query.student_domain === domainFilter;
 
     // Expert filter
     const matchesExpert = expertFilter === 'all' ||
@@ -260,8 +290,8 @@ const QueryManagement = () => {
 
     // Handle unassigned filter from URL parameter.
     // If a specific expert is selected, do not force URL unassigned filter.
-    const isSpecificExpertSelected = expertFilter !== 'all' && expertFilter !== 'unassigned';
-    const matchesAssignment = (urlFilter === 'unassigned' && !isSpecificExpertSelected) ? !hasAssignedExpert : true;
+    const shouldApplyUrlUnassignedFilter = urlFilter === 'unassigned' && statusFilter === 'open' && expertFilter === 'all';
+    const matchesAssignment = shouldApplyUrlUnassignedFilter ? !hasAssignedExpert : true;
 
     return matchesSearch && matchesStatus && matchesDomain && matchesExpert && matchesResponder && matchesAssignment;
   }).sort((a, b) => {
@@ -346,27 +376,29 @@ const QueryManagement = () => {
             </Select>
           </div>
 
-          <div className="filter-group">
-            <label htmlFor="domain-filter">Domain:</label>
-            <Select
-              value={domainFilter}
-              onValueChange={(value) => setDomainFilter(value)}
-            >
-              <SelectTrigger className="filter-select">
-                <SelectValue placeholder="All Domains" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem value="all">All Domains</SelectItem>
-                  {domains.map(domain => (
-                    <SelectItem key={domain.id} value={domain.name}>
-                      {domain.name}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </div>
+          {!isDomainAdmin && (
+            <div className="filter-group">
+              <label htmlFor="domain-filter">Domain:</label>
+              <Select
+                value={domainFilter}
+                onValueChange={(value) => setDomainFilter(value)}
+              >
+                <SelectTrigger className="filter-select">
+                  <SelectValue placeholder="All Domains" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="all">All Domains</SelectItem>
+                    {domains.map(domain => (
+                      <SelectItem key={domain.id} value={domain.name}>
+                        {domain.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
       </div>
 
@@ -412,7 +444,7 @@ const QueryManagement = () => {
                       <SelectTrigger className="table-filter-select">
                         <SelectValue placeholder="Filter" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent portal side="up">
                         <SelectGroup>
                           <SelectItem value="all">All</SelectItem>
                           <SelectItem value="unassigned">Unassigned</SelectItem>
@@ -450,7 +482,7 @@ const QueryManagement = () => {
                       <SelectTrigger className="table-filter-select">
                         <SelectValue placeholder="Filter" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent portal side="up">
                         <SelectGroup>
                           <SelectItem value="all">All</SelectItem>
                           <SelectItem value="no_response">No Response</SelectItem>

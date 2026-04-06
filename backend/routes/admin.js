@@ -30,7 +30,15 @@ router.get('/queries', auth, checkAdminRole, async (req, res) => {
       LEFT JOIN tools tool ON q.tool_id = tool.id
       LEFT JOIN stages ds ON q.stage_id = ds.id
       LEFT JOIN issue_categories ic ON q.issue_category_id = ic.id
-      LEFT JOIN query_assignments qa ON q.id = qa.query_id
+      LEFT JOIN (
+        SELECT qa_full.*
+        FROM query_assignments qa_full
+        INNER JOIN (
+          SELECT query_id, MAX(id) AS latest_id
+          FROM query_assignments
+          GROUP BY query_id
+        ) qa_latest ON qa_full.id = qa_latest.latest_id
+      ) qa ON q.id = qa.query_id
       LEFT JOIN users er ON qa.expert_reviewer_id = er.id
       LEFT JOIN (
         SELECT 

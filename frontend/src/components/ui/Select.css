@@ -293,3 +293,20 @@
   margin-top: 4px !important;
   max-height: 300px !important;
 }
+
+/* Portal-rendered dropdowns use fixed coordinates from JS, not local top/bottom rules */
+.select-content--portal {
+  position: fixed !important;
+  margin: 0 !important;
+}
+
+.select-content--portal-down {
+  margin: 0 !important;
+  animation: slideDown 0.2s ease-out !important;
+}
+
+.select-content--portal-up {
+  margin: 0 !important;
+  transform: translateY(calc(-100% - 4px));
+  animation: slideUp 0.2s ease-out !important;
+}

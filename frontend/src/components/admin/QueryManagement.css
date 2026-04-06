@@ -199,6 +199,7 @@
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-color);
   overflow-x: auto;
+  overflow-y: visible;
   margin-top: var(--space-5);
   position: relative;
   width: 100%;
@@ -313,11 +314,14 @@
   font-size: 0.9rem;
   min-width: 950px;
   table-layout: auto;
+  overflow: visible;
 }
 
 .queries-table thead {
   background: var(--bg-page);
   border-bottom: 2px solid var(--border-color);
+  position: relative;
+  z-index: 20;
 }
 
 .queries-table th {
@@ -330,6 +334,8 @@
   font-size: 0.85rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  position: relative;
+  overflow: visible;
 }
 
 .queries-table th:last-child {
@@ -1064,6 +1070,7 @@
 .expert-filter-header,
 .responder-filter-header {
   padding: 8px 12px !important;
+  z-index: 40;
 }
 
 .header-with-filter {
@@ -1071,6 +1078,28 @@
   flex-direction: column;
   gap: 8px;
   align-items: flex-start;
+  position: relative;
+  overflow: visible;
+  z-index: 45;
+}
+
+.header-with-filter .select-container {
+  position: relative;
+  z-index: 50;
+}
+
+.header-with-filter .select-content {
+  z-index: 1100 !important;
+}
+
+/* In table header, always open dropdown upward to avoid covering table rows */
+.header-with-filter .select-content,
+.header-with-filter .select-content--down {
+  top: auto !important;
+  bottom: calc(100% + 4px) !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  animation: slideUp 0.18s ease-out !important;
 }
 
 .header-with-filter span {

@@ -35,6 +35,12 @@ const QueryList = () => {
     }
   }, [activeTab, user?.role]);
 
+  useEffect(() => {
+    if (activeTab === 'resolved-queries') {
+      setStatusFilter('all');
+    }
+  }, [activeTab]);
+
   const fetchQueries = async () => {
     try {
       const response = await axios.get('/queries');
@@ -79,7 +85,7 @@ const QueryList = () => {
                          (query.custom_query_id && query.custom_query_id.toLowerCase().includes(searchTerm.toLowerCase())) ||
                          query.id.toString().includes(searchTerm);
     
-    const matchesStatus = statusFilter === 'all' || query.status === statusFilter;
+    const matchesStatus = activeTab === 'resolved-queries' || statusFilter === 'all' || query.status === statusFilter;
     
     const matchesDomain = domainFilter === 'all' || query.student_domain === domainFilter;
     

@@ -669,7 +669,7 @@ router.get('/export-resolved-domain', auth, checkRole(['student', 'professional'
     archive.pipe(res);
 
     // Create CSV content
-    const csvHeader = 'Query ID,Custom Query ID,Title,Description,Student Name,Teacher Name,Tool,Domain,Design Stage,Issue Category,Status,Created At,Updated At\n';
+    const csvHeader = 'Query ID,Custom Query ID,Title,Description,Student Name,Teacher Name,Tool,Technology,Domain,Design Stage,Issue Category,Status,Created At,Updated At\n';
     let csvContent = csvHeader;
 
     queries.forEach(query => {
@@ -681,6 +681,7 @@ router.get('/export-resolved-domain', auth, checkRole(['student', 'professional'
         `"${(query.student_name || '').replace(/"/g, '""')}"`,
         `"${(query.teacher_name || '').replace(/"/g, '""')}"`,
         `"${(query.tool_name || '').replace(/"/g, '""')}"`,
+        `"${(query.technology || '').replace(/"/g, '""')}"`,
         `"${(query.student_domain || '').replace(/"/g, '""')}"`,
         `"${(query.design_stage_name || '').replace(/"/g, '""')}"`,
         `"${(query.issue_category_name || '').replace(/"/g, '""')}"`,
@@ -702,6 +703,7 @@ router.get('/export-resolved-domain', auth, checkRole(['student', 'professional'
         `Student: ${query.student_name}\n` +
         `Teacher: ${query.teacher_name || 'Not assigned'}\n` +
         `Tool: ${query.tool_name || 'N/A'}\n` +
+        `Technology: ${query.technology || 'N/A'}\n` +
         `Domain: ${query.student_domain}\n` +
         `Design Stage: ${query.design_stage_name || 'N/A'}\n` +
         `Issue Category: ${query.issue_category_name || 'N/A'}\n` +
@@ -736,6 +738,7 @@ router.get('/export-new', auth, checkRole(['admin', 'domain_admin']), async (req
         q.id,
         q.title,
         q.description,
+        q.technology,
         q.status,
         q.resolution_attempts,
         q.debug_steps,
@@ -770,7 +773,7 @@ router.get('/export-new', auth, checkRole(['admin', 'domain_admin']), async (req
 
     // Create CSV content
     const csvHeaders = [
-      'Title', 'Description', 'Status', 'Student Name', 'Student Domain',
+      'Title', 'Description', 'Technology', 'Status', 'Student Name', 'Student Domain',
       'Expert Reviewer Name', 'Design Stage', 'Issue Category', 'Tool',
       'Debug Steps', 'Resolution', 'Created Date', 'Updated Date', 'Answer', 'Images'
     ];
@@ -827,6 +830,7 @@ router.get('/export-new', auth, checkRole(['admin', 'domain_admin']), async (req
         csvRow: [
           `"${(query.title || '').replace(/"/g, '""')}"`,
           `"${(query.description || '').replace(/"/g, '""')}"`,
+          `"${(query.technology || '').replace(/"/g, '""')}"`,
           query.status,
           `"${(query.student_name || '').replace(/"/g, '""')}"`,
           `"${(query.student_domain || '').replace(/"/g, '""')}"`,
@@ -907,6 +911,7 @@ router.get('/export', auth, checkRole(['admin', 'domain_admin']), async (req, re
         q.id,
         q.title,
         q.description,
+        q.technology,
         q.status,
         q.resolution_attempts,
         q.debug_steps,
@@ -953,6 +958,7 @@ router.get('/export', auth, checkRole(['admin', 'domain_admin']), async (req, re
     const csvHeaders = [
       'Title',
       'Description',
+      'Technology',
       'Status',
       'Student Name',
       'Student Domain',
@@ -1031,6 +1037,7 @@ router.get('/export', auth, checkRole(['admin', 'domain_admin']), async (req, re
           csvRow: [
             `"${(query.title || '').replace(/"/g, '""')}"`,
             `"${(query.description || '').replace(/"/g, '""')}"`,
+            `"${(query.technology || '').replace(/"/g, '""')}"`,
             query.status,
             `"${(query.student_name || '').replace(/"/g, '""')}"`,
             `"${(query.student_domain || '').replace(/"/g, '""')}"`,
@@ -1053,6 +1060,7 @@ router.get('/export', auth, checkRole(['admin', 'domain_admin']), async (req, re
           csvRow: [
             `"${(query.title || '').replace(/"/g, '""')}"`,
             `"${(query.description || '').replace(/"/g, '""')}"`,
+            `"${(query.technology || '').replace(/"/g, '""')}"`,
             query.status || 'unknown',
             `"${(query.student_name || '').replace(/"/g, '""')}"`,
             `"${(query.student_domain || '').replace(/"/g, '""')}"`,
@@ -1865,6 +1873,7 @@ router.get('/:id/export', auth, checkRole(['admin']), async (req, res) => {
         q.id,
         q.title,
         q.description,
+        q.technology,
         q.status,
         q.resolution_attempts,
         q.debug_steps,
@@ -1933,6 +1942,7 @@ router.get('/:id/export', auth, checkRole(['admin']), async (req, res) => {
     const csvHeaders = [
       'Title',
       'Description',
+      'Technology',
       'Status',
       'Student Name',
       'Student Domain',
@@ -1986,6 +1996,7 @@ router.get('/:id/export', auth, checkRole(['admin']), async (req, res) => {
       [
         `"${(queryData.title || '').replace(/"/g, '""')}"`,
         `"${(queryData.description || '').replace(/"/g, '""')}"`,
+        `"${(queryData.technology || '').replace(/"/g, '""')}"`,
         queryData.status,
         `"${(queryData.student_name || '').replace(/"/g, '""')}"`,
         `"${(queryData.student_domain || '').replace(/"/g, '""')}"`,
